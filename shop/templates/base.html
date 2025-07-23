@@ -53,6 +53,7 @@
         /* Accessibility Menu Enhanced */
         #accessibility-fab {
             position: fixed; top: 20px; right: 20px; z-index: 9999;
+            overflow: visible;
         }
         #accessibility-toggle {
             width: 64px; height: 64px; border-radius: 50%;
@@ -66,10 +67,19 @@
             box-shadow: 0 12px 40px var(--shadow-soft);
         }
         #accessibility-menu {
-            display: flex !important; flex-direction: column; gap: 15px; margin-top: 15px;
-            background: rgba(255, 255, 255, 0.95); border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1); padding: 25px;
-            backdrop-filter: blur(20px); border: 1px solid rgba(212, 175, 55, 0.2);
+            display: none;
+            position: fixed !important;
+            top: 70px !important;
+            right: 20px !important;
+            left: auto !important;
+            width: 320px !important;
+            height: auto !important;
+            background: #fff !important;
+            border: 2px solid #D4AF37 !important;
+            box-shadow: 0 8px 32px rgba(212,175,55,0.15) !important;
+            z-index: 2147483647 !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
         }
         .accessibility-btn {
             border-radius: 15px !important; padding: 12px 20px !important;
@@ -243,44 +253,22 @@
         /* Font size adjustments */
         .large-font { font-size: 1.2em !important; }
         .large-font h1 { font-size: 2.8rem !important; }
-        .large-font h2 { font-size: 2.4rem !important; }
-        .large-font h3 { font-size: 2rem !important; }
-        .large-font h4 { font-size: 1.7rem !important; }
-        .large-font h5 { font-size: 1.4rem !important; }
-        .large-font .btn { font-size: 1.1rem !important; padding: 15px 35px !important; }
-    </style>
+       .large-font h2 { font-size: 2.4rem !important; }
+       .large-font h3 { font-size: 2rem !important; }
+       .large-font h4 { font-size: 1.7rem !important; }
+       .large-font h5 { font-size: 1.4rem !important; }
+       .large-font .btn { font-size: 1.1rem !important; padding: 15px 35px !important; }
+   </style>
 </head>
 <body class="fade-in">
-    <!-- Accessibility Floating Icon & Menu -->
-    <div id="accessibility-fab">
-        <button id="accessibility-toggle" aria-label="תפריט נגישות">
-            <span class="material-icons" style="font-size:32px;color:#fff;opacity:0.95;">accessible</span>
-        </button>
-        <div id="accessibility-menu">
-            <button id="increase-font" class="btn btn-sm btn-primary accessibility-btn" aria-label="הגדל גופן">
-                <span class="material-icons" style="font-size:1.6em;vertical-align:middle;">zoom_in</span>
-                <span style="font-size:1.25em;font-weight:600;vertical-align:middle;">הגדל פונט</span>
-            </button>
-            <button id="toggle-contrast" class="btn btn-sm btn-dark accessibility-btn" aria-label="מצב ניגודיות גבוהה">
-                <span class="material-icons" style="font-size:1.6em;vertical-align:middle;">contrast</span>
-                <span style="font-size:1.25em;font-weight:600;vertical-align:middle;">שחור לבן</span>
-            </button>
-            <button id="reset-accessibility" class="btn btn-sm btn-secondary accessibility-btn" aria-label="איפוס נגישות">
-                <span class="material-icons" style="font-size:1.6em;vertical-align:middle;">refresh</span>
-                <span style="font-size:1.25em;font-weight:600;vertical-align:middle;">איפוס</span>
-            </button>
-            <span style="font-size:1.1em;color:#444;font-weight:700;text-align:center;margin-top:10px;">
-                <span class="material-icons" style="font-size:1.3em;vertical-align:middle;">accessibility_new</span>
-                נגישות
-            </span>
-        </div>
-    </div>
+  
 
     <!-- Header -->
     <header class="border-bottom">
         <div class="container">
             <div class="d-flex flex-wrap align-items-center justify-content-between">
                 <!-- Cart and Favorite Icons -->
+
                 <div class="header-icons">
                     {% if request.user.is_authenticated %}
                         <a href="{% url 'cart:show_cart' %}" class="icon-container">
@@ -406,6 +394,36 @@
                     </div>
                 {% endif %}
             </div>
+
+
+
+  <!-- Accessibility Floating Icon & Menu -->
+    <div id="accessibility-fab">
+        <button id="accessibility-toggle" aria-label="תפריט נגישות">
+            <span class="material-icons" style="font-size:32px;color:#fff;opacity:0.95;">accessible</span>
+        </button>
+        <div id="accessibility-menu">
+            <button id="increase-font" class="btn btn-sm btn-primary accessibility-btn" aria-label="הגדל גופן">
+                <span class="material-icons" style="font-size:1.6em;vertical-align:middle;">zoom_in</span>
+                <span style="font-size:1.25em;font-weight:600;vertical-align:middle;">הגדל פונט</span>
+            </button>
+            <button id="toggle-contrast" class="btn btn-sm btn-dark accessibility-btn" aria-label="מצב ניגודיות גבוהה">
+                <span class="material-icons" style="font-size:1.6em;vertical-align:middle;">contrast</span>
+                <span style="font-size:1.25em;font-weight:600;vertical-align:middle;">שחור לבן</span>
+            </button>
+            <button id="reset-accessibility" class="btn btn-sm btn-secondary accessibility-btn" aria-label="איפוס נגישות">
+                <span class="material-icons" style="font-size:1.6em;vertical-align:middle;">refresh</span>
+                <span style="font-size:1.25em;font-weight:600;vertical-align:middle;">איפוס</span>
+            </button>
+            <span style="font-size:1.1em;color:#444;font-weight:700;text-align:center;margin-top:10px;">
+                <span class="material-icons" style="font-size:1.3em;vertical-align:middle;">accessibility_new</span>
+                נגישות
+            </span>
+        </div>
+    </div>
+<!-- End Accessibility Floating Icon & Menu -->
+
+
         </div>
     </header>
 
@@ -451,18 +469,104 @@
             let fontSize = 16;
             let isHighContrast = false;
 
-            if (!toggle) { console.error('accessibility-toggle not found'); }
-            if (!menu) { console.error('accessibility-menu not found'); }
-            if (!incFont) { console.error('increase-font not found'); }
-            if (!contrast) { console.error('toggle-contrast not found'); }
-            if (!reset) { console.error('reset-accessibility not found'); }
+            // MutationObserver to debug menu changes
+            if (menu) {
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        console.log('Mutation observed on accessibility-menu:', mutation);
+                        console.log('Current style:', menu.style.cssText);
+                    });
+                });
+                observer.observe(menu, { attributes: true, childList: false, subtree: false, attributeFilter: ['style'] });
+            }
 
+            // Debug: log menu existence and content
+            console.log('accessibility-menu element:', menu);
+            if (menu) {
+                console.log('accessibility-menu innerHTML:', menu.innerHTML);
+            } else {
+                console.error('accessibility-menu NOT FOUND in DOM');
+            }
+
+            // Hide menu on load
+            if (menu) {
+                menu.setAttribute('role', 'dialog');
+                menu.setAttribute('aria-modal', 'true');
+                menu.setAttribute('tabindex', '-1');
+                menu.style.display = 'none';
+            }
+            if (toggle) {
+                toggle.setAttribute('aria-haspopup', 'dialog');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+
+            function openMenu() {
+                if (menu) {
+                    menu.style.setProperty('display', 'flex', 'important');
+                    menu.focus();
+                    if (toggle) toggle.setAttribute('aria-expanded', 'true');
+                    console.log('Accessibility menu opened');
+                }
+            }
+            function closeMenu() {
+                if (menu) {
+                    menu.style.setProperty('display', 'none', 'important');
+                    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+                    if (toggle) toggle.focus();
+                    console.log('Accessibility menu closed');
+                }
+            }
+
+            // Toggle logic
             if (toggle && menu) {
                 toggle.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'flex' : 'none';
+                    if (menu.style.display === 'none' || menu.style.display === '') {
+                        openMenu();
+                    } else {
+                        closeMenu();
+                    }
+                });
+                toggle.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        if (menu.style.display === 'none' || menu.style.display === '') {
+                            openMenu();
+                        } else {
+                            closeMenu();
+                        }
+                    }
                 });
             }
+
+            // Trap focus inside menu when open
+            if (menu) {
+                menu.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        closeMenu();
+                    }
+                    const focusable = menu.querySelectorAll('button, [tabindex]:not([tabindex="-1"])');
+                    if (focusable.length > 0) {
+                        let first = focusable[0];
+                        let last = focusable[focusable.length - 1];
+                        if (e.key === 'Tab') {
+                            if (e.shiftKey) {
+                                if (document.activeElement === first) {
+                                    e.preventDefault();
+                                    last.focus();
+                                }
+                            } else {
+                                if (document.activeElement === last) {
+                                    e.preventDefault();
+                                    first.focus();
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Accessibility actions
             if (incFont) {
                 incFont.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -488,11 +592,20 @@
                     document.body.classList.remove('high-contrast', 'large-font');
                 });
             }
-            document.addEventListener('click', function(event) {
-                if (menu && !document.getElementById('accessibility-fab').contains(event.target)) {
-                    menu.style.display = 'none';
-                }
-            });
+
+            // Close menu on outside click
+            // Prevent immediate close after open
+            setTimeout(function() {
+                document.addEventListener('click', function(event) {
+                    if (menu && !document.getElementById('accessibility-fab').contains(event.target)) {
+                        closeMenu();
+                    }
+                });
+            }, 200);
+
+            // Debug: log if toggle or menu not found
+            if (!toggle) { console.error('accessibility-toggle not found'); }
+            if (!menu) { console.error('accessibility-menu not found'); }
         });
     </script>
 </body>
