@@ -7,7 +7,8 @@ from shop.models import Product, Category
 class AddProductForm(ModelForm):
     class Meta:
         model = Product
-        fields = ['category', 'image', 'title','description', 'price']
+        fields = ['category', 'image', 'title', 'description', 'price', 'slug']
+        # Exclude slug from the form so it is always auto-generated
 
     def __init__(self, *args, **kwargs):
         super(AddProductForm, self).__init__(*args, **kwargs)
@@ -31,7 +32,7 @@ class AddCategoryForm(ModelForm):
 class EditProductForm(ModelForm):
     class Meta:
         model = Product
-        fields = ['category', 'image', 'title','description', 'price']
+        fields = ['category', 'image', 'title', 'description', 'price', 'slug']
 
     def __init__(self, *args, **kwargs):
         super(EditProductForm, self).__init__(*args, **kwargs)

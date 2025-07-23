@@ -1,12 +1,48 @@
 {% extends "dashboard.html" %}
 {% block content %}
 
-<form method="POST" enctype="multipart/form-data">
+<!-- Summernote CSS/JS CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+<form method="POST" enctype="multipart/form-data" style="direction: rtl;">
     {% csrf_token %}
-    {{ form }}
+    {{ form.category }}
+    {{ form.image }}
+    {{ form.title }}
+    {{ form.price }}
+    {{ form.slug }}
+    <div class="form-group mt-3">
+        <label for="description">תיאור מוצר:</label>
+        <textarea id="description" name="description" class="form-control" style="direction: rtl; text-align: right;">{{ form.description.value|default_if_none:"" }}</textarea>
+    </div>
     <div class="form-group">
         <button class="btn btn-primary mt-3 w-100" type="submit">Submit</button>
     </div>
 </form>
+<style>
+    input, textarea, select {
+        direction: rtl;
+        text-align: right;
+    }
+</style>
 
+
+<!-- CKEditor CDN -->
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+<script>
+   CKEDITOR.replace('description', {
+        allowedContent: true,
+        extraPlugins: 'clipboard,pastefromword',
+        contentsLangDirection: 'rtl'
+    });
+
+</script>
+
+<style>
+
+    .cke_notification {
+        display: none !important;
+    }
+
+</style>
 {% endblock %}

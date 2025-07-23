@@ -1,0 +1,100 @@
+body {
+  font-family: 'Segoe UI', 'Arial', sans-serif;
+  background: linear-gradient(135deg, #f8fafc 0%, #e3e8ff 100%);
+  color: #222;
+  transition: background 0.5s, color 0.5s;
+}
+
+.card {
+  box-shadow: 0 6px 32px rgba(60,60,120,0.13);
+  border-radius: 18px;
+  transition: transform 0.3s, box-shadow 0.3s;
+  background: #fff;
+  border: none;
+}
+.card:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 12px 48px rgba(60,60,120,0.18);
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, #4f8cff 0%, #6e6eff 100%);
+  border: none;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(79,140,255,0.12);
+  transition: background 0.3s;
+}
+.btn-primary:hover {
+  background: linear-gradient(90deg, #6e6eff 0%, #4f8cff 100%);
+}
+
+#accessibility-fab {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+#accessibility-toggle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(44,62,80,0.55);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+#accessibility-toggle:hover {
+  background: rgba(44,62,80,0.85);
+}
+
+#accessibility-menu {
+  min-width: 180px;
+  margin-top: 10px;
+  background: rgba(255,255,255,0.97);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  padding: 18px 20px;
+  opacity: 0;
+  transform: translateY(-20px);
+  pointer-events: none;
+  transition: opacity 0.35s, transform 0.35s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#accessibility-menu.active {
+  display: flex !important;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+body.high-contrast {
+  background: #111 !important;
+  color: #fff !important;
+}
+body.high-contrast .card {
+  background: #222 !important;
+  color: #fff !important;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.33);
+}
+body.high-contrast .btn,
+body.high-contrast .dropdown-menu {
+  background: #000 !important;
+  color: #fff !important;
+  border-color: #fff !important;
+}
+body.high-contrast #accessibility-menu {
+  background: #222 !important;
+  border-color: #fff !important;
+}
+
+html.font-large, body.font-large, .font-large * {
+  font-size: 1.35em !important;
+}

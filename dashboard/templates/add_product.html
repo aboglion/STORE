@@ -1,13 +1,38 @@
 {% extends "dashboard.html" %}
 {% block content %}
 
-<form method="POST" enctype="multipart/form-data">
+<form method="POST" enctype="multipart/form-data" style="direction: rtl;">
     {% csrf_token %}
     {{ form }}
+    <style>
+        input, textarea, select {
+            direction: rtl;
+            text-align: right;
+        }
+    </style>
     <div class="form-group">
         <button class="btn btn-primary mt-3 w-100" type="submit">Submit</button>
     </div>
 </form>
 
+
+
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+<script>
+    CKEDITOR.replace('description', {
+        allowedContent: true,
+        extraPlugins: 'clipboard,pastefromword',
+        contentsLangDirection: 'rtl'
+    });
+
+
+
+</script>
+
+<style>
+    .cke_notification {
+        display: none !important;
+    }
+</style>
 {% endblock %}
 

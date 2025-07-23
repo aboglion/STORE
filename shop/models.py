@@ -42,5 +42,15 @@ class Product(models.Model):
         return reverse('shop:product_detail', kwargs={'slug':self.slug})
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.title)
-        return super().save(*args, **kwargs)
+        from django.utils.text import slugify
+        from re import sub
+        # If slug is empty, generate from title
+        base_slug = self.slug if self.slug else slugify(self.title)
+        base_slug = sub(r'[^a-zA-Z0-9_-]', '', base_slug)
+        unique_slug = base_slug
+        num = 1
+        while Product.objects.filter(slug=unique_slug).exclude(pk=self.pk).exists():
+            unique_slug = f"{base_slug}-{num}"
+            num += 1
+        self.slug = unique_slug
+        super().save(*args, **kwargs)

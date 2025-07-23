@@ -1,93 +1,499 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- google fonts -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
-    <!-- bootstrap css cdn -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-    <title>{% if title %} {{ title }} {% else %} Django Online Shop {% endif %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Frank+Ruhl+Libre:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <title>{% if title %}{{ title }}{% else %}חנות קוסמטיקה יוקרתית - חלב נאקות{% endif %}</title>
+    <!-- Enhanced Styles -->
+    <link rel="stylesheet" href="{% static 'css/enhanced.css' %}">
+    <style>
+        :root {
+            --primary-gold: #D4AF37;
+            --secondary-gold: #F4E4BC;
+            --warm-beige: #F5F0E8;
+            --deep-brown: #8B4513;
+            --soft-cream: #FFFEF7;
+            --luxury-black: #2C2C2C;
+            --camel-brown: #C19A6B;
+            --pearl-white: #FAF8F5;
+            --shadow-soft: rgba(212, 175, 55, 0.15);
+            --shadow-warm: rgba(139, 69, 19, 0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Assistant', sans-serif;
+            background: linear-gradient(135deg, var(--soft-cream) 0%, var(--pearl-white) 100%);
+            color: var(--luxury-black);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 20% 30%, rgba(212, 175, 55, 0.03) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 70%, rgba(193, 154, 107, 0.04) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 80%, rgba(139, 69, 19, 0.02) 0%, transparent 50%);
+            z-index: -1;
+            animation: floatingBg 20s ease-in-out infinite;
+        }
+        @keyframes floatingBg {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-10px, -10px) rotate(1deg); }
+            66% { transform: translate(10px, -5px) rotate(-1deg); }
+        }
+        /* Accessibility Menu Enhanced */
+        #accessibility-fab {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+        }
+        #accessibility-toggle {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-gold), var(--camel-brown));
+            border: none; box-shadow: 0 8px 32px var(--shadow-soft);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px);
+        }
+        #accessibility-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px var(--shadow-soft);
+        }
+        #accessibility-menu {
+            display: flex !important; flex-direction: column; gap: 15px; margin-top: 15px;
+            background: rgba(255, 255, 255, 0.95); border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1); padding: 25px;
+            backdrop-filter: blur(20px); border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+        .accessibility-btn {
+            border-radius: 15px !important; padding: 12px 20px !important;
+            font-weight: 600 !important; transition: all 0.3s ease !important;
+            border: none !important; box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+        }
+        .accessibility-btn:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+        }
+        /* Header Enhancement */
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 2px 30px rgba(0,0,0,0.05);
+            position: sticky; top: 0; z-index: 1000; padding: 15px 0;
+        }
+        .header-icons {
+            display: flex; align-items: center; gap: 20px; margin-left: 30px;
+        }
+        .icon-container {
+            position: relative; display: flex; align-items: center; gap: 8px;
+            padding: 10px 15px; background: rgba(212, 175, 55, 0.1);
+            border-radius: 25px; transition: all 0.3s ease; text-decoration: none;
+        }
+        .icon-container:hover {
+            background: rgba(212, 175, 55, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--shadow-soft);
+        }
+        .icon-badge {
+            background: linear-gradient(135deg, var(--primary-gold), var(--camel-brown));
+            color: white; font-size: 0.8rem; font-weight: 700; padding: 4px 8px;
+            border-radius: 50%; min-width: 20px; height: 20px; display: flex;
+            align-items: center; justify-content: center; box-shadow: 0 2px 8px var(--shadow-soft);
+        }
+        .icon-container i { color: var(--primary-gold); font-size: 1.5rem; }
+        /* Navigation Enhancement */
+        .nav-link {
+            font-weight: 500; transition: all 0.3s ease; position: relative;
+            padding: 12px 20px !important; border-radius: 25px; margin: 0 5px;
+        }
+        .nav-link::after {
+            content: ''; position: absolute; width: 0; height: 2px; bottom: 8px; left: 50%;
+            background: var(--primary-gold); transition: all 0.3s ease; transform: translateX(-50%);
+        }
+        .nav-link:hover {
+            color: var(--primary-gold) !important;
+            background: rgba(212, 175, 55, 0.1);
+        }
+        .nav-link:hover::after { width: 60%; }
+        /* Dropdown Enhancement */
+        .dropdown-menu {
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 15px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1); padding: 10px 0; margin-top: 10px;
+        }
+        .dropdown-item {
+            padding: 12px 25px; transition: all 0.3s ease; font-weight: 500;
+        }
+        .dropdown-item:hover {
+            background: rgba(212, 175, 55, 0.1); color: var(--primary-gold); transform: translateX(-5px);
+        }
+        .dropdown-item.bg-light {
+            background: linear-gradient(135deg, var(--secondary-gold), var(--warm-beige)) !important;
+            font-weight: 700; margin: 5px 15px; border-radius: 10px;
+        }
+        /* Search Form Enhancement */
+        .search-container { position: relative; }
+        .form-control {
+            border-radius: 25px; border: 2px solid rgba(212, 175, 55, 0.3);
+            padding: 12px 20px 12px 50px; background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease; font-size: 1rem;
+        }
+        .form-control:focus {
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 0 0.2rem var(--shadow-soft);
+            background: white;
+        }
+        .search-container::before {
+            content: 'search'; font-family: 'Material Icons'; position: absolute;
+            left: 15px; top: 50%; transform: translateY(-50%);
+            color: var(--primary-gold); font-size: 1.2rem; z-index: 10;
+        }
+        /* Button Enhancements */
+        .btn-luxury {
+            background: linear-gradient(135deg, var(--primary-gold), var(--camel-brown));
+            border: none; padding: 12px 30px; border-radius: 25px; color: white;
+            font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 5px 20px var(--shadow-soft); position: relative; overflow: hidden;
+            text-decoration: none; display: inline-block;
+        }
+        .btn-luxury::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s ease;
+        }
+        .btn-luxury:hover {
+            transform: translateY(-2px); box-shadow: 0 8px 30px var(--shadow-soft); color: white;
+        }
+        .btn-luxury:hover::before { left: 100%; }
+        .btn-outline-primary {
+            border: 2px solid var(--primary-gold); color: var(--primary-gold);
+            background: transparent; border-radius: 25px; padding: 10px 25px;
+            font-weight: 600; transition: all 0.3s ease;
+        }
+        .btn-outline-primary:hover {
+            background: var(--primary-gold); color: white;
+            transform: translateY(-2px); box-shadow: 0 5px 20px var(--shadow-soft);
+        }
+        /* Main Content Styling */
+        .container { max-width: 1400px; }
+        main.container {
+            background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px);
+            border-radius: 30px 30px 0 0; margin-top: 20px; padding: 40px;
+            min-height: calc(100vh - 200px); box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+        }
+        /* Alert Messages Enhancement */
+        .alert {
+            border-radius: 15px; border: none; padding: 20px 25px; margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1); backdrop-filter: blur(10px); font-weight: 500;
+        }
+        .alert-success {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05));
+            color: #155724; border-left: 5px solid #28a745;
+        }
+        .alert-warning {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05));
+            color: #856404; border-left: 5px solid #ffc107;
+        }
+        .alert-danger {
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));
+            color: #721c24; border-left: 5px solid #dc3545;
+        }
+        .alert-info {
+            background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.05));
+            color: #0c5460; border-left: 5px solid #17a2b8;
+        }
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .header-icons { gap: 15px; margin-left: 15px; }
+            .icon-container { padding: 8px 12px; }
+            .nav-link { padding: 10px 15px !important; margin: 0 2px; }
+            .form-control { padding: 10px 15px 10px 40px; }
+            main.container { padding: 20px; border-radius: 20px 20px 0 0; }
+            #accessibility-toggle { width: 56px; height: 56px; }
+            #accessibility-menu { padding: 20px; }
+        }
+        @media (max-width: 576px) {
+            .header-icons { flex-direction: column; gap: 10px; margin-left: 10px; }
+            .search-container { margin: 10px 0; }
+        }
+        /* Animation Classes */
+        .fade-in { animation: fadeIn 0.8s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Loading Animation for Dynamic Content */
+        .loading-shimmer {
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.2) 50%, rgba(212, 175, 55, 0.1) 100%);
+            background-size: 200% 100%; animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        /* High contrast mode support */
+        .high-contrast { filter: contrast(200%) brightness(150%); }
+        /* Font size adjustments */
+        .large-font { font-size: 1.2em !important; }
+        .large-font h1 { font-size: 2.8rem !important; }
+        .large-font h2 { font-size: 2.4rem !important; }
+        .large-font h3 { font-size: 2rem !important; }
+        .large-font h4 { font-size: 1.7rem !important; }
+        .large-font h5 { font-size: 1.4rem !important; }
+        .large-font .btn { font-size: 1.1rem !important; padding: 15px 35px !important; }
+    </style>
 </head>
-<body>
-  <header class="p-2 border-bottom">
-    <div class="container">
-      <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
-        <!-- cart icon -->
-        {% if request.user.is_authenticated %}
-        <b class="text-primary">{{ cart_count }}</b>
-        {% endif %}
-        <a href="{% url 'cart:show_cart' %}" class="text-primary mt-2 me-2"><i class="material-icons h3">&#xe8cc;</i></a>
-        <!-- favorite icon -->
-        {% if request.user.is_authenticated %}
-        <b class="text-primary">{{ request.user.get_likes_count}}</b>
-        {% endif %}
-        <a href="{% url 'shop:favorites' %}" class="text-primary mt-2 me-2"><i class="material-icons h3">&#xe87d;</i></a>
-        <!-- Menu -->
-        <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
-          <li><a href="{% url 'shop:home_page' %}" class="nav-link px-2 text-dark">Home</a></li>
-          <li><a href="#" class="nav-link px-2 text-dark">Shop</a></li>
-          <!-- categories dropdown -->
-          <div class="dropdown text-end">
-            <a href="#" class=" mt-2 me-1 ms-1 text-dark d-block link-dark text-decoration-none dropdown-toggle"id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">Categories</a>
-            <ul class="dropdown-menu" aria-labelledby="dropdownUser1">
-              {% for category in categories %}
-              <!-- check if category is parent -->
-                {% if not category.is_sub %}
-                  <!-- parent -->
-                  <li><a href="{% url 'shop:filter_by_category' category.slug %}" class="dropdown-item text-capitalize bg-light border"><b>{{ category }}</b></a></li>
-                  {% for child in category.sub_categories.all %}
-                   <!-- child -->
-                   <li><a href="{% url 'shop:filter_by_category' child.slug %}" class="dropdown-item">{{ child }}</a></li>
-                  {% endfor %}
-                {% endif %}
-              {% endfor %}
-            </ul>
-          </div>
-          <li><a href="#" class="nav-link px-2 text-dark">FAQs</a></li>
-          <li><a href="#" class="nav-link px-2 text-dark">About</a></li>
-        </ul>
-        <!-- search form -->
-        <form class="col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3" action="{% url 'shop:search' %}">
-          <input name="q" type="search" class="form-control form-control-dark" placeholder="Search..." aria-label="Search">
-        </form>
-        {% if request.user.is_authenticated %}
-        <!-- user profile dropdown -->
-        <div class="dropdown text-end">
-          <a href="#" class="btn btn-primary text-white me-4 d-block link-dark text-decoration-none dropdown-toggle"id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">Profile</a>
-          <ul class="dropdown-menu" aria-labelledby="dropdownUser1">
-            <li><a href="{% url 'cart:show_cart' %}" <a class="dropdown-item">Cart</a></li>
-            <li><a href="{% url 'shop:favorites' %}" <a class="dropdown-item">Favorites</a></li>
-            <li><a href="{% url 'orders:user_orders' %}" <a class="dropdown-item">Orders</a></li>
-            <li><a class="dropdown-item" href="{% url 'accounts:edit_profile' %}">Edit Profile</a></li>
-            <li><a class="dropdown-item text-danger" href="{% url 'accounts:user_logout' %}">Sign out</a></li>
-          </ul>
+<body class="fade-in">
+    <!-- Accessibility Floating Icon & Menu -->
+    <div id="accessibility-fab">
+        <button id="accessibility-toggle" aria-label="תפריט נגישות">
+            <span class="material-icons" style="font-size:32px;color:#fff;opacity:0.95;">accessible</span>
+        </button>
+        <div id="accessibility-menu">
+            <button id="increase-font" class="btn btn-sm btn-primary accessibility-btn" aria-label="הגדל גופן">
+                <span class="material-icons" style="font-size:1.6em;vertical-align:middle;">zoom_in</span>
+                <span style="font-size:1.25em;font-weight:600;vertical-align:middle;">הגדל פונט</span>
+            </button>
+            <button id="toggle-contrast" class="btn btn-sm btn-dark accessibility-btn" aria-label="מצב ניגודיות גבוהה">
+                <span class="material-icons" style="font-size:1.6em;vertical-align:middle;">contrast</span>
+                <span style="font-size:1.25em;font-weight:600;vertical-align:middle;">שחור לבן</span>
+            </button>
+            <button id="reset-accessibility" class="btn btn-sm btn-secondary accessibility-btn" aria-label="איפוס נגישות">
+                <span class="material-icons" style="font-size:1.6em;vertical-align:middle;">refresh</span>
+                <span style="font-size:1.25em;font-weight:600;vertical-align:middle;">איפוס</span>
+            </button>
+            <span style="font-size:1.1em;color:#444;font-weight:700;text-align:center;margin-top:10px;">
+                <span class="material-icons" style="font-size:1.3em;vertical-align:middle;">accessibility_new</span>
+                נגישות
+            </span>
         </div>
-        {% else %}
-        <!-- login, sign-up btn -->
-        <div class="text-end">
-          <a href="{% url 'accounts:user_login' %}" class="btn btn-outline-primary me-2">Login</a>
-          <a href="{% url 'accounts:user_register' %}" class="btn btn-primary">Sign-up</a>
-        </div>
-        {% endif %}
-      </div>
     </div>
-  </header>
-    <main class="container">
-        <div class="row mt-3">
-          <!-- messages -->
-          {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-          <!-- content -->
-          {% block content %}{% endblock %}
+
+    <!-- Header -->
+    <header class="border-bottom">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center justify-content-between">
+                <!-- Cart and Favorite Icons -->
+                <div class="header-icons">
+                    {% if request.user.is_authenticated %}
+                        <a href="{% url 'cart:show_cart' %}" class="icon-container">
+                            <span class="icon-badge">{{ cart_count }}</span>
+                            <i class="material-icons">shopping_cart</i>
+                            <span class="d-none d-md-inline">סל הקניות</span>
+                        </a>
+                        <a href="{% url 'shop:favorites' %}" class="icon-container">
+                            <span class="icon-badge">{{ request.user.get_likes_count }}</span>
+                            <i class="material-icons">favorite</i>
+                            <span class="d-none d-md-inline">מועדפים</span>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'cart:show_cart' %}" class="icon-container">
+                            <span class="icon-badge">0</span>
+                            <i class="material-icons">shopping_cart</i>
+                            <span class="d-none d-md-inline">סל הקניות</span>
+                        </a>
+                        <a href="{% url 'shop:favorites' %}" class="icon-container">
+                            <span class="icon-badge">0</span>
+                            <i class="material-icons">favorite</i>
+                            <span class="d-none d-md-inline">מועדפים</span>
+                        </a>
+                    {% endif %}
+                </div>
+                <!-- Navigation Menu -->
+                <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+                    <li><a href="{% url 'shop:home_page' %}" class="nav-link text-dark">בית</a></li>
+                    <li><a href="#" class="nav-link text-dark">חנות</a></li>
+                    <!-- Categories Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link text-dark dropdown-toggle" id="categoriesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="material-icons" style="font-size: 1.2rem; vertical-align: middle;">category</i>
+                            קטגוריות
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="categoriesDropdown">
+                            {% for category in categories %}
+                                {% if not category.is_sub %}
+                                    {% if category.slug %}
+                                    <li>
+                                        <a href="{% url 'shop:filter_by_category' category.slug %}" class="dropdown-item bg-light border">
+                                            <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">label</i>
+                                            <strong>{{ category }}</strong>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% for child in category.sub_categories.all %}
+                                        {% if child.slug %}
+                                        <li>
+                                            <a href="{% url 'shop:filter_by_category' child.slug %}" class="dropdown-item">
+                                                <i class="material-icons" style="font-size: 0.9rem; vertical-align: middle;">subdirectory_arrow_right</i>
+                                                {{ child }}
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    <li><a href="#" class="nav-link text-dark">שאלות נפוצות</a></li>
+                    <li><a href="#" class="nav-link text-dark">אודות</a></li>
+                </ul>
+                <!-- Search Form -->
+                <div class="search-container col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3">
+                    <form action="{% url 'shop:search' %}">
+                        <input name="q" type="search" class="form-control" placeholder="חיפוש מוצרים..." aria-label="חיפוש">
+                    </form>
+                </div>
+                <!-- User Authentication -->
+                {% if request.user.is_authenticated %}
+                    <!-- User Profile Dropdown -->
+                    <div class="dropdown">
+                        <a href="#" class="btn btn-luxury dropdown-toggle" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="material-icons" style="font-size: 1.1rem; vertical-align: middle;">person</i>
+                            פרופיל
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="profileDropdown">
+                            <li>
+                                <a href="{% url 'cart:show_cart' %}" class="dropdown-item">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">shopping_cart</i>
+                                    עגלת קניות
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{% url 'shop:favorites' %}" class="dropdown-item">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">favorite</i>
+                                    רשימת מועדפים
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{% url 'orders:user_orders' %}" class="dropdown-item">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">receipt_long</i>
+                                    ההזמנות שלי
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'accounts:edit_profile' %}">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">edit</i>
+                                    עריכת פרופיל
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'accounts:user_logout' %}">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">logout</i>
+                                    התנתק
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <!-- Login & Sign-up Buttons -->
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'accounts:user_login' %}" class="btn btn-outline-primary">
+                            <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">login</i>
+                            התחבר
+                        </a>
+                        <a href="{% url 'accounts:user_register' %}" class="btn btn-luxury">
+                            <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">person_add</i>
+                            הירשם
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
         </div>
-      </main>
-    <!-- Bootstrap JavaScript Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Messages Display -->
+        {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <i class="material-icons" style="font-size: 1.2rem; vertical-align: middle; margin-left: 10px;">
+                            {% if message.tags == 'success' %}check_circle
+                            {% elif message.tags == 'warning' %}warning
+                            {% elif message.tags == 'error' or message.tags == 'danger' %}error
+                            {% else %}info{% endif %}
+                        </i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="סגור"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <!-- Page Content -->
+        <div class="row mt-3">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="container-fluid text-center py-4" style="background:var(--warm-beige); color:var(--deep-brown);">
+        <div>כל הזכויות שמורות &copy; חלב נאקות {{ now|date:"Y" }}</div>
+    </footer>
+
+    <!-- Bootstrap JS and Accessibility Script -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var toggle = document.getElementById('accessibility-toggle');
+            var menu = document.getElementById('accessibility-menu');
+            var incFont = document.getElementById('increase-font');
+            var contrast = document.getElementById('toggle-contrast');
+            var reset = document.getElementById('reset-accessibility');
+            let fontSize = 16;
+            let isHighContrast = false;
+
+            if (!toggle) { console.error('accessibility-toggle not found'); }
+            if (!menu) { console.error('accessibility-menu not found'); }
+            if (!incFont) { console.error('increase-font not found'); }
+            if (!contrast) { console.error('toggle-contrast not found'); }
+            if (!reset) { console.error('reset-accessibility not found'); }
+
+            if (toggle && menu) {
+                toggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'flex' : 'none';
+                });
+            }
+            if (incFont) {
+                incFont.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    fontSize += 2;
+                    if (fontSize > 24) fontSize = 16;
+                    document.body.style.fontSize = fontSize + 'px';
+                    document.body.classList.toggle('large-font', fontSize > 16);
+                });
+            }
+            if (contrast) {
+                contrast.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    isHighContrast = !isHighContrast;
+                    document.body.classList.toggle('high-contrast', isHighContrast);
+                });
+            }
+            if (reset) {
+                reset.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    fontSize = 16;
+                    isHighContrast = false;
+                    document.body.style.fontSize = '';
+                    document.body.classList.remove('high-contrast', 'large-font');
+                });
+            }
+            document.addEventListener('click', function(event) {
+                if (menu && !document.getElementById('accessibility-fab').contains(event.target)) {
+                    menu.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 </html>

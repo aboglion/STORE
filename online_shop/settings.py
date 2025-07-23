@@ -33,6 +33,8 @@ INSTALLED_APPS = [
     'shop.apps.ShopConfig',
     'dashboard.apps.DashboardConfig',
 ]
+# Static files root for collectstatic
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

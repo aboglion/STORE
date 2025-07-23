@@ -18,8 +18,14 @@
     <tbody>
       <tr>
         <th scope="row">{{ forloop.counter }}</th>
-        <td><a class="text-decoration-none" href="{{ product.get_absolute_url }}">{{ product.title }}</a></td>
-        <td>${{ product.price }}</td>
+        <td>
+          {% if product.slug %}
+            <a class="text-decoration-none" href="{{ product.get_absolute_url }}">{{ product.title }}</a>
+          {% else %}
+            {{ product.title }}
+          {% endif %}
+        </td>
+        <td>₪{{ product.price }}</td>
         <td>{{ product.category }}</td>
         <td>{{ product.date_created|date:"M d" }}</td>
         <td><a class="text-danger text-decoration-none" href="{% url 'dashboard:delete_product' product.id %}">Delete</a></td>

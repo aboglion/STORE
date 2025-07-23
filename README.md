@@ -31,8 +31,10 @@ Managers can access all the features available to regular users, along with addi
 
 To access the custom dashboard for managers, please use the following credentials:
 
-- Email: manager@example.com
-- Password: managerpass1234
+- Email: 
+`manager@example.com`
+- Password: 
+`managerpass1234`
 
 ## Technologies Used
 
@@ -55,6 +57,10 @@ To access the custom dashboard for managers, please use the following credential
 6. Install the application requirements by running: `pip install -r requirements.txt`
 7. Migrate the database by executing: `python manage.py migrate`
 8. Start the server: `python manage.py runserver`
+9. collect static files: `python manage.py collectstatic --noinput`
+
+`python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput && python manage.py runserver`
+
 9. You should now be able to access the application by visiting: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
 ## How to Contribute

@@ -16,12 +16,12 @@
 <div class="text-muted border-top pt-2"></div>
 {% for item in order.items.all  %}
     <div class="border-bottom p-2">
-        <p>product: <a class="text-decoration-none" href="{{ item.product.get_absolute_url }}">{{item.product.title}}</a></p>
-        <p>Price: ${{item.price}}</p>
-        <p>quantity: {{item.quantity}}</p>
+        <p>מוצר: <a class="text-decoration-none" href="{{ item.product.get_absolute_url }}">{{item.product.title}}</a></p>
+        <p>מחיר: ₪{{item.price}}</p>
+        <p>כמות: {{item.quantity}}</p>
     </div>
 {% endfor %}
-<b>Total price: ${{ order.get_total_price }}</b>
+<b>סך הכל: ₪{{ order.get_total_price }}</b>
 </div>
 {% endfor %}
 {% else %}
@@ -29,7 +29,7 @@
     <div class="col-md-2"></div>
     <div class="col-md-8 mt-5 pt-5 text-center">
       <br>
-      <h3 class="text-muted text-capitalize">Orders list is empty..!</h3>
+      <h3 class="text-muted text-capitalize">אין הזמנות..!</h3>
       <a href="/" class="text-primary text-decoration-none">Back</a>
     </div>
     <div class="col-md-2"></div>
