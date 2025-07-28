@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- קטגוריות ותתי קטגוריות -->
+<ul class="category-list">
+    <li style="color:red;direction:ltr;font-size:small;">
+        DEBUG: categories = {{ categories|length }} | {{ categories }}
+    </li>
+    {% for category in categories %}
+        {% include "category_menu_item.html" with category=category %}
+    {% empty %}
+        <li>לא נמצאו קטגוריות</li>
+    {% endfor %}
+</ul>
+
+<!-- Home page content moved from shop/templates/home_page.html -->
+{% for product in products %}
+    <div>
+        <h2>{{ product.title }}</h2>
+        <p>{{ product.description }}</p>
+        <img src="{{ product.image.url }}" alt="{{ product.title }}">
+    </div>
+{% endfor %}
+{% endblock %}

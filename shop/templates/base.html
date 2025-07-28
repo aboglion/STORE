@@ -13,6 +13,7 @@
     <title>{% if title %}{{ title }}{% else %}חנות קוסמטיקה יוקרתית - חלב נאקות{% endif %}</title>
     <!-- Enhanced Styles -->
     <link rel="stylesheet" href="{% static 'css/enhanced.css' %}">
+
     <style>
         :root {
             --primary-gold: #D4AF37;
@@ -285,7 +286,7 @@
                             <span class="d-none d-md-inline">מועדפים</span>
                         </a>
                     {% else %}
-                        <a href="{% url 'cart:show_cart' %}" class="icon-container">
+                        <a href="{% url 'cart:show_cart' %}" class="icon-container{% if cart_count|default:0|add:0 > 0 %} cart-glow{% endif %}">
                             <span class="icon-badge">0</span>
                             <i class="material-icons">shopping_cart</i>
                             <span class="d-none d-md-inline">סל הקניות</span>
@@ -295,47 +296,107 @@
                             <i class="material-icons">favorite</i>
                             <span class="d-none d-md-inline">מועדפים</span>
                         </a>
-                    {% endif %}
-                </div>
-                <!-- Navigation Menu -->
+                            <div class="d-flex gap-2 align-items-center ms-2">
+                                <a href="{% url 'accounts:user_login' %}" class="btn btn-outline-primary btn-auth-small">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">login</i>
+                                    התחבר
+                                </a>
+                                <a href="{% url 'accounts:user_register' %}" class="btn btn-luxury btn-auth-small">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">person_add</i>
+                                    הירשם
+                                </a>
+                            </div>
+                        {% endif %}
+                        </div>
+                        <!-- Navigation Menu -->
                 <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
-                    <li><a href="{% url 'shop:home_page' %}" class="nav-link text-dark">בית</a></li>
-                    <li><a href="#" class="nav-link text-dark">חנות</a></li>
-                    <!-- Categories Dropdown -->
                     <li class="nav-item dropdown">
-                        <a href="#" class="nav-link text-dark dropdown-toggle" id="categoriesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="material-icons" style="font-size: 1.2rem; vertical-align: middle;">category</i>
-                            קטגוריות
+                        <a href="#" class="nav-link dropdown-toggle text-dark px-3" id="mainMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 25px;">
+                            <i class="material-icons" style="font-size: 1.2rem; vertical-align: middle;">menu</i>
+                            תפריט
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="categoriesDropdown">
-                            {% for category in categories %}
-                                {% if not category.is_sub %}
-                                    {% if category.slug %}
-                                    <li>
-                                        <a href="{% url 'shop:filter_by_category' category.slug %}" class="dropdown-item bg-light border">
-                                            <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">label</i>
-                                            <strong>{{ category }}</strong>
-                                        </a>
-                                    </li>
-                                    {% endif %}
-                                    {% for child in category.sub_categories.all %}
-                                        {% if child.slug %}
-                                        <li>
-                                            <a href="{% url 'shop:filter_by_category' child.slug %}" class="dropdown-item">
-                                                <i class="material-icons" style="font-size: 0.9rem; vertical-align: middle;">subdirectory_arrow_right</i>
-                                                {{ child }}
-                                            </a>
-                                        </li>
+                        <ul class="dropdown-menu" aria-labelledby="mainMenuDropdown">
+                            <li class="dropdown-submenu">
+                                <a href="#" class="dropdown-item dropdown-toggle" id="categoriesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">category</i>
+                                    קטגוריות
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="categoriesDropdown">
+                                    {% for category in categories %}
+                                        {% if not category.is_sub %}
+                                            {% include "category_menu_item.html" with category=category %}
                                         {% endif %}
                                     {% endfor %}
-                                {% endif %}
-                            {% endfor %}
+                                </ul>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">help</i>
+                                    שאלות נפוצות
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">info</i>
+                                    אודות
+                                </a>
+                            </li>
                         </ul>
                     </li>
-                    <li><a href="#" class="nav-link text-dark">שאלות נפוצות</a></li>
-                    <li><a href="#" class="nav-link text-dark">אודות</a></li>
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle text-white bg-primary px-3" id="accessibilityDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 25px;">
+                            <i class="material-icons" style="font-size: 1.2rem; vertical-align: middle;">accessible</i>
+                            נגישות
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="accessibilityDropdown">
+                            <li>
+                                <button class="dropdown-item" onclick="increaseFontSize();">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">zoom_in</i>
+                                    הגדל פונט
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="document.body.classList.toggle('high-contrast');">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">contrast</i>
+                                    מצב ניגודיות גבוהה
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="resetAccessibility();">
+                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">refresh</i>
+                                    איפוס נגישות
+                                </button>
+                            </li>
+        <script>
+        // פונקציה להגדלת פונט בצורה הדרגתית
+        let currentFontSize = 1;
+        function increaseFontSize() {
+            currentFontSize += 0.1;
+            document.body.style.fontSize = currentFontSize + "em";
+        }
+        // מצב ניגודיות גבוהה (כבר עובד)
+        // איפוס
+        function resetAccessibility() {
+            currentFontSize = 1;
+            document.body.style.fontSize = "";
+            document.body.classList.remove('high-contrast');
+            document.documentElement.style.fontSize = "";
+        }
+        </script>
+                        </ul>
+                    </li>
                 </ul>
                 <!-- Search Form -->
+                <a href="/" class="btn btn-outline-primary me-2" style="min-width: 100px;">
+                    <i class="material-icons" style="vertical-align: middle;">home</i>
+                    דף הבית
+                </a>
+                {% if request.user.is_manager %}
+                <a href="/dashboard/products" class="btn btn-outline-primary me-2" style="min-width: 100px;">
+                    <i class="material-icons" style="vertical-align: middle;">dashboard</i>
+                    דאשבורד
+                </a>
+                {% endif %}
                 <div class="search-container col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3">
                     <form action="{% url 'shop:search' %}">
                         <input name="q" type="search" class="form-control" placeholder="חיפוש מוצרים..." aria-label="חיפוש">
@@ -385,16 +446,7 @@
                     </div>
                 {% else %}
                     <!-- Login & Sign-up Buttons -->
-                    <div class="d-flex gap-2">
-                        <a href="{% url 'accounts:user_login' %}" class="btn btn-outline-primary">
-                            <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">login</i>
-                            התחבר
-                        </a>
-                        <a href="{% url 'accounts:user_register' %}" class="btn btn-luxury">
-                            <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">person_add</i>
-                            הירשם
-                        </a>
-                    </div>
+                    <!-- removed: now inside .header-icons -->
                 {% endif %}
             </div>
 
@@ -436,6 +488,82 @@
 
     <!-- Bootstrap JS and Accessibility Script -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Enable Bootstrap 5 multi-level dropdowns (submenus) - תיקון: לא למנוע ניווט בלחיצה על קישור
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.dropdown-submenu > a').forEach(function(element) {
+    element.addEventListener('click', function(e) {
+      // אם יש href תקין (כלומר קישור לקטגוריה), לא למנוע ניווט
+      if (this.getAttribute('href') === '#' || this.classList.contains('dropdown-toggle')) {
+        e.preventDefault();
+        e.stopPropagation();
+        let submenu = this.nextElementSibling;
+        if (submenu && submenu.classList.contains('dropdown-menu')) {
+          submenu.classList.toggle('show');
+          // Hide other open submenus
+          let siblings = this.parentElement.parentElement.querySelectorAll('.dropdown-menu.show');
+          siblings.forEach(function(sib) {
+            if (sib !== submenu) sib.classList.remove('show');
+          });
+        }
+      }
+    });
+  });
+  // Hide all submenus when parent dropdown closes
+  document.querySelectorAll('.dropdown').forEach(function(drop) {
+    drop.addEventListener('hide.bs.dropdown', function () {
+      this.querySelectorAll('.dropdown-menu.show').forEach(function(sub) {
+        sub.classList.remove('show');
+      });
+    });
+  });
+  // סגור את כל התפריטים בעת לחיצה על קישור קטגוריה
+  document.querySelectorAll('.dropdown-menu a[href]:not([href="#"])').forEach(function(link) {
+    link.addEventListener('click', function() {
+      document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {
+        menu.classList.remove('show');
+      });
+      // סגור גם את התפריט הראשי
+      var dropdown = link.closest('.dropdown');
+      if (dropdown) {
+        var dropdownToggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+        if (dropdownToggle) {
+          var dropdownInstance = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+          dropdownInstance.hide();
+        }
+      }
+    });
+  });
+});
+</script>
+<script>
+// Enable Bootstrap 5 multi-level dropdowns (submenus)
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.dropdown-submenu > a').forEach(function(element) {
+    element.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      let submenu = this.nextElementSibling;
+      if (submenu && submenu.classList.contains('dropdown-menu')) {
+        submenu.classList.toggle('show');
+        // Hide other open submenus
+        let siblings = this.parentElement.parentElement.querySelectorAll('.dropdown-menu.show');
+        siblings.forEach(function(sib) {
+          if (sib !== submenu) sib.classList.remove('show');
+        });
+      }
+    });
+  });
+  // Hide all submenus when parent dropdown closes
+  document.querySelectorAll('.dropdown').forEach(function(drop) {
+    drop.addEventListener('hide.bs.dropdown', function () {
+      this.querySelectorAll('.dropdown-menu.show').forEach(function(sub) {
+        sub.classList.remove('show');
+      });
+    });
+  });
+});
+</script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var toggle = document.getElementById('accessibility-toggle');

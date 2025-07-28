@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>קטגוריות</h2>
+<ul class="list-group">
+    {% for category in sub_categories %}
+        <li class="list-group-item">
+            <a href="{% url 'shop:filter_by_category' category.slug %}">
+                {{ category.title }}
+            </a>
+        </li>
+    {% empty %}
+        <li class="list-group-item">לא נמצאו קטגוריות</li>
+    {% endfor %}
+</ul>
+{% endblock %}

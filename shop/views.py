@@ -19,10 +19,7 @@ def paginat(request, list_objects):
 	return page_obj
 
 
-def home_page(request):
-	products = Product.objects.all()
-	context = {'products': paginat(request ,products)}
-	return render(request, 'home_page.html', context)
+# home_page view moved to dashboard/views.py
 
 
 def product_detail(request, slug):
@@ -73,16 +70,13 @@ def filter_by_category(request, slug):
 	"""when user clicks on parent category
 	we want to show all products in its sub-categories too
 	"""
-	result = []
 	category = Category.objects.filter(slug=slug).first()
-	[result.append(product) \
-		for product in Product.objects.filter(category=category.id).all()]
-	# check if category is parent then get all sub-categories
-	if not category.is_sub:
-		sub_categories = category.sub_categories.all()
-		# get all sub-categories products 
-		for category in sub_categories:
-			[result.append(product) \
-				for product in Product.objects.filter(category=category).all()]
-	context = {'products': paginat(request ,result)}
-	return render(request, 'home_page.html', context)
+	sub_categories = category.sub_categories.all()
+	if sub_categories.exists():
+		context = {'sub_categories': sub_categories}
+		return render(request, 'categories_list.html', context)
+	else:
+		result = []
+		[result.append(product) for product in Product.objects.filter(category=category.id).all()]
+		context = {'products': paginat(request, result)}
+		return render(request, 'home_page.html', context)

@@ -1,0 +1,18 @@
+<li class="dropdown-submenu">
+    {% if category.sub_categories.all %}
+        <a href="{% if category.slug %}{% url 'shop:filter_by_category' category.slug %}{% else %}#{% endif %}" class="dropdown-item dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">label</i>
+            {{ category }}
+        </a>
+        <ul class="dropdown-menu">
+            {% for child in category.sub_categories.all %}
+                {% include "category_menu_item.html" with category=child %}
+            {% endfor %}
+        </ul>
+    {% else %}
+        <a href="{% if category.slug %}{% url 'shop:filter_by_category' category.slug %}{% else %}#{% endif %}" class="dropdown-item">
+            <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">label</i>
+            {{ category }}
+        </a>
+    {% endif %}
+</li>

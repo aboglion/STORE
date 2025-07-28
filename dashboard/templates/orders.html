@@ -1,18 +1,137 @@
 {% extends "dashboard.html" %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/enhanced.css' %}">
 {% block content %}
-<table class="table">
+<div class="mb-3">
+  <form method="get" class="form-inline" style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <input type="text" name="search" class="form-control" placeholder="Search by user, id, city, phone" value="{{ search }}">
+    <select name="status" class="form-control">
+      <option value="">All Statuses</option>
+      <option value="success" {% if status == 'success' %}selected{% endif %}>Successful</option>
+      <option value="canceled" {% if status == 'canceled' %}selected{% endif %}>Canceled</option>
+    </select>
+    <div class="dropdown" style="position:relative;">
+      <button type="button" class="btn btn-light border" onclick="document.getElementById('months-dropdown').classList.toggle('show');">
+        בחר חודשים ▼
+      </button>
+      <div id="months-dropdown" class="dropdown-menu" style="max-height:200px; overflow-y:auto; min-width:180px; position:absolute; z-index:1000; display:none;">
+        <label style="display:block; padding:4px;">
+          <input type="checkbox" name="months" value="all" {% if show_all %}checked{% endif %} onclick="toggleAllMonths(this)"> הצג הכל
+        </label>
+        {% for m in all_months %}
+          {% with mstr=m|stringformat:"Y-m" %}
+          <label style="display:block; padding:4px;">
+            <input type="checkbox" name="months" value="{{ mstr }}" {% if mstr in months %}checked{% endif %}>
+            {{ m|date:"F Y" }}
+          </label>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+    <script>
+      document.addEventListener('click', function(e) {
+        var menu = document.getElementById('months-dropdown');
+        if (menu && !menu.contains(e.target) && !e.target.matches('.btn')) {
+          menu.classList.remove('show');
+          menu.style.display = 'none';
+        }
+      });
+      document.querySelector('.btn.btn-light').addEventListener('click', function(e) {
+        var menu = document.getElementById('months-dropdown');
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+      });
+      function toggleAllMonths(allBox) {
+        var menu = document.getElementById('months-dropdown');
+        var boxes = menu.querySelectorAll('input[type=checkbox][name=months]');
+        boxes.forEach(function(box) {
+          if (box !== allBox) box.checked = allBox.checked;
+        });
+      }
+    </script>
+
+    <button type="submit" class="btn btn-primary">Search</button>
+    <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+  </form>
+</div>
+<table class="table table-bordered table-striped">
     <thead class="thead-dark">
       <tr>
         <th scope="col">#</th>
-        <th scope="col">User</th>
-        <th scope="col">Id</th>
-        <th scope="col">total price</th>
-        <th scope="col">status</th>
+        <th scope="col">
+          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=user&direction={% if sort == 'user' and direction == 'asc' %}desc{% else %}asc{% endif %}">User
+            {% if sort == 'user' %}
+              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+            {% endif %}
+          </a>
+        </th>
+        <th scope="col">
+          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=id&direction={% if sort == 'id' and direction == 'asc' %}desc{% else %}asc{% endif %}">Id
+            {% if sort == 'id' %}
+              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+            {% endif %}
+          </a>
+        </th>
+        <th scope="col">
+          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=price&direction={% if sort == 'price' and direction == 'asc' %}desc{% else %}asc{% endif %}">Total Price
+            {% if sort == 'price' %}
+              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+            {% endif %}
+          </a>
+        </th>
+        <th scope="col">
+          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=status&direction={% if sort == 'status' and direction == 'asc' %}desc{% else %}asc{% endif %}">Status
+            {% if sort == 'status' %}
+              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+            {% endif %}
+          </a>
+        </th>
+        <th scope="col">
+          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=phone&direction={% if sort == 'phone' and direction == 'asc' %}desc{% else %}asc{% endif %}">Phone
+            {% if sort == 'phone' %}
+              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+            {% endif %}
+          </a>
+        </th>
+        <th scope="col">
+          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=city&direction={% if sort == 'city' and direction == 'asc' %}desc{% else %}asc{% endif %}">City
+            {% if sort == 'city' %}
+              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+            {% endif %}
+          </a>
+        </th>
+        <th scope="col">
+          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=street&direction={% if sort == 'street' and direction == 'asc' %}desc{% else %}asc{% endif %}">Street
+            {% if sort == 'street' %}
+              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+            {% endif %}
+          </a>
+        </th>
+        <th scope="col">
+          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=house_number&direction={% if sort == 'house_number' and direction == 'asc' %}desc{% else %}asc{% endif %}">House #
+            {% if sort == 'house_number' %}
+              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+            {% endif %}
+          </a>
+        </th>
+        <th scope="col">
+          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=address_extra&direction={% if sort == 'address_extra' and direction == 'asc' %}desc{% else %}asc{% endif %}">Extra Address
+            {% if sort == 'address_extra' %}
+              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+            {% endif %}
+          </a>
+        </th>
+        <th scope="col">
+          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=created&direction={% if sort == 'created' and direction == 'asc' %}desc{% else %}asc{% endif %}">Date
+            {% if sort == 'created' %}
+              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+            {% endif %}
+          </a>
+        </th>
         <th scope="col"></th>
       </tr>
     </thead>
-    {% for order in orders %}
     <tbody>
+    {% for order in orders %}
       <tr>
         <th scope="row">{{ forloop.counter }}</th>
         <td>{{ order.user.full_name }}</td>
@@ -23,12 +142,16 @@
         {% else %}
             <td class="text-danger">Canceled</td>
         {% endif %}
+        <td>{{ order.phone }}</td>
+        <td>{{ order.city }}</td>
+        <td>{{ order.street }}</td>
+        <td>{{ order.house_number }}</td>
+        <td>{{ order.address_extra }}</td>
+        <td>{{ order.created|date:"Y-m-d H:i" }}</td>
         <td><a href="{% url 'dashboard:order_detail' order.id %}" class="text-primary text-decoration-none">Detail</a></td>
       </tr>
-    </tbody>
     {% endfor %}
+    </tbody>
   </table>
-  
-
 {% endblock %}
 

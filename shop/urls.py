@@ -5,7 +5,7 @@ from shop import views
 app_name = "shop"
 
 urlpatterns = [
-	path('', views.home_page, name='home_page'),
+	# path('', views.home_page, name='home_page'),  # Removed, home_page now in dashboard
 	path('<slug:slug>', views.product_detail, name='product_detail'),
 	path('add/favorites/<int:product_id>/', views.add_to_favorites, name='add_to_favorites'),
 	path('remove/favorites/<int:product_id>/', views.remove_from_favorites, name='remove_from_favorites'),
