@@ -74,12 +74,15 @@
             left: auto !important;
             width: 320px !important;
             height: auto !important;
+        }
+        #accessibility-menu.active {
+            pointer-events: auto !important;
             background: #fff !important;
             border: 2px solid #D4AF37 !important;
             box-shadow: 0 8px 32px rgba(212,175,55,0.15) !important;
             z-index: 2147483647 !important;
             opacity: 1 !important;
-            pointer-events: auto !important;
+            pointer-events: none !important;
         }
         .accessibility-btn {
             border-radius: 15px !important; padding: 12px 20px !important;
@@ -572,7 +575,6 @@
                     e.stopPropagation();
                     fontSize += 2;
                     if (fontSize > 24) fontSize = 16;
-                    document.body.style.fontSize = fontSize + 'px';
                     document.body.classList.toggle('large-font', fontSize > 16);
                 });
             }
@@ -588,7 +590,6 @@
                     e.stopPropagation();
                     fontSize = 16;
                     isHighContrast = false;
-                    document.body.style.fontSize = '';
                     document.body.classList.remove('high-contrast', 'large-font');
                 });
             }
@@ -609,4 +610,25 @@
         });
     </script>
 </body>
+<script>
+  // נסה להסיר כל מחלקה מה-body ולבדוק אם אפשר להקליד
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      document.body.className = '';
+      document.documentElement.className = '';
+      console.log('All classes removed from body and html for debug');
+    }, 1000);
+  });
+</script>
+<script>
+  // Debug: Show #accessibility-menu state on every click
+  document.addEventListener('click', function() {
+    var menu = document.getElementById('accessibility-menu');
+    if (menu) {
+      console.log('accessibility-menu: display=' + getComputedStyle(menu).display + ', pointer-events=' + getComputedStyle(menu).pointerEvents);
+    } else {
+      console.log('accessibility-menu: not found');
+    }
+  });
+</script>
 </html>

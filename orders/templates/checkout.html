@@ -2,13 +2,40 @@
 
 {% block content %}
 <div class="col-md-2"></div>
-
 <div class="col-md-8 border rounded p-3">
     <h3 class="text-muted">סך הכל ההזמנה שלך: ₪{{order.get_total_price}}</h3>
     <hr>
-    <p><b>רוצה להשלים את ההזמנה?</b></p>
-    <a href="{% url 'cart:show_cart' %}" class="btn btn-danger">חזרה לסל הקניות</a>
-    <a href="{% url 'orders:create_order' %}" class="btn btn-outline-success">לביצוע ההזמנה </a>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="mb-3">
+            <label for="id_phone" class="form-label">טלפון *</label>
+            {{ form.phone }}
+            {{ form.phone.errors }}
+        </div>
+        <div class="mb-3">
+            <label for="id_city" class="form-label">עיר *</label>
+            {{ form.city }}
+            {{ form.city.errors }}
+        </div>
+        <div class="mb-3">
+            <label for="id_street" class="form-label">רחוב *</label>
+            {{ form.street }}
+            {{ form.street.errors }}
+        </div>
+        <div class="mb-3">
+            <label for="id_house_number" class="form-label">מספר בית *</label>
+            {{ form.house_number }}
+            {{ form.house_number.errors }}
+        </div>
+        <div class="mb-3">
+            <label for="id_address_extra" class="form-label">הערות לכתובת (לא חובה)</label>
+            {{ form.address_extra }}
+            {{ form.address_extra.errors }}
+        </div>
+        <button type="submit" class="btn btn-outline-success">לביצוע ההזמנה</button>
+        <a href="{% url 'cart:show_cart' %}" class="btn btn-danger">חזרה לסל הקניות</a>
+    </form>
 <div class="col-md-2"></div>
 
 {% endblock %}

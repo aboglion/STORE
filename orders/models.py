@@ -9,6 +9,11 @@ class Order(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     status = models.BooleanField(default=False)
+    phone = models.CharField(max_length=20, blank=True, default='')
+    city = models.CharField(max_length=50, blank=True, default='')
+    street = models.CharField(max_length=100, blank=True, default='')
+    house_number = models.CharField(max_length=10, blank=True, default='')
+    address_extra = models.CharField(max_length=100, blank=True, default='')
 
     class Meta:
         ordering = ('-created',)
