@@ -2,156 +2,127 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/enhanced.css' %}">
 {% block content %}
-<div class="mb-3">
-  <form method="get" class="form-inline" style="display: flex; gap: 10px; flex-wrap: wrap;">
+<style>
+.orders-actions {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+.orders-actions form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.orders-actions input[type="text"], .orders-actions select {
+  min-width: 180px;
+  max-width: 260px;
+  height: 38px;
+  font-size: 1em;
+  padding: 6px 12px;
+}
+.orders-actions button {
+  height: 38px;
+  font-size: 1em;
+  padding: 0 18px;
+}
+.orders-actions .btn-secondary {
+  background: #f8fafc;
+  color: #374151;
+  border: 1px solid #4f8cff33;
+  transition: background 0.2s, color 0.2s;
+}
+.orders-actions .btn-secondary:hover {
+  background: #4f8cff;
+  color: #fff;
+}
+.orders-table-container {
+  width:98vw;
+  margin:auto;
+  overflow-x: auto;
+}
+.orders-table-container table {
+  width:100%;
+  table-layout:fixed;
+  word-break:break-word;
+}
+.orders-table-container th, .orders-table-container td {
+  padding: 6px 4px;
+  font-size: 1em;
+}
+@media (max-width: 900px) {
+  .orders-actions {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  .orders-actions form {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .orders-actions input[type="text"], .orders-actions select, .orders-actions button {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+</style>
+<div class="orders-actions">
+  <form method="get">
     <input type="text" name="search" class="form-control" placeholder="Search by user, id, city, phone" value="{{ search }}">
     <select name="status" class="form-control">
       <option value="">All Statuses</option>
       <option value="success" {% if status == 'success' %}selected{% endif %}>Successful</option>
       <option value="canceled" {% if status == 'canceled' %}selected{% endif %}>Canceled</option>
     </select>
-    <div class="dropdown" style="position:relative;">
-      <button type="button" class="btn btn-light border" onclick="document.getElementById('months-dropdown').classList.toggle('show');">
-        בחר חודשים ▼
-      </button>
-      <div id="months-dropdown" class="dropdown-menu" style="max-height:200px; overflow-y:auto; min-width:180px; position:absolute; z-index:1000; display:none;">
-        <label style="display:block; padding:4px;">
-          <input type="checkbox" name="months" value="all" {% if show_all %}checked{% endif %} onclick="toggleAllMonths(this)"> הצג הכל
-        </label>
-        {% for m in all_months %}
-          {% with mstr=m|stringformat:"Y-m" %}
-          <label style="display:block; padding:4px;">
-            <input type="checkbox" name="months" value="{{ mstr }}" {% if mstr in months %}checked{% endif %}>
-            {{ m|date:"F Y" }}
-          </label>
-          {% endwith %}
-        {% endfor %}
-      </div>
-    </div>
-    <script>
-      document.addEventListener('click', function(e) {
-        var menu = document.getElementById('months-dropdown');
-        if (menu && !menu.contains(e.target) && !e.target.matches('.btn')) {
-          menu.classList.remove('show');
-          menu.style.display = 'none';
-        }
-      });
-      document.querySelector('.btn.btn-light').addEventListener('click', function(e) {
-        var menu = document.getElementById('months-dropdown');
-        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-      });
-      function toggleAllMonths(allBox) {
-        var menu = document.getElementById('months-dropdown');
-        var boxes = menu.querySelectorAll('input[type=checkbox][name=months]');
-        boxes.forEach(function(box) {
-          if (box !== allBox) box.checked = allBox.checked;
-        });
-      }
-    </script>
-
     <button type="submit" class="btn btn-primary">Search</button>
-    <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
   </form>
+  <button type="button" class="btn btn-secondary" onclick="window.print()"><i class="fa fa-print"></i> Print</button>
 </div>
-<table class="table table-bordered table-striped">
+<div class="orders-table-container">
+  <table class="table table-bordered table-striped">
     <thead class="thead-dark">
       <tr>
-        <th scope="col">#</th>
-        <th scope="col">
-          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=user&direction={% if sort == 'user' and direction == 'asc' %}desc{% else %}asc{% endif %}">User
-            {% if sort == 'user' %}
-              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-            {% endif %}
-          </a>
-        </th>
-        <th scope="col">
-          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=id&direction={% if sort == 'id' and direction == 'asc' %}desc{% else %}asc{% endif %}">Id
-            {% if sort == 'id' %}
-              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-            {% endif %}
-          </a>
-        </th>
-        <th scope="col">
-          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=price&direction={% if sort == 'price' and direction == 'asc' %}desc{% else %}asc{% endif %}">Total Price
-            {% if sort == 'price' %}
-              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-            {% endif %}
-          </a>
-        </th>
-        <th scope="col">
-          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=status&direction={% if sort == 'status' and direction == 'asc' %}desc{% else %}asc{% endif %}">Status
-            {% if sort == 'status' %}
-              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-            {% endif %}
-          </a>
-        </th>
-        <th scope="col">
-          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=phone&direction={% if sort == 'phone' and direction == 'asc' %}desc{% else %}asc{% endif %}">Phone
-            {% if sort == 'phone' %}
-              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-            {% endif %}
-          </a>
-        </th>
-        <th scope="col">
-          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=city&direction={% if sort == 'city' and direction == 'asc' %}desc{% else %}asc{% endif %}">City
-            {% if sort == 'city' %}
-              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-            {% endif %}
-          </a>
-        </th>
-        <th scope="col">
-          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=street&direction={% if sort == 'street' and direction == 'asc' %}desc{% else %}asc{% endif %}">Street
-            {% if sort == 'street' %}
-              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-            {% endif %}
-          </a>
-        </th>
-        <th scope="col">
-          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=house_number&direction={% if sort == 'house_number' and direction == 'asc' %}desc{% else %}asc{% endif %}">House #
-            {% if sort == 'house_number' %}
-              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-            {% endif %}
-          </a>
-        </th>
-        <th scope="col">
-          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=address_extra&direction={% if sort == 'address_extra' and direction == 'asc' %}desc{% else %}asc{% endif %}">Extra Address
-            {% if sort == 'address_extra' %}
-              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-            {% endif %}
-          </a>
-        </th>
-        <th scope="col">
-          <a href="?{% if search %}search={{ search|urlencode }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% for m in months %}months={{ m }}&{% endfor %}{% if show_all %}show_all=1&{% endif %}sort=created&direction={% if sort == 'created' and direction == 'asc' %}desc{% else %}asc{% endif %}">Date
-            {% if sort == 'created' %}
-              {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-            {% endif %}
-          </a>
-        </th>
-        <th scope="col"></th>
+        <th>#</th>
+        <th>User</th>
+        <th>Id</th>
+        <th>Total Price</th>
+        <th>Processing</th>
+        <th>Shipped</th>
+        <th>Delivered</th>
+        <th>Canceled</th>
+        <th>Phone</th>
+        <th>City</th>
+        <th>Street</th>
+        <th>House #</th>
+        <th>Extra Address</th>
+        <th>Date</th>
       </tr>
     </thead>
     <tbody>
     {% for order in orders %}
       <tr>
-        <th scope="row">{{ forloop.counter }}</th>
-        <td>{{ order.user.full_name }}</td>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ order.user.username }}</td>
         <td>{{ order.id }}</td>
-        <td>₪{{ order.get_total_price }}</td>
-        {% if order.status %}
-            <td class="text-success">Successful</td>
-        {% else %}
-            <td class="text-danger">Canceled</td>
-        {% endif %}
+        <td>{{ order.get_total_price }}</td>
+        <td>{% if order.is_processing %}✔️{% else %}❌{% endif %}</td>
+        <td>{% if order.is_shipped %}✔️{% else %}❌{% endif %}</td>
+        <td>{% if order.is_delivered %}✔️{% else %}❌{% endif %}</td>
+        <td>{% if order.is_canceled %}✔️{% else %}❌{% endif %}</td>
         <td>{{ order.phone }}</td>
         <td>{{ order.city }}</td>
         <td>{{ order.street }}</td>
         <td>{{ order.house_number }}</td>
         <td>{{ order.address_extra }}</td>
-        <td>{{ order.created|date:"Y-m-d H:i" }}</td>
-        <td><a href="{% url 'dashboard:order_detail' order.id %}" class="text-primary text-decoration-none">Detail</a></td>
+        <td>{{ order.created|date:"d/m/Y H:i" }}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
+</div>
 {% endblock %}
-

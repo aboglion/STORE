@@ -76,7 +76,8 @@ def filter_by_category(request, slug):
 		context = {'sub_categories': sub_categories}
 		return render(request, 'categories_list.html', context)
 	else:
-		result = []
-		[result.append(product) for product in Product.objects.filter(category=category.id).all()]
+		result = Product.objects.filter(category=category.id).all()
+		context = {'products': paginat(request, result), 'selected_category': category}
+		return render(request, 'home_page.html', context)
 		context = {'products': paginat(request, result)}
 		return render(request, 'home_page.html', context)

@@ -14,6 +14,21 @@ class Order(models.Model):
     street = models.CharField(max_length=100, blank=True, default='')
     house_number = models.CharField(max_length=10, blank=True, default='')
     address_extra = models.CharField(max_length=100, blank=True, default='')
+    first_name = models.CharField(max_length=100, blank=True, default='')
+    last_name = models.CharField(max_length=100, blank=True, default='')
+    email = models.EmailField(blank=True, default='')
+    is_paid = models.BooleanField(default=False)
+    is_delivered = models.BooleanField(default=False)
+    is_canceled = models.BooleanField(default=False)
+    is_refunded = models.BooleanField(default=False)
+    is_returned = models.BooleanField(default=False)
+    is_completed = models.BooleanField(default=False)
+    is_processing = models.BooleanField(default=False)
+    is_shipped = models.BooleanField(default=False)
+    is_pending = models.BooleanField(default=False)
+    is_failed = models.BooleanField(default=False)
+    is_on_hold = models.BooleanField(default=False)
+
 
     class Meta:
         ordering = ('-created',)

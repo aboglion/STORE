@@ -9,6 +9,21 @@
         {% csrf_token %}
         {{ form.non_field_errors }}
         <div class="mb-3">
+            <label for="id_first_name" class="form-label">שם פרטי</label>
+            {{ form.first_name }}
+            {{ form.first_name.errors }}
+        </div>
+        <div class="mb-3">
+            <label for="id_last_name" class="form-label">שם משפחה</label>
+            {{ form.last_name }}
+            {{ form.last_name.errors }}
+        </div>
+        <div class="mb-3">
+            <label for="id_email" class="form-label">אימייל</label>
+            {{ form.email }}
+            {{ form.email.errors }}
+        </div>
+        <div class="mb-3">
             <label for="id_phone" class="form-label">טלפון *</label>
             {{ form.phone }}
             {{ form.phone.errors }}

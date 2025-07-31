@@ -1,0 +1,29 @@
+{% extends "dashboard.html" %}
+{% block content %}
+<form method="get" action="">
+<!-- Financing options placeholder -->
+<div style="margin-bottom: 15px;">
+    <button class="btn btn-primary">מימון פריט הזמנה</button>
+</div>
+    <input type="text" name="search" placeholder="Search by order ID, product, or quantity" value="{{ search }}">
+    <button type="submit">Search</button>
+</form>
+<h2>Order Items</h2>
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Order</th>
+        <th>Product</th>
+        <th>Quantity</th>
+    </tr>
+    {% for item in items %}
+    <tr>
+        <td>{{ item.id }}</td>
+        <td>{{ item.order.id }}</td>
+        <td>{{ item.product.title }}</td>
+        <td>{{ item.quantity }}</td>
+    </tr>
+    {% endfor %}
+</table>
+<!-- Search and financing options will be added here -->
+{% endblock %}

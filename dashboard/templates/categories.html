@@ -1,0 +1,45 @@
+{% extends "dashboard.html" %}
+{% block content %}
+<form method="get" action="">
+<!-- Financing options placeholder -->
+<div style="margin-bottom: 15px;">
+    <button class="btn btn-primary">מימון קטגוריה</button>
+</div>
+    <input type="text" name="search" placeholder="Search by category title" value="{{ search }}">
+    <button type="submit">Search</button>
+</form>
+<h2>Categories</h2>
+<div class="table-responsive" style="margin: 32px 0;">
+<table class="table table-bordered table-striped" style="width:100%;">
+    <thead>
+        <tr>
+            <th style="text-align:right;">ID</th>
+            <th style="text-align:right;">Title</th>
+            <th style="text-align:right;">Subcategory</th>
+            <th style="text-align:right;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for category in categories %}
+        <tr>
+            <td>{{ category.id }}</td>
+            <td>{{ category.title }}</td>
+            <td>
+                {% if category.sub_category %}
+                    {{ category.sub_category.title }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'dashboard:products_by_category' category.id %}" class="btn btn-sm btn-info">צפה במוצרים</a>
+                <a href="{% url 'dashboard:edit_category' category.id %}" class="btn btn-sm btn-warning">Edit</a>
+                <a href="{% url 'dashboard:delete_category' category.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this category?')">Delete</a>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+<!-- Search and financing options will be added here -->
+{% endblock %}

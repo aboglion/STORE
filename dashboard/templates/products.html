@@ -1,6 +1,15 @@
 {% extends "dashboard.html" %}
 
 {% block content %}
+{% if selected_category %}
+    <h3>מוצרים בקטגוריה: {{ selected_category.title }}</h3>
+{% endif %}
+<form method="get" action="">
+<!-- Financing options placeholder -->
+
+    <input type="text" name="search" placeholder="Search by title, price, or category" value="{{ search }}">
+    <button type="submit">Search</button>
+</form>
 
 <table class="table table-striped ">
     <thead class="text-muted">
@@ -22,10 +31,9 @@
               <a href="?sort=date_created" style="color:inherit;text-decoration:none;">date &#8593;</a>
               <a href="?sort=-date_created" style="color:inherit;text-decoration:none;">&#8595;</a>
             </th>
-            <th scope="col">category</th>
-            <th scope="col">date</th>
-            <th scope="col"></th>
-            <th scope="col"></th>
+            <th scope="col">מחיקה</th>
+            <th scope="col">עריכה</th>
+
         </tr>
     </thead>
     {% for product in products %}

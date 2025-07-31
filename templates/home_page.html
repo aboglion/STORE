@@ -1,7 +1,18 @@
 {% extends 'base.html' %}
+<div class="category-bar mb-4 px-2 py-2" style="background:var(--warm-beige); border-radius:18px; overflow-x:auto; white-space:nowrap; box-shadow:0 2px 8px var(--shadow-soft);">
+  {% for category in categories %}
+    {% if category.slug %}
+      <a href="{% url 'shop:filter_by_category' category.slug %}" class="btn btn-outline-primary btn-sm mx-1" style="font-size:1em; border-radius:16px; min-width:90px; display:inline-block;">
+        <i class="material-icons" style="font-size:1.1em; vertical-align:middle;">category</i>
+        {{ category.title }}
+      </a>
+    {% endif %}
+  {% endfor %}
+</div>
 {% block content %}
 <!-- קטגוריות ותתי קטגוריות -->
-<ul class="category-list">
+ <h1>קטגוריות</h1>
+ <ul class="category-list">
     <li style="color:red;direction:ltr;font-size:small;">
         DEBUG: categories = {{ categories|length }} | {{ categories }}
     </li>

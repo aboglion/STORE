@@ -19,12 +19,23 @@ class Category(models.Model):
         return reverse('shop:product_detail', kwargs={'slug':self.slug})
 
     def save(self, *args, **kwargs): # new
-        self.slug = slugify(self.title)
+        base_slug = slugify(self.title)
+        slug = base_slug
+        counter = 1
+        while Category.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+        self.slug = slug
         return super().save(*args, **kwargs)
         
 
 class Product(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='category')
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_DEFAULT,
+        default=1,  # ID of default category, ensure this exists
+        related_name='category'
+    )
     image = models.ImageField(upload_to='products')
     title = models.CharField(max_length=250)
     description = models.TextField()

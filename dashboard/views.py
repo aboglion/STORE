@@ -1,4 +1,5 @@
 from orders.models import Order
+from shop.models import Category
 import calendar
 from datetime import datetime
 from django.db.models import Q
@@ -8,7 +9,7 @@ from shop.views import paginat
 def home_page(request):
     from shop.models import Category
     products = Product.objects.all()
-    categories = Category.objects.filter(sub_category__isnull=True, is_sub=False)
+    categories = Category.objects.all()
     context = {
         'products': paginat(request, products),
         'categories': categories
@@ -37,15 +38,110 @@ def is_manager(user):
 
 @user_passes_test(is_manager)
 @login_required
+def products_by_category(request, category_id):
+    from shop.models import Product, Category
+    category = Category.objects.filter(id=category_id).first()
+    if not category:
+        products = Product.objects.none()
+    else:
+        products = Product.objects.filter(category_id=category_id)
+    return render(request, 'dashboard/products.html', {
+        'products': products,
+        'selected_category': category,
+    })
 def products(request):
     sort = request.GET.get('sort', '')
+    search = request.GET.get('search', '')
     allowed = ['title', '-title', 'price', '-price', 'category', '-category', 'date_created', '-date_created']
+    products_qs = Product.objects.all()
+    if search:
+        products_qs = products_qs.filter(
+            Q(title__icontains=search) |
+            Q(price__icontains=search) |
+            Q(category__title__icontains=search)
+        )
     if sort in allowed:
-        products = Product.objects.all().order_by(sort)
+        products = products_qs.order_by(sort)
     else:
-        products = Product.objects.all()
-    context = {'title':'Products', 'products':products, 'sort': sort}
+        products = products_qs
+    context = {'title':'Products', 'products':products, 'sort': sort, 'search': search}
     return render(request, 'products.html', context)
+@user_passes_test(is_manager)
+@login_required
+def orders(request):
+    sort = request.GET.get('sort', '')
+    search = request.GET.get('search', '')
+    status = request.GET.get('status', '')
+    allowed = ['id', '-id', 'user', '-user', 'date_created', '-date_created']
+    orders_qs = Order.objects.all()
+    if search:
+        orders_qs = orders_qs.filter(
+            Q(user__username__icontains=search) |
+            Q(id__icontains=search) |
+            Q(city__icontains=search) |
+            Q(phone__icontains=search)
+        )
+    if status:
+        orders_qs = orders_qs.filter(status=status)
+    if sort in allowed:
+        orders = orders_qs.order_by(sort)
+    else:
+        orders = orders_qs
+    context = {'title': 'Orders', 'orders': orders, 'sort': sort, 'search': search, 'status': status}
+    return render(request, 'orders.html', context)
+
+@user_passes_test(is_manager)
+@login_required
+def order_items(request):
+    sort = request.GET.get('sort', '')
+    search = request.GET.get('search', '')
+    allowed = ['id', '-id', 'order', '-order', 'product', '-product']
+    items_qs = OrderItem.objects.all()
+    if search:
+        items_qs = items_qs.filter(
+            Q(order__id__icontains=search) |
+            Q(product__title__icontains=search) |
+            Q(quantity__icontains=search)
+        )
+    if sort in allowed:
+        items = items_qs.order_by(sort)
+    else:
+        items = items_qs
+    context = {'title': 'Order Items', 'items': items, 'sort': sort, 'search': search}
+    return render(request, 'order_items.html', context)
+
+@user_passes_test(is_manager)
+@login_required
+
+def categories(request):
+    sort = request.GET.get('sort', '')
+    search = request.GET.get('search', '')
+    allowed = ['title', '-title']
+    categories_qs = Category.objects.all()
+    if search:
+        categories_qs = categories_qs.filter(title__icontains=search)
+    if sort in allowed:
+        categories = categories_qs.order_by(sort)
+    else:
+        categories = categories_qs
+    context = {'title': 'Categories', 'categories': categories, 'sort': sort, 'search': search}
+    return render(request, 'categories.html', context)
+
+@user_passes_test(is_manager)
+@login_required
+def users(request):
+    sort = request.GET.get('sort', '')
+    search = request.GET.get('search', '')
+    allowed = ['username', '-username', 'email', '-email']
+    users_qs = User.objects.all()
+    if search:
+        users_qs = users_qs.filter(Q(username__icontains=search) | Q(email__icontains=search))
+    if sort in allowed:
+        users = users_qs.order_by(sort)
+    else:
+        users = users_qs
+    context = {'title': 'Users', 'users': users, 'sort': sort, 'search': search}
+    return render(request, 'users.html', context)
 
 
 @user_passes_test(is_manager)
@@ -100,6 +196,37 @@ def add_category(request):
         form = AddCategoryForm()
     context = {'title':'Add Category', 'form':form}
     return render(request, 'add_category.html', context)
+@user_passes_test(is_manager)
+@login_required
+def edit_category(request, id):
+    from .forms import AddCategoryForm
+    from shop.models import Category
+    category = Category.objects.get(id=id)
+    if request.method == 'POST':
+        form = AddCategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Category updated successfully!')
+            return redirect('dashboard:categories')
+    else:
+        form = AddCategoryForm(instance=category)
+    context = {'title': 'Edit Category', 'form': form}
+    return render(request, 'add_category.html', context)
+
+@user_passes_test(is_manager)
+@login_required
+def delete_category(request, id):
+    from shop.models import Category, Product
+    from django.shortcuts import redirect
+    try:
+        category = Category.objects.get(id=id)
+        default_category, created = Category.objects.get_or_create(title='Default', defaults={'slug': 'default'})
+        Product.objects.filter(category=category).update(category=default_category)
+        category.delete()
+        messages.success(request, 'Category deleted and products moved to Default.')
+    except Category.DoesNotExist:
+        messages.error(request, 'Category not found.')
+    return redirect('dashboard:categories')
 
 
 @user_passes_test(is_manager)

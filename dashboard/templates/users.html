@@ -1,0 +1,27 @@
+{% extends "dashboard.html" %}
+{% block content %}
+<form method="get" action="">
+<!-- Financing options placeholder -->
+<div style="margin-bottom: 15px;">
+    <button class="btn btn-primary">מימון משתמש</button>
+</div>
+    <input type="text" name="search" placeholder="Search by username or email" value="{{ search }}">
+    <button type="submit">Search</button>
+</form>
+<h2>Users</h2>
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Email</th>
+    </tr>
+    {% for user in users %}
+    <tr>
+        <td>{{ user.id }}</td>
+        <td>{{ user.username }}</td>
+        <td>{{ user.email }}</td>
+    </tr>
+    {% endfor %}
+</table>
+<!-- Search and financing options will be added here -->
+{% endblock %}

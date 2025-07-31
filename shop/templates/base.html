@@ -317,17 +317,6 @@
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="mainMenuDropdown">
                             <li class="dropdown-submenu">
-                                <a href="#" class="dropdown-item dropdown-toggle" id="categoriesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">category</i>
-                                    קטגוריות
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="categoriesDropdown">
-                                    {% for category in categories %}
-                                        {% if not category.is_sub %}
-                                            {% include "category_menu_item.html" with category=category %}
-                                        {% endif %}
-                                    {% endfor %}
-                                </ul>
                             </li>
                             <li>
                                 <a href="#" class="dropdown-item">
@@ -515,23 +504,6 @@ document.addEventListener('DOMContentLoaded', function () {
       this.querySelectorAll('.dropdown-menu.show').forEach(function(sub) {
         sub.classList.remove('show');
       });
-    });
-  });
-  // סגור את כל התפריטים בעת לחיצה על קישור קטגוריה
-  document.querySelectorAll('.dropdown-menu a[href]:not([href="#"])').forEach(function(link) {
-    link.addEventListener('click', function() {
-      document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {
-        menu.classList.remove('show');
-      });
-      // סגור גם את התפריט הראשי
-      var dropdown = link.closest('.dropdown');
-      if (dropdown) {
-        var dropdownToggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
-        if (dropdownToggle) {
-          var dropdownInstance = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
-          dropdownInstance.hide();
-        }
-      }
     });
   });
 });
