@@ -285,6 +285,9 @@
                             <i class="material-icons">favorite</i>
                             <span class="d-none d-md-inline">מועדפים</span>
                         </a>
+                        <a href="{% url 'accounts:user_logout' %}" class="btn btn-outline-primary btn-auth-small ms-2">
+                            יציאה
+                        </a>
                     {% else %}
                         <a href="{% url 'cart:show_cart' %}" class="icon-container{% if cart_count|default:0|add:0 > 0 %} cart-glow{% endif %}">
                             <span class="icon-badge">0</span>
@@ -298,13 +301,10 @@
                         </a>
                             <div class="d-flex gap-2 align-items-center ms-2">
                                 <a href="{% url 'accounts:user_login' %}" class="btn btn-outline-primary btn-auth-small">
-                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">login</i>
-                                    התחבר
+                                    התחבר 
                                 </a>
-                                <a href="{% url 'accounts:user_register' %}" class="btn btn-luxury btn-auth-small">
-                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">person_add</i>
-                                    הירשם
-                                </a>
+                                  
+
                             </div>
                         {% endif %}
                         </div>
@@ -419,18 +419,7 @@
                                 </a>
                             </li>
                             <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item" href="{% url 'accounts:edit_profile' %}">
-                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">edit</i>
-                                    עריכת פרופיל
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item text-danger" href="{% url 'accounts:user_logout' %}">
-                                    <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">logout</i>
-                                    התנתק
-                                </a>
-                            </li>
+
                         </ul>
                     </div>
                 {% else %}
@@ -683,6 +672,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!menu) { console.error('accessibility-menu not found'); }
         });
     </script>
+{% block extra_js %}{% endblock %}
+
 </body>
 <script>
   // נסה להסיר כל מחלקה מה-body ולבדוק אם אפשר להקליד
@@ -706,3 +697,4 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 </script>
 </html>
+

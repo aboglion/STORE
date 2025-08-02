@@ -1,3 +1,4 @@
+from .views import edit_profile
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 
@@ -11,7 +12,7 @@ urlpatterns = [
     path('login/', views.user_login, name='user_login'),
     path('login/manager/', views.manager_login, name='manager_login'),
     path('logout/', views.user_logout, name='user_logout'),
-    path('profile/edit', views.edit_profile, name='edit_profile'),
+    path('profile/edit/', views.edit_profile, name='edit_profile'),
     path(
         'password-reset/',
         auth_views.PasswordResetView.as_view(
@@ -43,5 +44,5 @@ urlpatterns = [
         ),
         name='password_reset_complete'
     ),
+    path('firebase_login/', views.firebase_login, name='firebase_login'),
 ]
-

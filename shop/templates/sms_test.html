@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SMS Login</title>
+ <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>התחברות עם מספר טלפון</h2>
+
+  <div id="step1">
+    <input type="text" id="phone" placeholder="הכנס מספר טלפון עם קידומת (לדוג' +972...)">
+    <div id="recaptcha-container"></div>
+    <button onclick="sendCode()">שלח קוד</button>
+  </div>
+
+  <div id="step2" style="display:none;">
+    <input type="text" id="code" placeholder="הכנס קוד שקיבלת ב-SMS">
+    <button onclick="verifyCode()">אמת</button>
+  </div>
+
+  <div id="result"></div>
+
+  <script>
+    // Firebase config
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+            const firebaseConfig = {
+            apiKey: "AIzaSyCgK_isBjIE3Wnn8naJep-spYHN_8pVwe4",
+            authDomain: "storefirst-a560c.firebaseapp.com",
+            projectId: "storefirst-a560c",
+            storageBucket: "storefirst-a560c.firebasestorage.app",
+            messagingSenderId: "616381390287",
+            appId: "1:616381390287:web:8c3e78e2f5721def3506ba",
+            measurementId: "G-KM5LMBFYP9"
+            };
+
+    // Init Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    let confirmationResult;
+
+    window.onload = function () {
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        'size': 'normal',
+        'callback': function (response) {
+          console.log("reCAPTCHA passed");
+        }
+      });
+      recaptchaVerifier.render();
+    };
+
+    function sendCode() {
+      const phoneNumber = document.getElementById('phone').value.trim();
+      const appVerifier = window.recaptchaVerifier;
+
+      auth.signInWithPhoneNumber(phoneNumber, appVerifier)
+        .then(result => {
+          confirmationResult = result;
+          document.getElementById('step1').style.display = 'none';
+          document.getElementById('step2').style.display = 'block';
+        })
+        .catch(error => {
+          document.getElementById('result').innerText = "שגיאה: " + error.message;
+        });
+    }
+
+    function verifyCode() {
+      const code = document.getElementById('code').value.trim();
+      confirmationResult.confirm(code)
+        .then(result => {
+          const user = result.user;
+          document.getElementById('result').innerText = "התחברת בהצלחה! מזהה: " + user.uid;
+        })
+        .catch(error => {
+          document.getElementById('result').innerText = "קוד שגוי או שגיאה: " + error.message;
+        });
+    }
+  </script>
+</body>
+</html>
