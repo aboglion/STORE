@@ -84,6 +84,7 @@ export default async function ProductPage({
                             productId={product.id}
                             size="lg"
                             fullWidth
+                            disabled={outOfStock}
                         />
                     </div>
                 </div>

@@ -139,6 +139,10 @@ export function CheckoutView() {
         const detail = detailMap.get(item.product_id);
         return sum + (detail ? detail.price_agorot * item.quantity : 0);
     }, 0);
+    const hasUnavailableItems = orderItems.some((item) => {
+        const detail = detailMap.get(item.product_id);
+        return !detail || !detail.is_active || detail.stock_quantity <= 0;
+    });
 
     return (
         <Form {...form}>
@@ -362,7 +366,12 @@ export function CheckoutView() {
                         דמי משלוח יחושבו לפי סל ההזמנה
                     </div>
 
-                    <Button type="submit" className="mt-4 w-full" size="lg" disabled={pending}>
+                    {hasUnavailableItems && (
+                        <p className="mt-2 text-center text-xs text-destructive">
+                            יש מוצרים שאזלו מן המלאי — הסירהם כדי להמשיף
+                        </p>
+                    )}
+                    <Button type="submit" className="mt-4 w-full" size="lg" disabled={pending || hasUnavailableItems}>
                         {pending && <Loader2 className="size-4 animate-spin" />}
                         ביצוע הזמנה
                     </Button>

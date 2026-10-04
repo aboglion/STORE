@@ -55,6 +55,10 @@ export function CartView() {
         const detail = detailMap.get(item.product_id);
         return sum + (detail ? detail.price_agorot * item.quantity : 0);
     }, 0);
+    const hasUnavailableItems = items.some((item) => {
+        const detail = detailMap.get(item.product_id);
+        return !detail || !detail.is_active || detail.stock_quantity <= 0;
+    });
 
     return (
         <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
@@ -70,6 +74,7 @@ export function CartView() {
                     items.map((item) => {
                         const detail = detailMap.get(item.product_id);
                         const unavailable = !detail || !detail.is_active;
+                        const outOfStock = detail && detail.stock_quantity <= 0;
 
                         return (
                             <div
@@ -102,6 +107,11 @@ export function CartView() {
                                     {unavailable && (
                                         <span className="text-sm text-destructive">
                                             המוצר לא זמין יותר
+                                        </span>
+                                    )}
+                                    {outOfStock && (
+                                        <span className="text-sm text-destructive">
+                                            אזל מן המלאי
                                         </span>
                                     )}
                                     <span className="text-sm text-muted-foreground">
@@ -165,9 +175,20 @@ export function CartView() {
                 <div className="mt-1 text-xs text-muted-foreground">
                     דמי משלוח יחושבו בצ'קאאוט
                 </div>
-                <Button asChild className="mt-4 w-full" size="lg">
-                    <Link href="/checkout">מעבר לצ'קאאוט</Link>
-                </Button>
+                {hasUnavailableItems ? (
+                    <Button className="mt-4 w-full" size="lg" disabled>
+                        מעבר לצ&apos;קאאוט
+                    </Button>
+                ) : (
+                    <Button asChild className="mt-4 w-full" size="lg">
+                        <Link href="/checkout">מעבר לצ'קאאוט</Link>
+                    </Button>
+                )}
+                {hasUnavailableItems && (
+                    <p className="mt-2 text-center text-xs text-destructive">
+                        יש מוצרים שאזלו מן המלאי — הסירהם כדי להמשיף
+                    </p>
+                )}
             </div>
         </div>
     );

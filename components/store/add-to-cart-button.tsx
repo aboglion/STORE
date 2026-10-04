@@ -10,10 +10,12 @@ export function AddToCartButton({
     productId,
     size = "default",
     fullWidth = false,
+    disabled = false,
 }: {
     productId: string;
     size?: "default" | "lg" | "sm";
     fullWidth?: boolean;
+    disabled?: boolean;
 }) {
     const { addItem } = useCart();
 
@@ -22,13 +24,14 @@ export function AddToCartButton({
             type="button"
             size={size}
             className={fullWidth ? "w-full" : undefined}
+            disabled={disabled}
             onClick={() => {
                 addItem(productId);
                 toast.success("המוצר נוסף לסל");
             }}
         >
             <Plus />
-            הוסף לסל
+            {disabled ? "אזל מהמלאי" : "הוסף לסל"}
         </Button>
     );
 }
