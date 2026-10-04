@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { storageImageUrl } from "@/lib/utils/images";
+import { productImageUrl } from "@/lib/utils/images";
 
 export interface CartProductDetail {
     id: string;
@@ -49,8 +49,6 @@ export async function getCartProductDetails(
         price_agorot: p.price_agorot,
         stock_quantity: p.stock_quantity,
         is_active: p.is_active,
-        image_url: p.images[0]
-            ? storageImageUrl(p.images[0].storage_path)
-            : null,
+        image_url: productImageUrl(p.images[0]?.storage_path, p.slug),
     }));
 }

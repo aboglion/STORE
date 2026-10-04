@@ -42,7 +42,11 @@ export default async function ProductPage({
     return (
         <StoreChrome>
             <div className="grid gap-8 md:grid-cols-2">
-                <ProductGallery images={product.images} productName={product.name_he} />
+                <ProductGallery
+                    images={product.images}
+                    productName={product.name_he}
+                    productSlug={product.slug}
+                />
 
                 <div className="flex flex-col gap-4">
                     <div>

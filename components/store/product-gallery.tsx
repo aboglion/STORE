@@ -3,23 +3,32 @@
 import Image from "next/image";
 import { useState } from "react";
 
-import { storageImageUrl } from "@/lib/utils/images";
+import { demoImageUrl, productImageUrl } from "@/lib/utils/images";
 import type { ProductImage } from "@/types/database.types";
 import { cn } from "@/lib/utils";
 
 export function ProductGallery({
     images,
     productName,
+    productSlug,
 }: {
     images: ProductImage[];
     productName: string;
+    productSlug: string;
 }) {
     const [selected, setSelected] = useState(0);
 
     if (images.length === 0) {
         return (
-            <div className="flex aspect-square items-center justify-center rounded-xl border bg-muted text-muted-foreground">
-                אין תמונה
+            <div className="relative aspect-square overflow-hidden rounded-xl border bg-muted">
+                <Image
+                    src={demoImageUrl(productSlug)}
+                    alt={productName}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                    priority
+                />
             </div>
         );
     }
@@ -30,12 +39,17 @@ export function ProductGallery({
         <div className="grid gap-3">
             <div className="relative aspect-square overflow-hidden rounded-xl border bg-muted">
                 <Image
-                    src={storageImageUrl(current.storage_path)}
+                    src={productImageUrl(current.storage_path, productSlug)}
                     alt={current.alt_text ?? productName}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                     priority
+                    onError={(e) => {
+                        const target = e.currentTarget;
+                        const fallback = demoImageUrl(productSlug);
+                        if (!target.src.endsWith(fallback)) target.src = fallback;
+                    }}
                 />
             </div>
 
@@ -54,11 +68,18 @@ export function ProductGallery({
                             )}
                         >
                             <Image
-                                src={storageImageUrl(image.storage_path)}
+                                src={productImageUrl(image.storage_path, productSlug)}
                                 alt={image.alt_text ?? `${productName} ${index + 1}`}
                                 fill
                                 sizes="64px"
                                 className="object-cover"
+                                onError={(e) => {
+                                    const target = e.currentTarget;
+                                    const fallback = demoImageUrl(productSlug);
+                                    if (!target.src.endsWith(fallback)) {
+                                        target.src = fallback;
+                                    }
+                                }}
                             />
                         </button>
                     ))}

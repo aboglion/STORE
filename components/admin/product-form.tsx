@@ -275,7 +275,11 @@ export function ProductForm({
                 {product && (
                     <div className="grid gap-2">
                         <FormLabel>תמונות</FormLabel>
-                        <ImageUploader productId={product.id} images={product.images} />
+                        <ImageUploader
+                            productId={product.id}
+                            productSlug={product.slug}
+                            images={product.images}
+                        />
                     </div>
                 )}
 

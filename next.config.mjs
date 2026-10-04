@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
+        // Local demo placeholders in /public/products are SVGs.
+        dangerouslyAllowSVG: true,
         remotePatterns: [
             {
                 protocol: "https",

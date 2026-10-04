@@ -12,14 +12,16 @@ import {
     deleteProductImage,
     uploadProductImage,
 } from "@/lib/actions/products";
-import { storageImageUrl } from "@/lib/utils/images";
+import { demoImageUrl, productImageUrl } from "@/lib/utils/images";
 import type { ProductImage } from "@/types/database.types";
 
 export function ImageUploader({
     productId,
+    productSlug,
     images,
 }: {
     productId: string;
+    productSlug: string;
     images: ProductImage[];
 }) {
     const inputRef = useRef<HTMLInputElement>(null);
@@ -70,17 +72,38 @@ export function ImageUploader({
     return (
         <div className="grid gap-3">
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                {images.length === 0 && (
+                    <div className="relative aspect-square overflow-hidden rounded-md border bg-muted">
+                        <Image
+                            src={demoImageUrl(productSlug)}
+                            alt="תמונת דמו"
+                            fill
+                            sizes="120px"
+                            className="object-cover"
+                        />
+                        <span className="absolute bottom-1 left-1 rounded bg-background/80 px-1.5 text-[10px] text-muted-foreground">
+                            דמו
+                        </span>
+                    </div>
+                )}
                 {images.map((image, index) => (
                     <div
                         key={image.id}
                         className="group relative aspect-square overflow-hidden rounded-md border bg-muted"
                     >
                         <Image
-                            src={storageImageUrl(image.storage_path)}
+                            src={productImageUrl(image.storage_path, productSlug)}
                             alt={image.alt_text ?? `תמונה ${index + 1}`}
                             fill
                             sizes="120px"
                             className="object-cover"
+                            onError={(e) => {
+                                const target = e.currentTarget;
+                                const fallback = demoImageUrl(productSlug);
+                                if (!target.src.endsWith(fallback)) {
+                                    target.src = fallback;
+                                }
+                            }}
                         />
                         <Button
                             type="button"

@@ -19,7 +19,7 @@ import {
 import { requireAdmin } from "@/lib/auth";
 import { getProducts } from "@/lib/data/products";
 import { formatILS } from "@/lib/utils/currency";
-import { storageImageUrl } from "@/lib/utils/images";
+import { productImageUrl } from "@/lib/utils/images";
 
 export const metadata: Metadata = {
     title: "מוצרים",
@@ -115,19 +115,13 @@ export default async function AdminProductsPage({ searchParams }: Props) {
                                 <TableRow key={product.id}>
                                     <TableCell>
                                         <div className="relative aspect-square size-10 overflow-hidden rounded-md border bg-muted">
-                                            {image ? (
-                                                <Image
-                                                    src={storageImageUrl(image.storage_path)}
-                                                    alt={image.alt_text ?? product.name_he}
-                                                    fill
-                                                    sizes="40px"
-                                                    className="object-cover"
-                                                />
-                                            ) : (
-                                                <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
-                                                    —
-                                                </div>
-                                            )}
+                                            <Image
+                                                src={productImageUrl(image?.storage_path, product.slug)}
+                                                alt={image?.alt_text ?? product.name_he}
+                                                fill
+                                                sizes="40px"
+                                                className="object-cover"
+                                            />
                                         </div>
                                     </TableCell>
                                     <TableCell>
