@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
+    Bell,
     List,
     Loader2,
     Map as MapIcon,
@@ -14,21 +15,47 @@ import {
 import { CourierMapView } from "@/components/courier/courier-map-view";
 import { CourierOrderCard } from "@/components/courier/courier-order-card";
 import { NavigateSheet } from "@/components/courier/navigate-sheet";
+import {
+    OrderRequestPopup,
+    RequestSummaryRow,
+} from "@/components/courier/order-request-popup";
 import { RecommendationsPanel } from "@/components/courier/recommendations-panel";
 import { useCourierLocation } from "@/components/courier/use-courier-location";
 import { StoreLogo } from "@/components/store/store-logo";
 import { Button } from "@/components/ui/button";
+import {
+    courierAcceptOrderAction,
+    courierDeclineOrderAction,
+    refreshCourierPoolAction,
+} from "@/lib/actions/courier-portal";
 import { cn } from "@/lib/utils";
-import { optimizeRoute, type RoutePlan } from "@/lib/utils/route";
-import type { CourierOrder, CourierPortalData } from "@/types/database.types";
+import { haversineMeters, optimizeRoute, type RoutePlan } from "@/lib/utils/route";
+import type { CourierOrder, CourierPoolOrder, CourierPortalData } from "@/types/database.types";
 
 type Tab = "list" | "map";
 
 const POLL_INTERVAL_MS = 30_000;
+const POOL_POLL_INTERVAL_MS = 8_000;
+const MAX_VISIBLE_POPUPS = 2;
 
 interface CourierAppProps {
     token: string;
     initialData: CourierPortalData;
+}
+
+function toPoolOrder(order: CourierOrder): CourierPoolOrder {
+    return {
+        id: order.id,
+        order_number: order.order_number,
+        customer_name: order.customer_name,
+        customer_phone: order.customer_phone,
+        address_text: order.address_text,
+        address_lat: order.address_lat,
+        address_lng: order.address_lng,
+        total_agorot: order.total_agorot,
+        cash_to_collect: order.cash_to_collect,
+        placed_at: order.placed_at,
+    };
 }
 
 export function CourierApp({ token, initialData }: CourierAppProps) {
@@ -41,17 +68,32 @@ export function CourierApp({ token, initialData }: CourierAppProps) {
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const [deliveredOpen, setDeliveredOpen] = useState(false);
 
+    // Broadcast-pool dispatch.
+    const [requests, setRequests] = useState<CourierPoolOrder[]>(() =>
+        initialData.pool_orders.map(toPoolOrder)
+    );
+    const [busyId, setBusyId] = useState<string | null>(null);
+    const declinedRef = useRef<Set<string>>(new Set());
+
     const { position, status: locationStatus } = useCourierLocation({
         token,
-        enabled: data.active_orders.length > 0,
+        enabled: data.active_orders.length > 0 || requests.length > 0,
     });
 
     // Keep local state in sync when the server re-renders (router.refresh).
     useEffect(() => {
         setData(initialData);
+        setRequests((prev) => {
+            const nextMap = new Map(prev.map((r) => [r.id, r]));
+            const activeIds = new Set(initialData.active_orders.map((o) => o.id));
+            for (const o of initialData.pool_orders) {
+                if (!activeIds.has(o.id)) nextMap.set(o.id, toPoolOrder(o));
+            }
+            return [...nextMap.values()];
+        });
     }, [initialData]);
 
-    // Poll for new assignments / transfers while the tab is visible.
+    // Full-data poll while visible.
     useEffect(() => {
         const id = setInterval(() => {
             if (!document.hidden) router.refresh();
@@ -65,6 +107,33 @@ export function CourierApp({ token, initialData }: CourierAppProps) {
             document.removeEventListener("visibilitychange", onVisibility);
         };
     }, [router]);
+
+    // Lightweight pool poll — keeps the request popups fresh (Uber-style).
+    useEffect(() => {
+        let cancelled = false;
+        const id = setInterval(async () => {
+            if (document.hidden) return;
+            const res = await refreshCourierPoolAction({ token });
+            if (cancelled || res.error) return;
+            setRequests((prev) => {
+                const nextMap = new Map(prev.map((r) => [r.id, r]));
+                const liveIds = new Set(res.pool.map((p) => p.id));
+                for (const p of res.pool) {
+                    if (!declinedRef.current.has(p.id)) nextMap.set(p.id, p);
+                }
+                for (const id of nextMap.keys()) {
+                    if (!liveIds.has(id) && !declinedRef.current.has(id)) {
+                        nextMap.delete(id);
+                    }
+                }
+                return [...nextMap.values()];
+            });
+        }, POOL_POLL_INTERVAL_MS);
+        return () => {
+            cancelled = true;
+            clearInterval(id);
+        };
+    }, [token]);
 
     const ordersById = useMemo(
         () => new Map(data.active_orders.map((o) => [o.id, o])),
@@ -100,6 +169,59 @@ export function CourierApp({ token, initialData }: CourierAppProps) {
         return data.active_orders.filter((o) => !ids.has(o.id));
     }, [data.active_orders, plan.ordered]);
 
+    const visiblePopups = requests.slice(0, MAX_VISIBLE_POPUPS);
+
+    const distanceToOrder = useCallback(
+        (order: CourierPoolOrder): number | null => {
+            if (
+                !position ||
+                typeof order.address_lat !== "number" ||
+                typeof order.address_lng !== "number"
+            ) {
+                return null;
+            }
+            return haversineMeters(
+                { lat: position.lat, lng: position.lng },
+                { lat: order.address_lat, lng: order.address_lng }
+            );
+        },
+        [position]
+    );
+
+    function removeRequest(id: string) {
+        setRequests((prev) => prev.filter((r) => r.id !== id));
+    }
+
+    async function handleAccept(order: CourierPoolOrder) {
+        setBusyId(order.id);
+        const res = await courierAcceptOrderAction({
+            token,
+            order_id: order.id,
+        });
+        setBusyId(null);
+        if (res?.error) {
+            // Someone else won the claim — drop it locally, keep working.
+            if (res.error.includes("already") || res.error.includes("נלקחה")) {
+                declinedRef.current.add(order.id);
+                removeRequest(order.id);
+            }
+            return;
+        }
+        declinedRef.current.add(order.id);
+        removeRequest(order.id);
+        router.refresh();
+    }
+
+    async function handleDecline(order: CourierPoolOrder) {
+        declinedRef.current.add(order.id);
+        removeRequest(order.id);
+        void courierDeclineOrderAction({
+            token,
+            order_id: order.id,
+        });
+        router.refresh();
+    }
+
     function handleChanged() {
         setSelectedOrderId(null);
         router.refresh();
@@ -129,9 +251,15 @@ export function CourierApp({ token, initialData }: CourierAppProps) {
                             })}
                         </div>
                     </div>
+                    {requests.length > 0 && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                            <Bell className="size-3.5 animate-pulse" />
+                            {t("requestCount", { count: requests.length })}
+                        </span>
+                    )}
                     {locationStatus === "active" && (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                            <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/15 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+                            <span className="size-1.5 animate-pulse rounded-full bg-sky-500" />
                             {t("live")}
                         </span>
                     )}
@@ -140,7 +268,7 @@ export function CourierApp({ token, initialData }: CourierAppProps) {
 
             {/* Location hint */}
             {(locationStatus === "denied" || locationStatus === "unsupported") &&
-                data.active_orders.length > 0 && (
+                (data.active_orders.length > 0 || requests.length > 0) && (
                     <div className="mx-auto mt-3 w-full max-w-3xl px-4">
                         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
                             {t("locationHint")}
@@ -149,7 +277,7 @@ export function CourierApp({ token, initialData }: CourierAppProps) {
                 )}
 
             <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-28 pt-3">
-                {data.active_orders.length === 0 ? (
+                {data.active_orders.length === 0 && requests.length === 0 ? (
                     <EmptyState
                         title={t("noOrders")}
                         hint={`${t("noOrdersHint")} ${data.store.contact_phone ? `· ${data.store.contact_phone}` : ""}`}
@@ -158,37 +286,63 @@ export function CourierApp({ token, initialData }: CourierAppProps) {
                     <>
                         {tab === "list" ? (
                             <div className="space-y-3">
-                                <RecommendationsPanel
-                                    plan={plan}
-                                    ordersById={ordersById}
-                                    locationStatus={locationStatus}
-                                />
-
-                                {orderedCards.map(({ order, index, distanceMeters, isFirstStop }) =>
-                                    order ? (
-                                        <CourierOrderCard
-                                            key={order.id}
-                                            order={order}
-                                            token={token}
-                                            stopNumber={index + 1}
-                                            distanceMeters={distanceMeters}
-                                            isFirstStop={isFirstStop}
-                                            onChanged={handleChanged}
-                                            onNavigate={setNavOrder}
-                                        />
-                                    ) : null
+                                {/* Pending broadcast requests */}
+                                {requests.length > 0 && (
+                                    <div className="space-y-3">
+                                        <h2 className="flex items-center gap-2 px-1 pt-1 text-sm font-bold text-muted-foreground">
+                                            <Bell className="size-4 text-emerald-600" />
+                                            {t("pendingRequests", {
+                                                count: requests.length,
+                                            })}
+                                        </h2>
+                                        {requests.map((order) => (
+                                            <RequestSummaryRow
+                                                key={order.id}
+                                                order={order}
+                                                distanceMeters={distanceToOrder(order)}
+                                                busy={busyId === order.id}
+                                                onAccept={() => handleAccept(order)}
+                                                onDecline={() => handleDecline(order)}
+                                            />
+                                        ))}
+                                    </div>
                                 )}
 
-                                {unlocatedOrders.map((order) => (
-                                    <CourierOrderCard
-                                        key={order.id}
-                                        order={order}
-                                        token={token}
-                                        stopNumber={null}
-                                        onChanged={handleChanged}
-                                        onNavigate={setNavOrder}
-                                    />
-                                ))}
+                                {data.active_orders.length > 0 && (
+                                    <>
+                                        <RecommendationsPanel
+                                            plan={plan}
+                                            ordersById={ordersById}
+                                            locationStatus={locationStatus}
+                                        />
+
+                                        {orderedCards.map(({ order, index, distanceMeters, isFirstStop }) =>
+                                            order ? (
+                                                <CourierOrderCard
+                                                    key={order.id}
+                                                    order={order}
+                                                    token={token}
+                                                    stopNumber={index + 1}
+                                                    distanceMeters={distanceMeters}
+                                                    isFirstStop={isFirstStop}
+                                                    onChanged={handleChanged}
+                                                    onNavigate={setNavOrder}
+                                                />
+                                            ) : null
+                                        )}
+
+                                        {unlocatedOrders.map((order) => (
+                                            <CourierOrderCard
+                                                key={order.id}
+                                                order={order}
+                                                token={token}
+                                                stopNumber={null}
+                                                onChanged={handleChanged}
+                                                onNavigate={setNavOrder}
+                                            />
+                                        ))}
+                                    </>
+                                )}
 
                                 {data.delivered_today.length > 0 && (
                                     <div className="pt-3">
@@ -266,14 +420,32 @@ export function CourierApp({ token, initialData }: CourierAppProps) {
                 )}
             </main>
 
+            {/* Uber-style incoming request popups (stacked bottom cards) */}
+            {visiblePopups.length > 0 && (
+                <div className="pointer-events-none fixed inset-x-0 bottom-20 z-50 flex flex-col gap-2 px-3 pb-[max(env(safe-area-inset-bottom),12px)]">
+                    {visiblePopups.map((order, depth) => (
+                        <OrderRequestPopup
+                            key={order.id}
+                            order={order}
+                            distanceMeters={distanceToOrder(order)}
+                            busy={busyId === order.id}
+                            depth={depth}
+                            onAccept={() => handleAccept(order)}
+                            onDecline={() => handleDecline(order)}
+                            onExpire={() => handleDecline(order)}
+                        />
+                    ))}
+                </div>
+            )}
+
             {/* Bottom tab bar */}
             <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/90 backdrop-blur-xl">
-                <div className="mx-auto grid max-w-3xl grid-cols-2 gap-2 p-3">
+                <div className="mx-auto grid max-w-3xl grid-cols-2 gap-2 p-3 pb-[max(env(safe-area-inset-bottom),12px)]">
                     <Button
                         type="button"
                         variant={tab === "list" ? "default" : "ghost"}
                         className={cn(
-                            "h-11 rounded-2xl text-sm font-semibold transition-all active:scale-[0.98]",
+                            "h-12 rounded-2xl text-sm font-semibold transition-all active:scale-[0.98]",
                             tab === "list" && "shadow-soft"
                         )}
                         onClick={() => setTab("list")}
@@ -285,7 +457,7 @@ export function CourierApp({ token, initialData }: CourierAppProps) {
                         type="button"
                         variant={tab === "map" ? "default" : "ghost"}
                         className={cn(
-                            "h-11 rounded-2xl text-sm font-semibold transition-all active:scale-[0.98]",
+                            "h-12 rounded-2xl text-sm font-semibold transition-all active:scale-[0.98]",
                             tab === "map" && "shadow-soft"
                         )}
                         onClick={() => setTab("map")}

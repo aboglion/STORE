@@ -161,7 +161,7 @@ export function CouriersTable({ couriers, locale }: CouriersTableProps) {
                         <TableRow>
                             <TableHead>{t("courier")}</TableHead>
                             <TableHead>{t("vehicle")}</TableHead>
-                            <TableHead>{t("activeOrders")}</TableHead>
+                            <TableHead>{t("activeOrdersTitle")}</TableHead>
                             <TableHead>{t("deliveredToday")}</TableHead>
                             <TableHead>{t("lastSeen")}</TableHead>
                             <TableHead>{t("statusShort")}</TableHead>
@@ -243,7 +243,7 @@ export function CouriersTable({ couriers, locale }: CouriersTableProps) {
                         </div>
                         <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
                             <span>
-                                {t("activeOrders")}:{" "}
+                                {t("activeOrdersTitle")}:{" "}
                                 <b className="text-foreground">{c.active_orders_count}</b>
                             </span>
                             <span>

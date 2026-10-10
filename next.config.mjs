@@ -47,7 +47,7 @@ if (isHttps) {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    output: "standalone",
+    output: process.env.STANDALONE === "true" ? "standalone" : undefined,
     images: {
         // Local demo placeholders in /public/products are SVGs.
         dangerouslyAllowSVG: true,

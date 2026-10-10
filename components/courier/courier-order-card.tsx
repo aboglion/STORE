@@ -7,6 +7,7 @@ import {
     Banknote,
     CheckCircle2,
     ChevronDown,
+    CornerUpLeft,
     FileText,
     MapPin,
     Navigation,
@@ -16,26 +17,18 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { courierUpdateOrderStatusAction } from "@/lib/actions/courier-portal";
+import {
+    courierDeclineOrderAction,
+    courierUpdateOrderStatusAction,
+} from "@/lib/actions/courier-portal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
 import type { Locale } from "@/lib/i18n/config";
@@ -54,11 +47,8 @@ const STATUS_STYLES: Record<CourierOrder["status"], string> = {
 interface CourierOrderCardProps {
     order: CourierOrder;
     token: string;
-    /** Recommended stop number (1 = start first). */
     stopNumber?: number | null;
-    /** Straight-line distance from the courier to this stop. */
     distanceMeters?: number | null;
-    /** Whether this is the recommended first stop. */
     isFirstStop?: boolean;
     onChanged: () => void;
     onNavigate: (order: CourierOrder) => void;
@@ -79,12 +69,12 @@ export function CourierOrderCard({
 
     const [expanded, setExpanded] = useState(false);
     const [busy, setBusy] = useState(false);
-    const [deliverOpen, setDeliverOpen] = useState(false);
-    const [problemOpen, setProblemOpen] = useState(false);
-    const [problemNote, setProblemNote] = useState("");
+    const [sheet, setSheet] = useState<"delivered" | "problem" | "decline" | null>(null);
+    const [note, setNote] = useState("");
 
     const statusKey = ORDER_STATUS_LABELS[order.status];
     const isDone = order.status === "delivered" || order.status === "canceled";
+    const canDecline = order.status === "confirmed" || order.status === "preparing";
     const distanceText =
         distanceMeters != null
             ? distanceMeters >= 1000
@@ -94,14 +84,14 @@ export function CourierOrderCard({
 
     async function runStatus(
         toStatus: "out_for_delivery" | "delivered" | "preparing",
-        note?: string
+        noteText?: string
     ) {
         setBusy(true);
         const res = await courierUpdateOrderStatusAction({
             token,
             order_id: order.id,
             to_status: toStatus,
-            note: note ?? null,
+            note: noteText ?? null,
         });
         setBusy(false);
         if (res?.error) {
@@ -114,19 +104,37 @@ export function CourierOrderCard({
         onChanged();
     }
 
+    async function runDecline() {
+        setBusy(true);
+        const res = await courierDeclineOrderAction({
+            token,
+            order_id: order.id,
+            note: note.trim() || null,
+        });
+        setBusy(false);
+        setSheet(null);
+        setNote("");
+        if (res?.error) {
+            toast.error(res.error);
+            return;
+        }
+        toast.success(t("toast.declined"));
+        onChanged();
+    }
+
     return (
         <Card
             className={`overflow-hidden rounded-2xl border shadow-soft transition-all duration-200 ${isFirstStop
-                ? "border-primary/60 ring-2 ring-primary/20"
-                : "border-border/70"
+                    ? "border-primary/60 ring-2 ring-primary/20"
+                    : "border-border/70"
                 }`}
         >
             {/* Header */}
             <div className="flex items-start gap-3 p-4">
                 <div
                     className={`flex size-9 shrink-0 items-center justify-center rounded-xl font-display text-sm font-extrabold ${isFirstStop
-                        ? "bg-primary text-primary-foreground shadow-soft"
-                        : "bg-secondary text-secondary-foreground"
+                            ? "bg-primary text-primary-foreground shadow-soft"
+                            : "bg-secondary text-secondary-foreground"
                         }`}
                 >
                     {stopNumber ?? "•"}
@@ -190,7 +198,7 @@ export function CourierOrderCard({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-9 rounded-xl text-xs"
+                    className="h-10 rounded-xl text-xs"
                     asChild
                 >
                     <a href={`tel:${order.customer_phone}`}>
@@ -202,7 +210,7 @@ export function CourierOrderCard({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-9 rounded-xl text-xs"
+                    className="h-10 rounded-xl text-xs"
                     onClick={() => onNavigate(order)}
                 >
                     <Navigation className="size-3.5" />
@@ -212,7 +220,7 @@ export function CourierOrderCard({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-9 rounded-xl text-xs"
+                    className="h-10 rounded-xl text-xs"
                     disabled={!order.invoice_token}
                     asChild
                 >
@@ -229,7 +237,7 @@ export function CourierOrderCard({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-9 rounded-xl text-xs text-muted-foreground"
+                    className="h-10 rounded-xl text-xs text-muted-foreground"
                     onClick={() => setExpanded((v) => !v)}
                 >
                     <ChevronDown
@@ -316,33 +324,46 @@ export function CourierOrderCard({
             {/* Status actions */}
             {!isDone && (
                 <div className="flex gap-2 border-t border-border/50 px-4 py-3">
-                    {order.status === "confirmed" || order.status === "preparing" ? (
-                        <Button
-                            type="button"
-                            className="h-10 flex-1 rounded-xl text-sm font-semibold"
-                            disabled={busy}
-                            onClick={() => runStatus("out_for_delivery")}
-                        >
-                            <Navigation className="size-4" />
-                            {t("startDelivery")}
-                        </Button>
+                    {canDecline ? (
+                        <>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-12 flex-1 rounded-2xl text-sm"
+                                disabled={busy}
+                                onClick={() => setSheet("decline")}
+                            >
+                                <CornerUpLeft className="size-4" />
+                                {t("decline")}
+                            </Button>
+                            <Button
+                                type="button"
+                                className="h-12 flex-1 rounded-2xl text-sm font-semibold"
+                                disabled={busy}
+                                onClick={() => runStatus("out_for_delivery")}
+                            >
+                                <Navigation className="size-4" />
+                                {t("startDelivery")}
+                            </Button>
+                        </>
                     ) : order.status === "out_for_delivery" ? (
                         <>
                             <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="h-10 flex-1 rounded-xl text-sm"
+                                className="h-12 flex-1 rounded-2xl text-sm"
                                 disabled={busy}
-                                onClick={() => setProblemOpen(true)}
+                                onClick={() => setSheet("problem")}
                             >
                                 {t("reportProblem")}
                             </Button>
                             <Button
                                 type="button"
-                                className="h-10 flex-1 rounded-xl bg-emerald-600 text-sm font-semibold hover:bg-emerald-700"
+                                className="h-12 flex-1 rounded-2xl bg-emerald-600 text-sm font-semibold hover:bg-emerald-700"
                                 disabled={busy}
-                                onClick={() => setDeliverOpen(true)}
+                                onClick={() => setSheet("delivered")}
                             >
                                 <CheckCircle2 className="size-4" />
                                 {t("markDelivered")}
@@ -352,72 +373,145 @@ export function CourierOrderCard({
                 </div>
             )}
 
+            {/* ---- Mobile-optimized bottom sheets ---- */}
+
             {/* Delivered confirm */}
-            <AlertDialog open={deliverOpen} onOpenChange={setDeliverOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>{t("confirmDeliveredTitle")}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            {t("confirmDeliveredBody", { order: order.order_number })}
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>{tr("common.cancel") ?? t("cancel")}</AlertDialogCancel>
-                        <AlertDialogAction
+            <Sheet
+                open={sheet === "delivered"}
+                onOpenChange={(open) => !open && setSheet(null)}
+            >
+                <SheetContent side="bottom" className="rounded-t-3xl pb-[max(env(safe-area-inset-bottom),16px)]">
+                    <SheetHeader>
+                        <SheetTitle className="text-base">
+                            {t("confirmDeliveredTitle")}
+                        </SheetTitle>
+                    </SheetHeader>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        {t("confirmDeliveredBody", { order: order.order_number })}
+                    </p>
+                    <div className="mt-5 grid gap-2.5">
+                        <Button
+                            type="button"
+                            size="lg"
+                            className="h-12 rounded-2xl bg-emerald-600 text-sm font-bold hover:bg-emerald-700"
                             disabled={busy}
                             onClick={() => {
-                                setDeliverOpen(false);
+                                setSheet(null);
                                 void runStatus("delivered");
                             }}
                         >
+                            <CheckCircle2 className="size-5" />
                             {t("confirmDeliveredAction")}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            {/* Problem note */}
-            <Dialog open={problemOpen} onOpenChange={setProblemOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{t("problemTitle")}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                        <p className="text-sm text-muted-foreground">{t("problemHint")}</p>
-                        <Textarea
-                            value={problemNote}
-                            onChange={(e) => setProblemNote(e.target.value)}
-                            placeholder={t("problemPlaceholder")}
-                            rows={3}
-                            dir="auto"
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() => {
-                                setProblemOpen(false);
-                                setProblemNote("");
-                            }}
-                        >
-                            {t("cancel")}
                         </Button>
                         <Button
                             type="button"
-                            disabled={busy || problemNote.trim().length < 2}
+                            variant="ghost"
+                            className="h-12 rounded-2xl text-sm"
+                            disabled={busy}
+                            onClick={() => setSheet(null)}
+                        >
+                            {t("cancel")}
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Problem report */}
+            <Sheet
+                open={sheet === "problem"}
+                onOpenChange={(open) => !open && setSheet(null)}
+            >
+                <SheetContent side="bottom" className="rounded-t-3xl pb-[max(env(safe-area-inset-bottom),16px)]">
+                    <SheetHeader>
+                        <SheetTitle className="text-base">{t("problemTitle")}</SheetTitle>
+                    </SheetHeader>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        {t("problemHint")}
+                    </p>
+                    <Textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder={t("problemPlaceholder")}
+                        rows={3}
+                        className="mt-4"
+                        dir="auto"
+                    />
+                    <div className="mt-4 grid gap-2.5">
+                        <Button
+                            type="button"
+                            size="lg"
+                            className="h-12 rounded-2xl text-sm font-semibold"
+                            disabled={busy || note.trim().length < 2}
                             onClick={() => {
-                                setProblemOpen(false);
-                                const note = problemNote.trim();
-                                setProblemNote("");
-                                void runStatus("preparing", note);
+                                setSheet(null);
+                                const text = note.trim();
+                                setNote("");
+                                void runStatus("preparing", text);
                             }}
                         >
                             {t("submitProblem")}
                         </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-12 rounded-2xl text-sm"
+                            onClick={() => {
+                                setSheet(null);
+                                setNote("");
+                            }}
+                        >
+                            {t("cancel")}
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Decline (return order to the pool) */}
+            <Sheet
+                open={sheet === "decline"}
+                onOpenChange={(open) => !open && setSheet(null)}
+            >
+                <SheetContent side="bottom" className="rounded-t-3xl pb-[max(env(safe-area-inset-bottom),16px)]">
+                    <SheetHeader>
+                        <SheetTitle className="text-base">{t("declineTitle")}</SheetTitle>
+                    </SheetHeader>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        {t("declineBody")}
+                    </p>
+                    <Textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder={t("declineNotePlaceholder")}
+                        rows={2}
+                        className="mt-4"
+                        dir="auto"
+                    />
+                    <div className="mt-4 grid gap-2.5">
+                        <Button
+                            type="button"
+                            size="lg"
+                            variant="outline"
+                            className="h-12 rounded-2xl text-sm font-semibold text-destructive hover:text-destructive"
+                            disabled={busy}
+                            onClick={runDecline}
+                        >
+                            <CornerUpLeft className="size-4" />
+                            {t("confirmDecline")}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-12 rounded-2xl text-sm"
+                            onClick={() => {
+                                setSheet(null);
+                                setNote("");
+                            }}
+                        >
+                            {t("cancel")}
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
         </Card>
     );
 }

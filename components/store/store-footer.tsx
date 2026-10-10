@@ -10,6 +10,7 @@ import {
     Shield,
 } from "lucide-react";
 
+import { AccessibilityFooterButton } from "@/components/accessibility/accessibility-widget";
 import { StoreLogo } from "@/components/store/store-logo";
 import type { AppSettings } from "@/types/database.types";
 
@@ -135,15 +136,23 @@ export function StoreFooter({ settings, storeName }: StoreFooterProps) {
                             <Accessibility className="size-4 text-primary" />
                             <span>נגישות ומעקב</span>
                         </div>
-                        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1.5 text-[11px]">
+                        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2 text-[11px]">
                             <div className="font-semibold text-foreground flex items-center gap-1">
                                 <span>רכז/ת נגישות:</span>
                                 <span className="text-primary font-bold">{officerName}</span>
                             </div>
+                            {settings.accessibility_officer_phone && (
+                                <div className="text-muted-foreground">
+                                    טלפון: <a href={`tel:${settings.accessibility_officer_phone}`} className="font-mono text-foreground hover:underline" dir="ltr">{settings.accessibility_officer_phone}</a>
+                                </div>
+                            )}
                             <p className="text-muted-foreground leading-snug">
-                                האתר מונגש ברמת AA לפי תקן ת״י 5568. לחץ על כפתור הנגישות בפינת המסך להפעלת התאמות.
+                                האתר מונגש ברמת AA לפי תקן ת״י 5568.
                             </p>
-                            <Link href="/accessibility" className="text-primary font-bold hover:underline block pt-1">
+                            <div className="pt-1">
+                                <AccessibilityFooterButton />
+                            </div>
+                            <Link href="/accessibility" className="text-primary font-bold hover:underline block pt-0.5 text-[11px]">
                                 להצהרת הנגישות המלאה ←
                             </Link>
                         </div>

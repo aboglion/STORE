@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 
-import { AccessibilityWidget } from "@/components/accessibility/accessibility-widget";
+import { AccessibilityHeaderButton } from "@/components/accessibility/accessibility-widget";
 import { CookieConsentBanner } from "@/components/legal/cookie-consent-banner";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { CartProvider } from "@/contexts/cart-context";
@@ -26,7 +26,6 @@ export async function StoreChrome({
     return (
         <CartProvider>
             <div className="flex min-h-screen flex-col bg-background">
-                <AccessibilityWidget />
                 <CookieConsentBanner />
 
                 <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
@@ -63,6 +62,7 @@ export async function StoreChrome({
                             >
                                 ביטול עסקה
                             </Link>
+                            <AccessibilityHeaderButton />
                             <LocaleSwitcher />
                             <CartButton />
                         </nav>

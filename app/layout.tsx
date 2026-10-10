@@ -9,6 +9,7 @@ import {
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
+import { AccessibilityWidget } from "@/components/accessibility/accessibility-widget";
 import { NavigationProgress } from "@/components/ui/navigation-progress";
 import { Toaster } from "@/components/ui/sonner";
 import { getPublicSettings } from "@/lib/data/storefront";
@@ -105,6 +106,7 @@ export default async function RootLayout({
                     <Suspense fallback={null}>
                         <NavigationProgress />
                     </Suspense>
+                    <AccessibilityWidget />
                     {children}
                     <Toaster position="top-center" richColors />
                 </NextIntlClientProvider>

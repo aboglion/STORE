@@ -5,6 +5,7 @@ import type {
     CourierEvent,
     CourierLiveRow,
     CourierOrder,
+    CourierPoolOrder,
     CourierPortalData,
     CourierWithStats,
     Order,
@@ -281,7 +282,7 @@ export async function getCourierByToken(
     const c = courier as unknown as Courier;
     const today = israelTodayStartUtc();
 
-    const [activeRes, doneRes, settings] = await Promise.all([
+    const [activeRes, doneRes, poolRes, settings] = await Promise.all([
         admin
             .from("orders")
             .select("*, order_items(*)")
@@ -296,6 +297,13 @@ export async function getCourierByToken(
             .gte("delivered_at", today)
             .order("delivered_at", { ascending: false })
             .limit(50),
+        admin
+            .from("orders")
+            .select("*, order_items(*)")
+            .is("courier_id", null)
+            .in("status", ["confirmed", "preparing"])
+            .order("placed_at", { ascending: true })
+            .limit(15),
         getSettings(),
     ]);
 
@@ -349,7 +357,60 @@ export async function getCourierByToken(
         },
         active_orders: (activeRes.data ?? []).map(mapOrder),
         delivered_today: (doneRes.data ?? []).map(mapOrder),
+        pool_orders: (poolRes.data ?? []).map(mapOrder),
     };
+}
+
+/**
+ * Lightweight broadcast-pool feed for the courier popups (polled often).
+ * Projected without items/events to keep the payload small.
+ * Returns null when the token is not a valid active courier.
+ */
+export async function getCourierPoolOrders(
+    token: string
+): Promise<CourierPoolOrder[] | null> {
+    const admin = createAdminClient();
+    const { data: courier } = await admin
+        .from("couriers")
+        .select("id")
+        .eq("access_token", token)
+        .eq("is_active", true)
+        .maybeSingle();
+
+    if (!courier) return null;
+
+    const { data, error } = await admin
+        .from("orders")
+        .select(
+            "id, order_number, customer_name_snapshot, customer_phone_snapshot, address_snapshot, total_agorot, payment_method, payment_status, placed_at"
+        )
+        .is("courier_id", null)
+        .in("status", ["confirmed", "preparing"])
+        .order("placed_at", { ascending: true })
+        .limit(15);
+
+    if (error) return null;
+
+    return (data ?? []).map((row) => {
+        const address = row.address_snapshot as {
+            full_address?: string;
+            lat?: number | null;
+            lng?: number | null;
+        } | null;
+        return {
+            id: row.id as string,
+            order_number: row.order_number as string,
+            customer_name: row.customer_name_snapshot as string,
+            customer_phone: row.customer_phone_snapshot as string,
+            address_text: address?.full_address ?? "",
+            address_lat: address?.lat ?? null,
+            address_lng: address?.lng ?? null,
+            total_agorot: row.total_agorot as number,
+            cash_to_collect:
+                row.payment_method === "cash" && row.payment_status !== "paid",
+            placed_at: row.placed_at as string,
+        };
+    });
 }
 
 /** Admin live-map feed: active couriers + their active order stops. */

@@ -56,3 +56,20 @@ export const courierLocationSchema = z.object({
 });
 
 export type CourierLocationValues = z.infer<typeof courierLocationSchema>;
+
+/** Accepting a broadcast-pool order (Uber/Bolt-style claim). */
+export const courierClaimSchema = z.object({
+    token: z.string().trim().min(16).max(128),
+    order_id: z.string().uuid(),
+});
+
+export type CourierClaimValues = z.infer<typeof courierClaimSchema>;
+
+/** Declining / cancelling a claim — returns the order to the pool. */
+export const courierDeclineSchema = z.object({
+    token: z.string().trim().min(16).max(128),
+    order_id: z.string().uuid(),
+    note: z.string().trim().max(500).optional().nullable(),
+});
+
+export type CourierDeclineValues = z.infer<typeof courierDeclineSchema>;

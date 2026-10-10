@@ -122,8 +122,8 @@ export function CourierShareDialog({
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-3 py-2.5">
-                        <span className="min-w-0 flex-1 truncate font-mono text-xs" dir="ltr">
+                    <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-3 py-2.5" dir="ltr">
+                        <span className="min-w-0 flex-1 truncate font-mono text-xs">
                             {portalUrl}
                         </span>
                         <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0" onClick={copyLink}>

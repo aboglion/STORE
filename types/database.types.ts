@@ -233,6 +233,8 @@ export type CourierEventType =
     | "assigned"
     | "transferred"
     | "returned_to_store"
+    | "claimed"
+    | "declined"
     | "status_changed"
     | "problem_reported";
 
@@ -402,6 +404,25 @@ export interface CourierPortalData {
     store: { name: string; contact_phone: string; logo_url: string | null };
     active_orders: CourierOrder[];
     delivered_today: CourierOrder[];
+    /** Broadcast pool — unassigned deliverable orders offered to everyone. */
+    pool_orders: CourierOrder[];
+}
+
+/**
+ * Lightweight projection of a broadcast-pool order — everything the request
+ * popup needs without the full item/event payload (polled frequently).
+ */
+export interface CourierPoolOrder {
+    id: string;
+    order_number: string;
+    customer_name: string;
+    customer_phone: string;
+    address_text: string;
+    address_lat: number | null;
+    address_lng: number | null;
+    total_agorot: number;
+    cash_to_collect: boolean;
+    placed_at: string;
 }
 
 // ---------------------------------------------------------------------------

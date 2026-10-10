@@ -44,6 +44,8 @@ const EVENT_LABEL_KEYS: Record<CourierEventType, string> = {
     returned_to_store: "events.returnedToStore",
     status_changed: "events.statusChanged",
     problem_reported: "events.problemReported",
+    claimed: "events.claimed",
+    declined: "events.declined",
 };
 
 export default async function CourierDetailPage({
@@ -138,7 +140,7 @@ export default async function CourierDetailPage({
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
                 {statCard(
                     <ShoppingBag className="size-4" />,
-                    t("activeOrders"),
+                    t("activeOrdersTitle"),
                     String(stats.active_orders_count)
                 )}
                 {statCard(

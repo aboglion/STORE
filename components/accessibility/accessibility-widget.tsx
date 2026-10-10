@@ -48,6 +48,60 @@ const DEFAULT_STATE: A11yState = {
 };
 
 const STORAGE_KEY = "store_a11y_settings_v1";
+const EVENT_OPEN_A11Y = "open-accessibility-menu";
+
+/**
+ * Triggers the accessibility menu from anywhere in the application
+ * (e.g. Header button, Footer link, or Statement page).
+ */
+export function openAccessibilityMenu() {
+    if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(EVENT_OPEN_A11Y));
+    }
+}
+
+/**
+ * Header accessibility button to be placed in the top navigation bar.
+ */
+export function AccessibilityHeaderButton() {
+    const locale = useLocale();
+    const isAr = locale === "ar";
+
+    return (
+        <button
+            type="button"
+            onClick={openAccessibilityMenu}
+            className="flex items-center gap-1.5 rounded-full border border-border/80 bg-background/80 px-2.5 py-1.5 text-xs font-semibold text-foreground transition-all hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label={isAr ? "إمكانية الوصول" : "פתיחת תפריט נגישות (ת״י 5568)"}
+            title={isAr ? "إمكانية الوصول" : "כלי נגישות האתר"}
+        >
+            <Accessibility className="size-4 text-primary shrink-0" />
+            <span className="hidden sm:inline font-bold">
+                {isAr ? "إمكانية الوصول" : "נגישות"}
+            </span>
+        </button>
+    );
+}
+
+/**
+ * Footer accessibility button to be placed in the footer.
+ */
+export function AccessibilityFooterButton() {
+    const locale = useLocale();
+    const isAr = locale === "ar";
+
+    return (
+        <button
+            type="button"
+            onClick={openAccessibilityMenu}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-bold text-primary transition-all hover:bg-primary/20 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label={isAr ? "فتح أدوات إمكانية الوصول" : "פתיחת סרגל נגישות (ת״י 5568)"}
+        >
+            <Accessibility className="size-3.5 shrink-0" />
+            <span>{isAr ? "أدوات إمكانية الوصول" : "פתיחת סרגל נגישות"}</span>
+        </button>
+    );
+}
 
 export function AccessibilityWidget() {
     const locale = useLocale();
@@ -55,6 +109,13 @@ export function AccessibilityWidget() {
     const [open, setOpen] = useState(false);
     const [state, setState] = useState<A11yState>(DEFAULT_STATE);
     const [mounted, setMounted] = useState(false);
+
+    // Listen to global open events from Header or Footer buttons
+    useEffect(() => {
+        const handler = () => setOpen(true);
+        window.addEventListener(EVENT_OPEN_A11Y, handler);
+        return () => window.removeEventListener(EVENT_OPEN_A11Y, handler);
+    }, []);
 
     // Load saved settings
     useEffect(() => {
@@ -121,20 +182,21 @@ export function AccessibilityWidget() {
                 {isAr ? "الانتقال إلى المحتوى الرئيسي" : "דלג לתוכן מרכזי"}
             </a>
 
-            {/* Accessibility floating toggle button */}
-            <aside aria-label={isAr ? "إمكانية الوصول" : "כלי נגישות"}>
+            {/* Prominent floating accessibility button */}
+            <aside aria-label={isAr ? "إمكانية الوصول" : "כלי נגישות האתר"}>
                 <button
                     type="button"
                     onClick={() => setOpen(true)}
-                    className="fixed bottom-20 left-4 z-40 flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-primary/40 md:bottom-6"
-                    aria-label={isAr ? "فتح قائمة إمكانية الوصول" : "פתח תפריט נגישות"}
+                    className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-[#0060df] px-4 py-2.5 text-white shadow-2xl transition-all duration-200 hover:scale-105 hover:bg-[#004dc0] focus:outline-none focus:ring-4 focus:ring-blue-300 active:scale-95 sm:bottom-6 sm:right-6 cursor-pointer"
+                    aria-label={isAr ? "فتح قائمة إمكانية الوصول" : "פתח תפריט נגישות (ת״י 5568)"}
                     title={isAr ? "إمكانية الوصول (ת״י 5568)" : "סרגל נגישות (ת״י 5568)"}
                 >
-                    <Accessibility className="size-6" />
+                    <Accessibility className="size-5 shrink-0" />
+                    <span className="text-xs font-bold tracking-wide">
+                        {isAr ? "إمكانية الوصول" : "נגישות"}
+                    </span>
                     {hasActiveAdjustments && (
-                        <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white ring-2 ring-background">
-                            ✓
-                        </span>
+                        <span className="size-2 rounded-full bg-emerald-400 ring-2 ring-white" />
                     )}
                 </button>
             </aside>
@@ -186,7 +248,7 @@ export function AccessibilityWidget() {
                                     onClick={() => setTextSize("normal")}
                                     className="rounded-xl text-xs"
                                 >
-                                    {isAr ? "א (רגיל)" : "א (רגיל)"}
+                                    א (רגיל)
                                 </Button>
                                 <Button
                                     type="button"

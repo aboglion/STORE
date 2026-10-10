@@ -28,11 +28,11 @@ const PAYMENT_METHOD_KEYS = {
 } as const;
 
 const PAYMENT_STATUS_KEYS = {
-    unpaid: "status.unpaid",
-    authorized: "status.authorized",
-    paid: "status.paid",
-    failed: "status.failed",
-    refunded: "status.refunded",
+    unpaid: "payment.unpaid",
+    authorized: "payment.authorized",
+    paid: "payment.paid",
+    failed: "payment.failed",
+    refunded: "payment.refunded",
 } as const;
 
 export function InvoiceView({ detail, settings }: InvoiceViewProps) {
