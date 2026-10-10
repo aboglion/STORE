@@ -9,6 +9,11 @@ export default defineConfig({
     resolve: {
         alias: {
             "@": path.resolve(process.cwd()),
+            // Next.js provides `server-only` as a built-in; stub it for tests.
+            "server-only": path.resolve(
+                process.cwd(),
+                "tests/stubs/server-only.ts"
+            ),
         },
     },
 });

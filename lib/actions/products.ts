@@ -50,6 +50,14 @@ export async function createProduct(
         return { error: te("invalidComparePrice") };
     }
 
+    const costAgorot =
+        parsed.data.cost_shekels && parsed.data.cost_shekels.trim() !== ""
+            ? shekelInputToAgorot(parsed.data.cost_shekels)
+            : null;
+    if (costAgorot === null && parsed.data.cost_shekels?.trim()) {
+        return { error: te("invalidCost") };
+    }
+
     const { error } = await createAdminClient()
         .from("products")
         .insert({
@@ -61,6 +69,7 @@ export async function createProduct(
             description_ar: parsed.data.description_ar || null,
             price_agorot: priceAgorot,
             compare_at_price_agorot: compareAt,
+            cost_agorot: costAgorot,
             stock_quantity: parsed.data.stock_quantity,
             low_stock_threshold: parsed.data.low_stock_threshold,
             is_active: parsed.data.is_active,
@@ -101,6 +110,14 @@ export async function updateProduct(
         return { error: te("invalidComparePrice") };
     }
 
+    const costAgorot =
+        parsed.data.cost_shekels && parsed.data.cost_shekels.trim() !== ""
+            ? shekelInputToAgorot(parsed.data.cost_shekels)
+            : null;
+    if (costAgorot === null && parsed.data.cost_shekels?.trim()) {
+        return { error: te("invalidCost") };
+    }
+
     const { error } = await createAdminClient()
         .from("products")
         .update({
@@ -112,6 +129,7 @@ export async function updateProduct(
             description_ar: parsed.data.description_ar || null,
             price_agorot: priceAgorot,
             compare_at_price_agorot: compareAt,
+            cost_agorot: costAgorot,
             stock_quantity: parsed.data.stock_quantity,
             low_stock_threshold: parsed.data.low_stock_threshold,
             is_active: parsed.data.is_active,

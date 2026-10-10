@@ -39,6 +39,8 @@ export interface PublicOrder {
         lng?: number | null;
     } | null;
     customer_notes: string | null;
+    /** Estimated arrival time set by the courier (shown in tracking). */
+    eta_at: string | null;
     placed_at: string;
     updated_at: string;
     order_items: PublicOrderItem[];
@@ -65,6 +67,7 @@ const ORDER_SELECT = `
     customer_phone_snapshot,
     address_snapshot,
     customer_notes,
+    eta_at,
     placed_at,
     updated_at,
     order_items (

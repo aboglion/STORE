@@ -28,6 +28,7 @@ import {
     courierDeclineOrderAction,
     refreshCourierPoolAction,
 } from "@/lib/actions/courier-portal";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { haversineMeters, optimizeRoute, type RoutePlan } from "@/lib/utils/route";
 import type { CourierOrder, CourierPoolOrder, CourierPortalData } from "@/types/database.types";
@@ -134,6 +135,43 @@ export function CourierApp({ token, initialData }: CourierAppProps) {
             clearInterval(id);
         };
     }, [token]);
+
+    // Realtime status feed — new orders, claims, status/eta changes push
+    // an immediate refresh (the polling above is only a fallback).
+    useEffect(() => {
+        const supabase = createClient();
+        const channel = supabase
+            .channel("courier-status-feed")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "order_status_updates" },
+                () => {
+                    if (document.hidden) return;
+                    void refreshCourierPoolAction({ token }).then((res) => {
+                        if (res.error) return;
+                        setRequests((prev) => {
+                            const nextMap = new Map(prev.map((r) => [r.id, r]));
+                            const liveIds = new Set(res.pool.map((p) => p.id));
+                            for (const p of res.pool) {
+                                if (!declinedRef.current.has(p.id)) nextMap.set(p.id, p);
+                            }
+                            for (const id of nextMap.keys()) {
+                                if (!liveIds.has(id) && !declinedRef.current.has(id)) {
+                                    nextMap.delete(id);
+                                }
+                            }
+                            return [...nextMap.values()];
+                        });
+                    });
+                    router.refresh();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            void supabase.removeChannel(channel);
+        };
+    }, [token, router]);
 
     const ordersById = useMemo(
         () => new Map(data.active_orders.map((o) => [o.id, o])),

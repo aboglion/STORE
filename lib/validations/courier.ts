@@ -57,6 +57,16 @@ export const courierLocationSchema = z.object({
 
 export type CourierLocationValues = z.infer<typeof courierLocationSchema>;
 
+/** Courier pins the actual delivery location on the map. */
+export const courierPinLocationSchema = z.object({
+    token: z.string().trim().min(16).max(128),
+    order_id: z.string().uuid(),
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+});
+
+export type CourierPinLocationValues = z.infer<typeof courierPinLocationSchema>;
+
 /** Accepting a broadcast-pool order (Uber/Bolt-style claim). */
 export const courierClaimSchema = z.object({
     token: z.string().trim().min(16).max(128),
@@ -73,3 +83,21 @@ export const courierDeclineSchema = z.object({
 });
 
 export type CourierDeclineValues = z.infer<typeof courierDeclineSchema>;
+
+/** Courier cancels the deal entirely (e.g. no stock) — restores stock. */
+export const courierCancelSchema = z.object({
+    token: z.string().trim().min(16).max(128),
+    order_id: z.string().uuid(),
+    note: z.string().trim().max(500).optional().nullable(),
+});
+
+export type CourierCancelValues = z.infer<typeof courierCancelSchema>;
+
+/** Courier records the exact estimated arrival time. */
+export const courierEtaSchema = z.object({
+    token: z.string().trim().min(16).max(128),
+    order_id: z.string().uuid(),
+    eta_at: z.string().datetime({ offset: true }),
+});
+
+export type CourierEtaValues = z.infer<typeof courierEtaSchema>;

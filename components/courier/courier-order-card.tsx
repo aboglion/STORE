@@ -1,14 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import {
+    Ban,
     Banknote,
     CheckCircle2,
     ChevronDown,
+    Clock,
     CornerUpLeft,
     FileText,
+    Loader2,
     MapPin,
     Navigation,
     Package,
@@ -18,11 +22,15 @@ import {
 import { toast } from "sonner";
 
 import {
+    courierCancelOrderAction,
     courierDeclineOrderAction,
+    courierPinOrderLocationAction,
+    courierSetEtaAction,
     courierUpdateOrderStatusAction,
 } from "@/lib/actions/courier-portal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
     Sheet,
     SheetContent,
@@ -34,6 +42,15 @@ import { ORDER_STATUS_LABELS } from "@/lib/constants";
 import type { Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
 import type { CourierOrder } from "@/types/database.types";
+
+// Leaflet is client-only — load the picker without SSR.
+const AddressPinPicker = dynamic(
+    () =>
+        import("@/components/store/address-pin-picker").then(
+            (m) => m.AddressPinPicker
+        ),
+    { ssr: false }
+);
 
 const STATUS_STYLES: Record<CourierOrder["status"], string> = {
     pending: "bg-muted text-muted-foreground",
@@ -54,6 +71,12 @@ interface CourierOrderCardProps {
     onNavigate: (order: CourierOrder) => void;
 }
 
+/** Converts a Date to a datetime-local input value (local time). */
+function toDatetimeLocal(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 export function CourierOrderCard({
     order,
     token,
@@ -69,12 +92,19 @@ export function CourierOrderCard({
 
     const [expanded, setExpanded] = useState(false);
     const [busy, setBusy] = useState(false);
-    const [sheet, setSheet] = useState<"delivered" | "problem" | "decline" | null>(null);
+    const [sheet, setSheet] = useState<"delivered" | "problem" | "decline" | "cancel" | "eta" | "pin" | null>(null);
     const [note, setNote] = useState("");
+    const [etaValue, setEtaValue] = useState(() => toDatetimeLocal(new Date(Date.now() + 60 * 60 * 1000)));
+    const [pinLat, setPinLat] = useState<number | null>(null);
+    const [pinLng, setPinLng] = useState<number | null>(null);
 
     const statusKey = ORDER_STATUS_LABELS[order.status];
     const isDone = order.status === "delivered" || order.status === "canceled";
     const canDecline = order.status === "confirmed" || order.status === "preparing";
+    const needsPin =
+        order.address_lat == null ||
+        order.address_lng == null ||
+        order.location_confidence === "low";
     const distanceText =
         distanceMeters != null
             ? distanceMeters >= 1000
@@ -104,6 +134,27 @@ export function CourierOrderCard({
         onChanged();
     }
 
+    async function runPin() {
+        if (pinLat == null || pinLng == null) return;
+        setBusy(true);
+        const res = await courierPinOrderLocationAction({
+            token,
+            order_id: order.id,
+            lat: pinLat,
+            lng: pinLng,
+        });
+        setBusy(false);
+        if (res?.error) {
+            toast.error(res.error);
+            return;
+        }
+        toast.success(t("toast.pinned"));
+        setSheet(null);
+        setPinLat(null);
+        setPinLng(null);
+        onChanged();
+    }
+
     async function runDecline() {
         setBusy(true);
         const res = await courierDeclineOrderAction({
@@ -122,19 +173,70 @@ export function CourierOrderCard({
         onChanged();
     }
 
+    async function runCancel() {
+        setBusy(true);
+        const res = await courierCancelOrderAction({
+            token,
+            order_id: order.id,
+            note: note.trim() || null,
+        });
+        setBusy(false);
+        setSheet(null);
+        setNote("");
+        if (res?.error) {
+            toast.error(res.error);
+            return;
+        }
+        toast.success(t("toast.canceled"));
+        onChanged();
+    }
+
+    async function runEta() {
+        const parsed = new Date(etaValue);
+        if (Number.isNaN(parsed.getTime())) {
+            toast.error(t("errors.invalidData"));
+            return;
+        }
+        setBusy(true);
+        const res = await courierSetEtaAction({
+            token,
+            order_id: order.id,
+            eta_at: parsed.toISOString(),
+        });
+        setBusy(false);
+        setSheet(null);
+        if (res?.error) {
+            toast.error(res.error);
+            return;
+        }
+        toast.success(t("toast.etaSet"));
+        onChanged();
+    }
+
+    function applyEtaPreset(minutes: number) {
+        setEtaValue(toDatetimeLocal(new Date(Date.now() + minutes * 60 * 1000)));
+    }
+
+    const etaText = order.eta_at
+        ? new Date(order.eta_at).toLocaleTimeString(locale === "ar" ? "ar-EG" : "he-IL", {
+            hour: "2-digit",
+            minute: "2-digit",
+        })
+        : null;
+
     return (
         <Card
             className={`overflow-hidden rounded-2xl border shadow-soft transition-all duration-200 ${isFirstStop
-                    ? "border-primary/60 ring-2 ring-primary/20"
-                    : "border-border/70"
+                ? "border-primary/60 ring-2 ring-primary/20"
+                : "border-border/70"
                 }`}
         >
             {/* Header */}
             <div className="flex items-start gap-3 p-4">
                 <div
                     className={`flex size-9 shrink-0 items-center justify-center rounded-xl font-display text-sm font-extrabold ${isFirstStop
-                            ? "bg-primary text-primary-foreground shadow-soft"
-                            : "bg-secondary text-secondary-foreground"
+                        ? "bg-primary text-primary-foreground shadow-soft"
+                        : "bg-secondary text-secondary-foreground"
                         }`}
                 >
                     {stopNumber ?? "•"}
@@ -154,6 +256,12 @@ export function CourierOrderCard({
                             <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
                                 <Banknote className="size-3" />
                                 {formatILS(order.total_agorot, locale)}
+                            </span>
+                        )}
+                        {etaText && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 text-[11px] font-semibold text-sky-700">
+                                <Clock className="size-3" />
+                                {t("etaAt", { time: etaText })}
                             </span>
                         )}
                     </div>
@@ -191,6 +299,25 @@ export function CourierOrderCard({
                     {order.address_text}
                 </span>
             </div>
+
+            {/* Unverified address warning + pin action */}
+            {needsPin && (
+                <div className="mt-2 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+                    <MapPin className="size-4 shrink-0 text-amber-700" />
+                    <span className="min-w-0 flex-1 text-xs text-amber-700">
+                        {t("unverifiedAddress")}
+                    </span>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg text-[11px]"
+                        onClick={() => setSheet("pin")}
+                    >
+                        {t("pinActualLocation")}
+                    </Button>
+                </div>
+            )}
 
             {/* Actions row */}
             <div className="grid grid-cols-4 gap-2 px-4 pb-3 pt-2.5">
@@ -323,45 +450,86 @@ export function CourierOrderCard({
 
             {/* Status actions */}
             {!isDone && (
-                <div className="flex gap-2 border-t border-border/50 px-4 py-3">
+                <div className="space-y-2 border-t border-border/50 px-4 py-3">
                     {canDecline ? (
                         <>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-12 flex-1 rounded-2xl text-sm"
-                                disabled={busy}
-                                onClick={() => setSheet("decline")}
-                            >
-                                <CornerUpLeft className="size-4" />
-                                {t("decline")}
-                            </Button>
-                            <Button
-                                type="button"
-                                className="h-12 flex-1 rounded-2xl text-sm font-semibold"
-                                disabled={busy}
-                                onClick={() => runStatus("out_for_delivery")}
-                            >
-                                <Navigation className="size-4" />
-                                {t("startDelivery")}
-                            </Button>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-11 rounded-2xl text-sm"
+                                    disabled={busy}
+                                    onClick={() => setSheet("decline")}
+                                >
+                                    <CornerUpLeft className="size-4" />
+                                    {t("decline")}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-11 rounded-2xl text-sm text-destructive hover:text-destructive"
+                                    disabled={busy}
+                                    onClick={() => setSheet("cancel")}
+                                >
+                                    <Ban className="size-4" />
+                                    {t("cancelOrder")}
+                                </Button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-11 rounded-2xl text-sm"
+                                    disabled={busy}
+                                    onClick={() => setSheet("eta")}
+                                >
+                                    <Clock className="size-4" />
+                                    {t("setEta")}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    className="h-11 rounded-2xl text-sm font-semibold"
+                                    disabled={busy}
+                                    onClick={() => runStatus("out_for_delivery")}
+                                >
+                                    <Navigation className="size-4" />
+                                    {t("startDelivery")}
+                                </Button>
+                            </div>
                         </>
                     ) : order.status === "out_for_delivery" ? (
                         <>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-11 rounded-2xl text-sm"
+                                    disabled={busy}
+                                    onClick={() => setSheet("problem")}
+                                >
+                                    {t("reportProblem")}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-11 rounded-2xl text-sm"
+                                    disabled={busy}
+                                    onClick={() => setSheet("eta")}
+                                >
+                                    <Clock className="size-4" />
+                                    {t("setEta")}
+                                </Button>
+                            </div>
                             <Button
                                 type="button"
-                                variant="outline"
                                 size="sm"
-                                className="h-12 flex-1 rounded-2xl text-sm"
-                                disabled={busy}
-                                onClick={() => setSheet("problem")}
-                            >
-                                {t("reportProblem")}
-                            </Button>
-                            <Button
-                                type="button"
-                                className="h-12 flex-1 rounded-2xl bg-emerald-600 text-sm font-semibold hover:bg-emerald-700"
+                                className="h-11 w-full rounded-2xl bg-emerald-600 text-sm font-semibold hover:bg-emerald-700"
                                 disabled={busy}
                                 onClick={() => setSheet("delivered")}
                             >
@@ -505,6 +673,168 @@ export function CourierOrderCard({
                             onClick={() => {
                                 setSheet(null);
                                 setNote("");
+                            }}
+                        >
+                            {t("cancel")}
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Cancel order (no stock) */}
+            <Sheet
+                open={sheet === "cancel"}
+                onOpenChange={(open) => !open && setSheet(null)}
+            >
+                <SheetContent side="bottom" className="rounded-t-3xl pb-[max(env(safe-area-inset-bottom),16px)]">
+                    <SheetHeader>
+                        <SheetTitle className="text-base">{t("cancelOrderTitle")}</SheetTitle>
+                    </SheetHeader>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        {t("cancelOrderBody", { order: order.order_number })}
+                    </p>
+                    <Textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder={t("cancelOrderNotePlaceholder")}
+                        rows={2}
+                        className="mt-4"
+                        dir="auto"
+                    />
+                    <div className="mt-4 grid gap-2.5">
+                        <Button
+                            type="button"
+                            size="lg"
+                            className="h-12 rounded-2xl bg-destructive text-sm font-bold hover:bg-destructive/90"
+                            disabled={busy}
+                            onClick={runCancel}
+                        >
+                            <Ban className="size-4" />
+                            {t("confirmCancelOrder")}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-12 rounded-2xl text-sm"
+                            onClick={() => {
+                                setSheet(null);
+                                setNote("");
+                            }}
+                        >
+                            {t("cancel")}
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Set ETA */}
+            <Sheet
+                open={sheet === "eta"}
+                onOpenChange={(open) => !open && setSheet(null)}
+            >
+                <SheetContent side="bottom" className="rounded-t-3xl pb-[max(env(safe-area-inset-bottom),16px)]">
+                    <SheetHeader>
+                        <SheetTitle className="text-base">{t("etaTitle")}</SheetTitle>
+                    </SheetHeader>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        {t("etaHint")}
+                    </p>
+
+                    <div className="mt-4 grid grid-cols-4 gap-2">
+                        {[
+                            { label: "30′", minutes: 30 },
+                            { label: "1h", minutes: 60 },
+                            { label: "2h", minutes: 120 },
+                            { label: "3h", minutes: 180 },
+                        ].map((preset) => (
+                            <Button
+                                key={preset.minutes}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-10 rounded-xl text-xs font-semibold"
+                                onClick={() => applyEtaPreset(preset.minutes)}
+                            >
+                                {preset.label}
+                            </Button>
+                        ))}
+                    </div>
+
+                    <Input
+                        type="datetime-local"
+                        value={etaValue}
+                        onChange={(e) => setEtaValue(e.target.value)}
+                        className="mt-3 h-12 rounded-xl text-sm"
+                        dir="ltr"
+                    />
+
+                    <div className="mt-4 grid gap-2.5">
+                        <Button
+                            type="button"
+                            size="lg"
+                            className="h-12 rounded-2xl text-sm font-bold"
+                            disabled={busy}
+                            onClick={runEta}
+                        >
+                            <Clock className="size-4" />
+                            {t("confirmEta")}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-12 rounded-2xl text-sm"
+                            onClick={() => setSheet(null)}
+                        >
+                            {t("cancel")}
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Pin actual location */}
+            <Sheet
+                open={sheet === "pin"}
+                onOpenChange={(open) => !open && setSheet(null)}
+            >
+                <SheetContent side="bottom" className="rounded-t-3xl pb-[max(env(safe-area-inset-bottom),16px)]">
+                    <SheetHeader>
+                        <SheetTitle className="text-base">{t("pinTitle")}</SheetTitle>
+                    </SheetHeader>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        {t("pinBody")}
+                    </p>
+                    <div className="mt-4">
+                        <AddressPinPicker
+                            value={{ lat: order.address_lat, lng: order.address_lng }}
+                            onChange={(v) => {
+                                if (v.lat != null && v.lng != null) {
+                                    setPinLat(v.lat);
+                                    setPinLng(v.lng);
+                                }
+                            }}
+                            searchPlaceholder={t("pinSearchPlaceholder")}
+                            heightClassName="h-56"
+                        />
+                    </div>
+                    <div className="mt-4 grid gap-2.5">
+                        <Button
+                            type="button"
+                            size="lg"
+                            className="h-12 rounded-2xl text-sm font-bold"
+                            disabled={busy || pinLat == null || pinLng == null}
+                            onClick={runPin}
+                        >
+                            {busy && <Loader2 className="size-4 animate-spin" />}
+                            {t("confirmPin")}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-12 rounded-2xl text-sm"
+                            onClick={() => {
+                                setSheet(null);
+                                setPinLat(null);
+                                setPinLng(null);
                             }}
                         >
                             {t("cancel")}

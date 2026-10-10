@@ -8,12 +8,14 @@ import {
     Check,
     ChevronDown,
     Loader2,
+    MapPin,
     Send,
     X,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { OrderAssignDialog, type AssignableCourier } from "@/components/admin/order-assign-dialog";
+import { OrderLocationFix } from "@/components/admin/order-location-fix";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -45,8 +47,13 @@ import {
 import type { Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
 import { formatDateTime } from "@/lib/utils/dates";
+import { orderLocationStatus } from "@/lib/utils/location";
 import { cn } from "@/lib/utils";
-import type { OrderStatus, PaymentStatus } from "@/types/database.types";
+import type {
+    AddressSnapshot,
+    OrderStatus,
+    PaymentStatus,
+} from "@/types/database.types";
 
 export interface OrderRow {
     id: string;
@@ -58,6 +65,7 @@ export interface OrderRow {
     total_agorot: number;
     placed_at: string;
     courier: { id: string; full_name: string; color: string } | null;
+    address_snapshot: AddressSnapshot | null;
 }
 
 const STATUS_VARIANTS: Record<OrderStatus, "default" | "secondary" | "destructive" | "outline"> = {
@@ -91,6 +99,7 @@ export function OrdersBrowser({ orders, couriers, locale }: OrdersBrowserProps) 
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [assignOpen, setAssignOpen] = useState(false);
     const [pendingId, setPendingId] = useState<string | null>(null);
+    const [fixOrder, setFixOrder] = useState<OrderRow | null>(null);
 
     const allSelected = orders.length > 0 && orders.every((o) => selected.has(o.id));
     const someSelected = selected.size > 0 && !allSelected;
@@ -144,6 +153,24 @@ export function OrdersBrowser({ orders, couriers, locale }: OrdersBrowserProps) 
         else params.set("courier", id);
         router.push(`/admin/orders?${params.toString()}`);
     }
+
+    const locationBadge = (row: OrderRow) => {
+        const status = orderLocationStatus(row.address_snapshot);
+        if (status === "ok") return null;
+        return (
+            <button
+                type="button"
+                onClick={() => setFixOrder(row)}
+                className="inline-flex items-center gap-1 rounded-full border border-border/60 px-2 py-0.5 text-xs font-semibold transition-colors hover:bg-accent"
+                title={t("locationFixTitle")}
+            >
+                <MapPin className="size-3" />
+                {status === "missing"
+                    ? t("locationMissing")
+                    : t("locationImprecise")}
+            </button>
+        );
+    };
 
     const courierBadge = (row: OrderRow) =>
         row.courier ? (
@@ -232,6 +259,7 @@ export function OrdersBrowser({ orders, couriers, locale }: OrdersBrowserProps) 
                                     <Badge variant={PAYMENT_VARIANTS[order.payment_status]}>
                                         {tr(PAYMENT_STATUS_LABELS[order.payment_status])}
                                     </Badge>
+                                    {locationBadge(order)}
                                     <span className="ms-auto">{courierBadge(order)}</span>
                                 </div>
                             </div>
@@ -254,6 +282,7 @@ export function OrdersBrowser({ orders, couriers, locale }: OrdersBrowserProps) 
                                     <TableHead>{t("orderNumber")}</TableHead>
                                     <TableHead>{t("customer")}</TableHead>
                                     <TableHead>{t("courier")}</TableHead>
+                                    <TableHead>{t("location")}</TableHead>
                                     <TableHead>{t("payment")}</TableHead>
                                     <TableHead>{t("statusQuick")}</TableHead>
                                     <TableHead>{t("total")}</TableHead>
@@ -301,6 +330,13 @@ export function OrdersBrowser({ orders, couriers, locale }: OrdersBrowserProps) 
                                             </Link>
                                         </TableCell>
                                         <TableCell>{courierBadge(order)}</TableCell>
+                                        <TableCell>
+                                            {locationBadge(order) ?? (
+                                                <span className="text-xs text-muted-foreground/60">
+                                                    —
+                                                </span>
+                                            )}
+                                        </TableCell>
                                         <TableCell>
                                             <Badge variant={PAYMENT_VARIANTS[order.payment_status]}>
                                                 {tr(PAYMENT_STATUS_LABELS[order.payment_status])}
@@ -365,6 +401,17 @@ export function OrdersBrowser({ orders, couriers, locale }: OrdersBrowserProps) 
                 orderIds={[...selected]}
                 couriers={couriers}
             />
+
+            {fixOrder && (
+                <OrderLocationFix
+                    open
+                    onOpenChange={(open) => {
+                        if (!open) setFixOrder(null);
+                    }}
+                    orderId={fixOrder.id}
+                    snapshot={fixOrder.address_snapshot}
+                />
+            )}
         </>
     );
 }

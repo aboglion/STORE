@@ -74,6 +74,10 @@ export function ProductForm({
                     product.compare_at_price_agorot != null
                         ? agorotToShekelInput(product.compare_at_price_agorot)
                         : "",
+                cost_shekels:
+                    product.cost_agorot != null
+                        ? agorotToShekelInput(product.cost_agorot)
+                        : "",
                 stock_quantity: product.stock_quantity,
                 low_stock_threshold: product.low_stock_threshold,
                 category_id: product.category_id ?? undefined,
@@ -88,6 +92,7 @@ export function ProductForm({
                 description_ar: "",
                 price_shekels: "",
                 compare_at_price_shekels: "",
+                cost_shekels: "",
                 stock_quantity: 0,
                 low_stock_threshold: 5,
                 category_id: undefined,
@@ -219,6 +224,21 @@ export function ProductForm({
                         )}
                     />
                 </div>
+
+                <FormField
+                    control={form.control}
+                    name="cost_shekels"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t("costLabel")}</FormLabel>
+                            <FormControl>
+                                <Input placeholder={t("optional")} dir="ltr" {...field} />
+                            </FormControl>
+                            <FormDescription>{t("costDesc")}</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 <div className="grid gap-4 sm:grid-cols-3">
                     <FormField

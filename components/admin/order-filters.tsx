@@ -24,9 +24,18 @@ const ALL_ORDER_STATUSES = Object.keys(ORDER_STATUS_LABELS) as OrderStatus[];
 export function OrderFilters({
     initial,
     couriers,
+    basePath = "/admin/orders",
 }: {
-    initial: { q?: string; status?: string; payment?: string; courier?: string };
+    initial: {
+        q?: string;
+        status?: string;
+        payment?: string;
+        courier?: string;
+        location?: string;
+    };
     couriers: AssignableCourier[];
+    /** Where the filters navigate to (e.g. /admin/orders or /admin/receipts). */
+    basePath?: string;
 }) {
     const router = useRouter();
     const t = useTranslations("admin.orders");
@@ -35,6 +44,7 @@ export function OrderFilters({
     const [status, setStatus] = useState(initial.status ?? "all");
     const [payment, setPayment] = useState(initial.payment ?? "all");
     const [courier, setCourier] = useState(initial.courier ?? "all");
+    const [location, setLocation] = useState(initial.location ?? "all");
 
     function apply() {
         const params = new URLSearchParams();
@@ -42,7 +52,8 @@ export function OrderFilters({
         if (status !== "all") params.set("status", status);
         if (payment !== "all") params.set("payment", payment);
         if (courier !== "all") params.set("courier", courier);
-        router.push(`/admin/orders?${params.toString()}`);
+        if (location !== "all") params.set("location", location);
+        router.push(`${basePath}?${params.toString()}`);
     }
 
     return (
@@ -108,6 +119,19 @@ export function OrderFilters({
                     </SelectContent>
                 </Select>
             )}
+
+            <Select value={location} onValueChange={setLocation}>
+                <SelectTrigger className="w-full md:w-44">
+                    <SelectValue placeholder={t("allLocations")} />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">{t("allLocations")}</SelectItem>
+                    <SelectItem value="missing">{t("locationMissing")}</SelectItem>
+                    <SelectItem value="imprecise">
+                        {t("locationImprecise")}
+                    </SelectItem>
+                </SelectContent>
+            </Select>
 
             <Button type="button" variant="secondary" onClick={apply}>
                 {t("filter")}

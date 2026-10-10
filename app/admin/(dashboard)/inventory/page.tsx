@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 
-import { AlertTriangle, Boxes } from "lucide-react";
+import { AlertTriangle, Boxes, Coins, PackageX, Wallet } from "lucide-react";
 
 import { InventoryAdjustDialog } from "@/components/admin/inventory-adjust-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,9 @@ import {
     getInventoryLogs,
     getLowStockProducts,
 } from "@/lib/data/products";
+import { getInventoryBalance } from "@/lib/data/finance";
 import { localizedText, type Locale } from "@/lib/i18n/config";
+import { formatILS } from "@/lib/utils/currency";
 import { formatDateTime } from "@/lib/utils/dates";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -37,10 +39,11 @@ export default async function AdminInventoryPage() {
     const locale = (await getLocale()) as Locale;
     const t = await getTranslations("admin.inventory");
 
-    const [products, lowStock, logs] = await Promise.all([
+    const [products, lowStock, logs, balance] = await Promise.all([
         getAllProducts(),
         getLowStockProducts(),
         getInventoryLogs(),
+        getInventoryBalance(),
     ]);
 
     const lowStockIds = new Set(lowStock.map((p) => p.id));
@@ -52,6 +55,54 @@ export default async function AdminInventoryPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                     {t("desc")}
                 </p>
+            </div>
+
+            {/* Full inventory balance summary */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Boxes className="size-4 text-primary" />
+                            {t("totalUnits")}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0 text-2xl font-bold">
+                        {balance.totalUnits}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Wallet className="size-4 text-primary" />
+                            {t("retailValue")}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0 text-2xl font-bold">
+                        {formatILS(balance.totalRetailValueAgorot, locale)}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Coins className="size-4 text-primary" />
+                            {t("costValue")}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0 text-2xl font-bold">
+                        {formatILS(balance.totalCostValueAgorot, locale)}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <PackageX className="size-4 text-destructive" />
+                            {t("outOfStock")}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0 text-2xl font-bold text-destructive">
+                        {balance.outOfStockCount}
+                    </CardContent>
+                </Card>
             </div>
 
             {lowStock.length > 0 && (
@@ -84,6 +135,8 @@ export default async function AdminInventoryPage() {
                             <TableHead>{t("product")}</TableHead>
                             <TableHead>{t("inStock")}</TableHead>
                             <TableHead>{t("lowStockThreshold")}</TableHead>
+                            <TableHead>{t("retailValue")}</TableHead>
+                            <TableHead>{t("costValue")}</TableHead>
                             <TableHead>{t("status")}</TableHead>
                             <TableHead className="w-32"></TableHead>
                         </TableRow>
@@ -91,6 +144,8 @@ export default async function AdminInventoryPage() {
                     <TableBody>
                         {products.map((p) => {
                             const isLow = lowStockIds.has(p.id);
+                            const retailValue = p.stock_quantity * p.price_agorot;
+                            const costValue = p.stock_quantity * (p.cost_agorot ?? 0);
                             return (
                                 <TableRow key={p.id}>
                                     <TableCell>
@@ -107,6 +162,14 @@ export default async function AdminInventoryPage() {
                                         </Badge>
                                     </TableCell>
                                     <TableCell>{p.low_stock_threshold}</TableCell>
+                                    <TableCell>
+                                        {formatILS(retailValue, locale)}
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground">
+                                        {p.cost_agorot != null
+                                            ? formatILS(costValue, locale)
+                                            : "—"}
+                                    </TableCell>
                                     <TableCell>
                                         {isLow ? (
                                             <span className="text-sm text-destructive">{t("lowStock")}</span>

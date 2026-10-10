@@ -13,9 +13,11 @@ import {
     Loader2,
     LogOut,
     Package,
+    Receipt,
     Settings,
     ShoppingCart,
     Tags,
+    TrendingUp,
     Users,
 } from "lucide-react";
 
@@ -31,6 +33,8 @@ export const NAV_ITEMS = [
     { href: "/admin/categories", labelKey: "categories", icon: Tags },
     { href: "/admin/inventory", labelKey: "inventory", icon: Boxes },
     { href: "/admin/orders", labelKey: "orders", icon: ShoppingCart },
+    { href: "/admin/receipts", labelKey: "receipts", icon: Receipt },
+    { href: "/admin/finance", labelKey: "finance", icon: TrendingUp },
     { href: "/admin/couriers", labelKey: "couriers", icon: Bike },
     { href: "/admin/customers", labelKey: "customers", icon: Users },
     { href: "/admin/stats", labelKey: "stats", icon: BarChart3 },

@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSettings } from "@/lib/data/storefront";
+import { geocodeAddress } from "@/lib/server/geocoding";
 import { rateLimit } from "@/lib/server/rate-limit";
 import { formatIsraeliPhone, normalizeIsraeliPhone } from "@/lib/utils/phone";
 import { normalizeAddress } from "@/lib/utils/address";
@@ -145,7 +146,42 @@ export async function createOrder(
         apartment: customer.address.apartment || null,
         lat: customer.lat ?? null,
         lng: customer.lng ?? null,
+        location_source: customer.location_source ?? "manual",
+        location_confidence: customer.location_confidence ?? null,
+        location_accuracy_m: customer.location_accuracy_m ?? null,
     };
+
+    // 5b. Server geocoding fallback (Layer 2): when the customer provided no
+    //     coordinates, try to resolve the address via Nominatim. Best-effort
+    //     and time-boxed so checkout never stalls; failures are swallowed.
+    //     Only high/medium matches are stored — low (city centroid) and none
+    //     keep nulls so the order is visibly flagged for the admin (Layer 3).
+    let locationSource = customer.location_source ?? "manual";
+    if (customer.lat == null || customer.lng == null) {
+        const geocoded = await Promise.race([
+            geocodeAddress({
+                full_address: fullAddress,
+                city: customer.address.city || null,
+                street: customer.address.street || null,
+                house_number: customer.address.house_number || null,
+            }),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+        ]);
+
+        if (
+            geocoded &&
+            geocoded.lat != null &&
+            geocoded.lng != null &&
+            (geocoded.confidence === "high" || geocoded.confidence === "medium")
+        ) {
+            addressSnapshot.lat = geocoded.lat;
+            addressSnapshot.lng = geocoded.lng;
+            addressSnapshot.location_source = "geocoded";
+            addressSnapshot.location_confidence = geocoded.confidence;
+            addressSnapshot.geocoded_at = new Date().toISOString();
+            locationSource = "geocoded";
+        }
+    }
 
     // 6. Create the order via the transactional RPC.
     const { data, error } = await admin.rpc("create_order", {
@@ -157,7 +193,7 @@ export async function createOrder(
         p_delivery_fee_agorot: deliveryFee,
         p_discount_agorot: 0,
         p_customer_notes: customer.customer_notes || null,
-        p_location_source: customer.location_source ?? "manual",
+        p_location_source: locationSource,
         p_items: cartLines,
     });
 

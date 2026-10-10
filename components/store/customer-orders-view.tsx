@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import {
     ArrowRight,
     Check,
+    Clock,
     Copy,
     Download,
     Eye,
@@ -28,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OrderTimeline } from "@/components/store/order-timeline";
+import { createClient } from "@/lib/supabase/client";
 import {
     getPublicOrder,
     getPublicOrdersByNumbers,
@@ -125,6 +127,43 @@ export function CustomerOrdersView({
                 setLoadingRecent(false);
             });
     }, []);
+
+    // Realtime status feed — the tracking page updates instantly at every
+    // stage (courier claim, status change, ETA update, cancellation).
+    useEffect(() => {
+        if (!selectedOrder) return;
+        const supabase = createClient();
+        const channel = supabase
+            .channel(`order-status-${selectedOrder.id}`)
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "order_status_updates",
+                    filter: `order_id=eq.${selectedOrder.id}`,
+                },
+                () => {
+                    const stored = getStoredRecentOrders();
+                    const entry = stored.find(
+                        (s) => s.orderNumber === selectedOrder.order_number
+                    );
+                    const phone = entry?.phone ?? searchPhone.trim();
+                    if (!phone) return;
+                    getPublicOrder(selectedOrder.order_number, phone).then(
+                        (updated) => {
+                            if (updated) setSelectedOrder(updated);
+                        }
+                    );
+                }
+            )
+            .subscribe();
+
+        return () => {
+            void supabase.removeChannel(channel);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedOrder?.id]);
 
     function handleSearch(e: React.FormEvent) {
         e.preventDefault();
@@ -276,6 +315,30 @@ export function CustomerOrdersView({
 
                     {/* Timeline stepper */}
                     <OrderTimeline status={selectedOrder.status} />
+
+                    {/* ETA banner — courier-provided arrival time */}
+                    {selectedOrder.eta_at &&
+                        selectedOrder.status !== "delivered" &&
+                        selectedOrder.status !== "canceled" && (
+                            <div className="flex items-center gap-3 rounded-2xl border border-sky-500/30 bg-sky-500/10 p-4 shadow-soft">
+                                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-600">
+                                    <Clock className="size-5" />
+                                </span>
+                                <div className="min-w-0">
+                                    <div className="text-sm font-bold text-foreground">
+                                        {t("etaTitle")}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                        {t("etaBody", {
+                                            time: new Date(selectedOrder.eta_at).toLocaleTimeString(
+                                                locale === "ar" ? "ar-EG" : "he-IL",
+                                                { hour: "2-digit", minute: "2-digit" }
+                                            ),
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                     {/* Order Details Card */}
                     <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-soft">

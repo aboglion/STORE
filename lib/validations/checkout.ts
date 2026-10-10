@@ -55,9 +55,22 @@ export function checkoutSchema(t: ValidationMessages) {
         lat: z.number().min(-90).max(90).optional().nullable(),
         lng: z.number().min(-180).max(180).optional().nullable(),
         location_source: z
-            .enum(["browser_geolocation", "manual"])
+            .enum([
+                "browser_geolocation",
+                "map_pin",
+                "manual",
+                "geocoded",
+                "admin_pinned",
+                "courier_pinned",
+            ])
             .optional()
             .default("manual"),
+        // Location quality, set by the server geocoding fallback.
+        location_confidence: z
+            .enum(["high", "medium", "low"])
+            .optional()
+            .nullable(),
+        location_accuracy_m: z.number().positive().optional().nullable(),
     });
 }
 

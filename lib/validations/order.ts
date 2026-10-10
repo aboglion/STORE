@@ -32,3 +32,9 @@ export const cancelOrderSchema = z.object({
     order_id: z.string().uuid(),
     note: z.string().trim().max(500).optional().nullable(),
 });
+
+export const updateOrderAddressLocationSchema = z.object({
+    order_id: z.string().uuid(),
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+});

@@ -53,6 +53,7 @@ function toCourierOrder(order: Order & { order_items: OrderItem[] }): CourierOrd
             city?: string | null;
             lat?: number | null;
             lng?: number | null;
+            location_confidence?: "high" | "medium" | "low" | null;
         } | null) ?? null;
 
     const addressText = address
@@ -81,10 +82,12 @@ function toCourierOrder(order: Order & { order_items: OrderItem[] }): CourierOrd
         address_text: addressText,
         address_lat: address?.lat ?? null,
         address_lng: address?.lng ?? null,
+        location_confidence: address?.location_confidence ?? null,
         customer_notes: order.customer_notes,
         placed_at: order.placed_at,
         assigned_at: order.assigned_at,
         delivered_at: order.delivered_at,
+        eta_at: order.eta_at,
         items: (order.order_items ?? []).map((i) => ({
             name: i.product_name_snapshot,
             quantity: i.quantity,
@@ -382,7 +385,7 @@ export async function getCourierPoolOrders(
     const { data, error } = await admin
         .from("orders")
         .select(
-            "id, order_number, customer_name_snapshot, customer_phone_snapshot, address_snapshot, total_agorot, payment_method, payment_status, placed_at"
+            "id, order_number, customer_name_snapshot, customer_phone_snapshot, address_snapshot, total_agorot, payment_method, payment_status, placed_at, eta_at"
         )
         .is("courier_id", null)
         .in("status", ["confirmed", "preparing"])

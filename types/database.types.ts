@@ -62,6 +62,8 @@ export interface Product {
     description_ar: string | null;
     price_agorot: number;
     compare_at_price_agorot: number | null;
+    /** Unit cost in agorot — used for COGS / P&L. Null when unknown. */
+    cost_agorot: number | null;
     stock_quantity: number;
     low_stock_threshold: number;
     is_active: boolean;
@@ -93,6 +95,18 @@ export interface Customer {
     updated_at: string;
 }
 
+/** Where an order/address coordinate came from. */
+export type LocationSource =
+    | "browser_geolocation"
+    | "map_pin"
+    | "manual"
+    | "geocoded"
+    | "admin_pinned"
+    | "courier_pinned";
+
+/** How precise a coordinate is: high (building/house), medium (street), low (city centroid). */
+export type LocationConfidence = "high" | "medium" | "low";
+
 export interface Address {
     id: string;
     customer_id: string;
@@ -108,6 +122,10 @@ export interface Address {
     lat: number | null;
     lng: number | null;
     is_default: boolean;
+    location_source: string | null;
+    location_confidence: LocationConfidence | null;
+    location_accuracy_m: number | null;
+    geocoded_at: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -124,6 +142,20 @@ export interface AddressSnapshot {
     notes?: string | null;
     lat?: number | null;
     lng?: number | null;
+    location_source?: string | null;
+    location_confidence?: LocationConfidence | null;
+    location_accuracy_m?: number | null;
+    geocoded_at?: string | null;
+}
+
+/** Cached Nominatim result (geocode_cache). */
+export interface GeocodeCache {
+    query_norm: string;
+    lat: number | null;
+    lng: number | null;
+    confidence: LocationConfidence | "none";
+    display_name: string | null;
+    created_at: string;
 }
 
 export interface Order {
@@ -149,6 +181,8 @@ export interface Order {
     assigned_at: string | null;
     /** When the courier marked the order as delivered. */
     delivered_at: string | null;
+    /** Estimated arrival time set by the courier (shown in tracking). */
+    eta_at: string | null;
     /** Unguessable token used in the public invoice URL. */
     invoice_token: string | null;
     placed_at: string;
@@ -375,10 +409,14 @@ export interface CourierOrder {
     address_text: string;
     address_lat: number | null;
     address_lng: number | null;
+    /** Location confidence: high (building), medium (street), low (city), null when unknown. */
+    location_confidence: LocationConfidence | null;
     customer_notes: string | null;
     placed_at: string;
     assigned_at: string | null;
     delivered_at: string | null;
+    /** Estimated arrival time set by the courier. */
+    eta_at: string | null;
     items: Array<{ name: string; quantity: number; line_total_agorot: number }>;
     events: Array<{
         created_at: string;
@@ -423,6 +461,60 @@ export interface CourierPoolOrder {
     total_agorot: number;
     cash_to_collect: boolean;
     placed_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Realtime status feed (order_status_updates)
+// ---------------------------------------------------------------------------
+
+/** Row pushed to the public realtime feed on every order status/eta change. */
+export interface OrderStatusUpdate {
+    id: number;
+    order_id: string;
+    order_number: string;
+    status: OrderStatus;
+    eta_at: string | null;
+    updated_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Finance & inventory read models
+// ---------------------------------------------------------------------------
+
+/** One row of the monthly P&L summary (profit_loss_summary view). */
+export interface ProfitLossRow {
+    month: string;
+    orders_count: number;
+    revenue_agorot: number;
+    delivery_fees_agorot: number;
+    discounts_agorot: number;
+    cogs_agorot: number;
+    gross_profit_agorot: number;
+}
+
+/** All-time P&L totals (profit_loss_totals view). */
+export interface ProfitLossTotals {
+    orders_count: number;
+    revenue_agorot: number;
+    delivery_fees_agorot: number;
+    discounts_agorot: number;
+    cogs_agorot: number;
+    gross_profit_agorot: number;
+}
+
+/** Full inventory balance row (inventory_balance view). */
+export interface InventoryBalanceRow {
+    product_id: string;
+    name_he: string;
+    name_ar: string | null;
+    slug: string;
+    stock_quantity: number;
+    low_stock_threshold: number;
+    price_agorot: number;
+    cost_agorot: number | null;
+    is_active: boolean;
+    retail_value_agorot: number;
+    cost_value_agorot: number;
 }
 
 // ---------------------------------------------------------------------------

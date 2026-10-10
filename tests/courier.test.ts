@@ -5,6 +5,7 @@ import {
     courierClaimSchema,
     courierDeclineSchema,
     courierLocationSchema,
+    courierPinLocationSchema,
     courierSchema,
     courierStatusSchema,
     courierUpdateStatusSchema,
@@ -305,5 +306,51 @@ describe("Navigation & Deep Linking", () => {
 
         const sorted = sortedNavigationTargets(targets, false);
         expect(sorted.map((t) => t.app)).toEqual(["waze", "google", "apple"]);
+    });
+});
+
+
+describe("courierPinLocationSchema", () => {
+    const valid = {
+        token: "a".repeat(20),
+        order_id: "00000000-0000-0000-0000-000000000000",
+        lat: 31.9,
+        lng: 34.8,
+    };
+
+    it("accepts valid pin coordinates", () => {
+        expect(courierPinLocationSchema.safeParse(valid).success).toBe(true);
+    });
+
+    it("rejects out-of-range latitude", () => {
+        const result = courierPinLocationSchema.safeParse({
+            ...valid,
+            lat: 95,
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects out-of-range longitude", () => {
+        const result = courierPinLocationSchema.safeParse({
+            ...valid,
+            lng: 200,
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects a malformed order id", () => {
+        const result = courierPinLocationSchema.safeParse({
+            ...valid,
+            order_id: "not-a-uuid",
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects a short token", () => {
+        const result = courierPinLocationSchema.safeParse({
+            ...valid,
+            token: "short",
+        });
+        expect(result.success).toBe(false);
     });
 });

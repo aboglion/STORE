@@ -38,6 +38,15 @@ export function productFormSchema(t: ValidationMessages) {
                 (v) => !v || /^\d+(\.\d{1,2})?$/.test(v.replace(",", ".")),
                 t("comparePriceInvalid")
             ),
+        cost_shekels: z
+            .string()
+            .trim()
+            .optional()
+            .or(z.literal(""))
+            .refine(
+                (v) => !v || /^\d+(\.\d{1,2})?$/.test(v.replace(",", ".")),
+                t("costInvalid")
+            ),
         stock_quantity: z.coerce.number().int().min(0, t("stockNegative")),
         low_stock_threshold: z.coerce
             .number()

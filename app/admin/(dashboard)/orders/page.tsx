@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { OrderFilters } from "@/components/admin/order-filters";
+import { OrdersRealtime } from "@/components/admin/orders-realtime";
 import {
     OrdersBrowser,
     type OrderRow,
@@ -12,6 +13,7 @@ import { getOrders } from "@/lib/data/orders";
 import { getCouriers } from "@/lib/data/couriers";
 import type { Locale } from "@/lib/i18n/config";
 import type { AssignableCourier } from "@/components/admin/order-assign-dialog";
+import type { AddressSnapshot } from "@/types/database.types";
 
 export async function generateMetadata(): Promise<Metadata> {
     const t = await getTranslations("admin.orders");
@@ -26,6 +28,7 @@ type Props = {
         status?: string;
         payment?: string;
         courier?: string;
+        location?: string;
         page?: string;
     }>;
 };
@@ -41,6 +44,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
     const status = (params.status as string) || "all";
     const payment = (params.payment as string) || "all";
     const courier = (params.courier as string) || "all";
+    const location = (params.location as string) || "all";
     const page = Math.max(1, Number(params.page) || 1);
 
     const [result, courierRows] = await Promise.all([
@@ -49,6 +53,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
             status,
             paymentStatus: payment,
             courier: courier === "all" ? undefined : courier,
+            location: location === "all" ? undefined : location,
             page,
             pageSize: 25,
         }),
@@ -79,6 +84,8 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                 color: order.courier.color,
             }
             : null,
+        address_snapshot:
+            (order.address_snapshot as unknown as AddressSnapshot) ?? null,
     }));
 
     const buildHref = (p: number) => {
@@ -87,6 +94,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
         if (status !== "all") search.set("status", status);
         if (payment !== "all") search.set("payment", payment);
         if (courier !== "all") search.set("courier", courier);
+        if (location !== "all") search.set("location", location);
         if (p > 1) search.set("page", String(p));
         const qs = search.toString();
         return `/admin/orders${qs ? `?${qs}` : ""}`;
@@ -94,6 +102,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
 
     return (
         <div className="grid gap-6 pb-16">
+            <OrdersRealtime />
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h1 className="font-display text-2xl font-extrabold tracking-tight">
@@ -106,7 +115,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
             </div>
 
             <OrderFilters
-                initial={{ q, status, payment, courier }}
+                initial={{ q, status, payment, courier, location }}
                 couriers={assignableCouriers}
             />
 

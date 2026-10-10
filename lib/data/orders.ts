@@ -38,6 +38,8 @@ export interface OrderListFilters {
     paymentStatus?: string;
     /** A courier id, or "unassigned" for orders still in the store pool. */
     courier?: string;
+    /** "missing" (no coords) or "imprecise" (low confidence) location. */
+    location?: string;
     q?: string;
     page?: number;
     pageSize?: number;
@@ -85,6 +87,17 @@ export async function getOrders(
         query = query.is("courier_id", null);
     } else if (filters.courier) {
         query = query.eq("courier_id", filters.courier);
+    }
+    if (filters.location === "missing") {
+        query = query.or(
+            "address_snapshot->>lat.is.null,address_snapshot->>lng.is.null"
+        );
+    } else if (filters.location === "imprecise") {
+        query = query.filter(
+            "address_snapshot->>location_confidence",
+            "eq",
+            "low"
+        );
     }
     if (filters.q) {
         query = query.or(

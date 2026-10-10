@@ -3,6 +3,7 @@ import {
     composeAddressLine,
     normalizeAddress,
 } from "@/lib/utils/address";
+import { orderLocationStatus } from "@/lib/utils/location";
 
 describe("normalizeAddress", () => {
     it("trims and lowercases", () => {
@@ -54,5 +55,67 @@ describe("composeAddressLine", () => {
         expect(
             composeAddressLine({ full_address: "כתובת חופשית" })
         ).toBe("כתובת חופשית");
+    });
+});
+
+
+describe("orderLocationStatus", () => {
+    it("returns missing when the snapshot has no coordinates", () => {
+        expect(orderLocationStatus(null)).toBe("missing");
+        expect(
+            orderLocationStatus({
+                full_address: "x",
+                normalized_address: "x",
+            })
+        ).toBe("missing");
+        expect(
+            orderLocationStatus({
+                full_address: "x",
+                normalized_address: "x",
+                lat: null,
+                lng: null,
+            })
+        ).toBe("missing");
+    });
+
+    it("returns imprecise for low-confidence coordinates", () => {
+        expect(
+            orderLocationStatus({
+                full_address: "x",
+                normalized_address: "x",
+                lat: 31.9,
+                lng: 34.8,
+                location_confidence: "low",
+            })
+        ).toBe("imprecise");
+    });
+
+    it("returns ok for high/medium confidence coordinates", () => {
+        expect(
+            orderLocationStatus({
+                full_address: "x",
+                normalized_address: "x",
+                lat: 31.9,
+                lng: 34.8,
+                location_confidence: "high",
+            })
+        ).toBe("ok");
+        expect(
+            orderLocationStatus({
+                full_address: "x",
+                normalized_address: "x",
+                lat: 31.9,
+                lng: 34.8,
+                location_confidence: "medium",
+            })
+        ).toBe("ok");
+        expect(
+            orderLocationStatus({
+                full_address: "x",
+                normalized_address: "x",
+                lat: 31.9,
+                lng: 34.8,
+            })
+        ).toBe("ok");
     });
 });

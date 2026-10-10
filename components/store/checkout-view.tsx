@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,16 @@ import {
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -59,6 +70,12 @@ import { saveRecentOrder } from "@/lib/utils/recent-orders";
 
 import { MobileStickyBar } from "./mobile-sticky-bar";
 
+// Leaflet is client-only — load the picker without SSR.
+const AddressPinPicker = dynamic(
+    () => import("./address-pin-picker").then((m) => m.AddressPinPicker),
+    { ssr: false }
+);
+
 export function CheckoutView() {
     const router = useRouter();
     const { items, clear } = useCart();
@@ -67,6 +84,8 @@ export function CheckoutView() {
     const locale = useLocale() as Locale;
     const [pending, startTransition] = useTransition();
     const [locating, setLocating] = useState(false);
+    const [showLocationWarning, setShowLocationWarning] = useState(false);
+    const [pendingValues, setPendingValues] = useState<CheckoutFormValues | null>(null);
     const [termsAccepted, setTermsAccepted] = useState(true);
     const [marketingOptIn, setMarketingOptIn] = useState(false);
     const [details, setDetails] = useState<Awaited<
@@ -142,9 +161,19 @@ export function CheckoutView() {
 
     function onSubmit(values: CheckoutFormValues) {
         if (!termsAccepted) {
-            toast.error("יש לאשר את תקנון האתר ומדיניות ביטול עסקה כדי לבצע הזמנה");
+            toast.error("יש לאשר את תקנון האתר ומדיניות ביטول עסקה כדי לבצע הזמנה");
             return;
         }
+
+        // Soft-required location: without coordinates the courier may not
+        // find the customer. Ask once, never hard-block (protects conversion).
+        const hasCoords = values.lat != null && values.lng != null;
+        if (!hasCoords && !pendingValues) {
+            setPendingValues(values);
+            setShowLocationWarning(true);
+            return;
+        }
+        setPendingValues(null);
 
         const payload: CheckoutPayload = {
             customer: values,
@@ -329,6 +358,29 @@ export function CheckoutView() {
                                         <FormMessage />
                                     </FormItem>
                                 )}
+                            />
+                            <AddressPinPicker
+                                value={{
+                                    lat: form.watch("lat") ?? null,
+                                    lng: form.watch("lng") ?? null,
+                                }}
+                                onChange={(v) => {
+                                    if (v.lat != null && v.lng != null) {
+                                        form.setValue("lat", v.lat);
+                                        form.setValue("lng", v.lng);
+                                        form.setValue("location_source", "map_pin");
+                                    }
+                                }}
+                                onReverseGeocode={(displayName) => {
+                                    if (!displayName) return;
+                                    const current =
+                                        form.watch("address.full_address") ?? "";
+                                    if (!current.trim()) {
+                                        form.setValue("address.full_address", displayName);
+                                    }
+                                }}
+                                searchPlaceholder={t("pinSearchPlaceholder")}
+                                heightClassName="h-56"
                             />
                             {form.watch("lat") != null && (
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -597,6 +649,43 @@ export function CheckoutView() {
                     </Button>
                 </MobileStickyBar>
             </form>
+
+            <AlertDialog
+                open={showLocationWarning}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setShowLocationWarning(false);
+                        setPendingValues(null);
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t("locationWarningTitle")}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {t("locationWarningDesc")}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel asChild>
+                            <Button type="button" variant="outline">
+                                {t("locationWarningBack")}
+                            </Button>
+                        </AlertDialogCancel>
+                        <AlertDialogAction asChild>
+                            <Button
+                                type="button"
+                                onClick={() => {
+                                    setShowLocationWarning(false);
+                                    if (pendingValues) onSubmit(pendingValues);
+                                }}
+                            >
+                                {t("locationWarningContinue")}
+                            </Button>
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Form>
     );
 }
