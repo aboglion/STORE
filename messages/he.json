@@ -97,6 +97,7 @@
         "addressChecking": "מאמת את הכתובת במפה...",
         "addressVerified": "הכתובת אותרה במפה ✓",
         "addressNotFound": "הכתובת לא נמצאה במפה — נא לסמן את המיקום ידנית על ידי נעיצת סיכה",
+        "selectCityFirst": "נא לבחור עיר או כפר תחילה",
         "pinUpdatedAddress": "הכתובת עודכנה לפי הסיכה",
         "locateFailedPrompt": "איתור אוטומטי נכשל — נא לסמן את המיקום ידנית במפה",
         "locationPinned": "המיקום סומן במפה",

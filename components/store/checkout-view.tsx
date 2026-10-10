@@ -76,6 +76,8 @@ import {
 import {
     geocodeForward,
     geocodeReverse,
+    geocodeSearch,
+    type GeocodeClientResult,
 } from "@/lib/utils/geocode-client";
 
 import { MobileStickyBar } from "./mobile-sticky-bar";
@@ -124,10 +126,17 @@ export function CheckoutView() {
         confidence?: string;
     }>({ status: "idle" });
 
+    // Street-address autocomplete state.
+    const [addressResults, setAddressResults] = useState<GeocodeClientResult[]>([]);
+    const [addressSearching, setAddressSearching] = useState(false);
+    const [showAddressResults, setShowAddressResults] = useState(false);
+
     // Guards reverse-geocode autofill from re-triggering verification loops.
     const programmaticRef = useRef(false);
     const verifyDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const verifySeq = useRef(0);
+    const addressSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const addressSearchSeq = useRef(0);
     const mapCardRef = useRef<HTMLDivElement | null>(null);
 
     const schema = useMemo(() => checkoutSchema(tv), [tv]);
@@ -232,6 +241,57 @@ export function CheckoutView() {
         }
         // Re-verify the address if one is already typed.
         if (form.watch("address.full_address")?.trim()) {
+            verifyAddress();
+        }
+    }
+
+    /**
+     * Debounced street-address autocomplete, scoped to the selected city.
+     * Shows matching addresses from the map as the customer types.
+     */
+    function handleAddressInputChange(next: string) {
+        if (addressSearchDebounceRef.current) clearTimeout(addressSearchDebounceRef.current);
+        const city = form.watch("address.city")?.trim() ?? "";
+        if (next.trim().length < 3 || !city) {
+            setAddressResults([]);
+            setShowAddressResults(false);
+            setAddressSearching(false);
+            return;
+        }
+        const seq = ++addressSearchSeq.current;
+        setAddressSearching(true);
+        addressSearchDebounceRef.current = setTimeout(async () => {
+            const found = await geocodeSearch(`${next.trim()}, ${city}`, 5);
+            if (seq !== addressSearchSeq.current) return;
+            setAddressSearching(false);
+            setAddressResults(found);
+            setShowAddressResults(true);
+        }, 500);
+    }
+
+    function selectAddressResult(result: GeocodeClientResult) {
+        setShowAddressResults(false);
+        setAddressResults([]);
+        if (!result.display_name) return;
+        programmaticRef.current = true;
+        form.setValue(
+            "address.full_address",
+            formatGeocodedAddress(result.display_name)
+        );
+        programmaticRef.current = false;
+        if (
+            result.lat != null &&
+            result.lng != null &&
+            (result.confidence === "high" || result.confidence === "medium")
+        ) {
+            form.setValue("lat", result.lat);
+            form.setValue("lng", result.lng);
+            form.setValue("location_source", "geocoded");
+            form.setValue("location_confidence", result.confidence);
+            setAddressCheck({ status: "found", confidence: result.confidence });
+            setMapPrompt(null);
+            setMapStatus({ message: t("addressVerified"), type: "success" });
+        } else {
             verifyAddress();
         }
     }
@@ -454,41 +514,98 @@ export function CheckoutView() {
                             <FormField
                                 control={form.control}
                                 name="address.full_address"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{t("address")}</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                placeholder={t("addressPlaceholder")}
-                                                className="h-11 rounded-xl"
-                                                {...field}
-                                                onBlur={() => {
-                                                    field.onBlur();
-                                                    verifyAddress();
-                                                }}
-                                            />
-                                        </FormControl>
-                                        {addressCheck.status === "checking" && (
-                                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                <Loader2 className="size-3.5 animate-spin" />
-                                                {t("addressChecking")}
-                                            </div>
-                                        )}
-                                        {addressCheck.status === "found" && (
-                                            <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-                                                <CheckCircle2 className="size-3.5" />
-                                                {t("addressVerified")}
-                                            </div>
-                                        )}
-                                        {addressCheck.status === "not_found" && (
-                                            <div className="flex items-center gap-1.5 text-xs text-destructive">
-                                                <AlertTriangle className="size-3.5" />
-                                                {t("addressNotFound")}
-                                            </div>
-                                        )}
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
+                                render={({ field }) => {
+                                    const citySelected = Boolean(
+                                        form.watch("address.city")?.trim()
+                                    );
+                                    return (
+                                        <FormItem>
+                                            <FormLabel>{t("address")}</FormLabel>
+                                            <FormControl>
+                                                <div className="relative">
+                                                    <Input
+                                                        placeholder={t("addressPlaceholder")}
+                                                        className="h-11 rounded-xl"
+                                                        disabled={!citySelected}
+                                                        {...field}
+                                                        onChange={(e) => {
+                                                            field.onChange(e);
+                                                            handleAddressInputChange(
+                                                                e.target.value
+                                                            );
+                                                        }}
+                                                        onBlur={() => {
+                                                            field.onBlur();
+                                                            setTimeout(
+                                                                () =>
+                                                                    setShowAddressResults(
+                                                                        false
+                                                                    ),
+                                                                150
+                                                            );
+                                                            verifyAddress();
+                                                        }}
+                                                    />
+                                                    {addressSearching && (
+                                                        <Loader2 className="pointer-events-none absolute end-3 top-3 size-4 animate-spin text-muted-foreground" />
+                                                    )}
+                                                    {showAddressResults &&
+                                                        addressResults.length > 0 && (
+                                                            <div className="absolute z-[1050] mt-1 w-full overflow-hidden rounded-xl border border-border/70 bg-popover/95 p-1.5 shadow-xl backdrop-blur-md">
+                                                                {addressResults.map(
+                                                                    (result, i) => (
+                                                                        <button
+                                                                            key={`${result.lat}-${result.lng}-${i}`}
+                                                                            type="button"
+                                                                            onMouseDown={(e) =>
+                                                                                e.preventDefault()
+                                                                            }
+                                                                            onClick={() =>
+                                                                                selectAddressResult(
+                                                                                    result
+                                                                                )
+                                                                            }
+                                                                            className="block w-full truncate rounded-lg px-3 py-2 text-start text-sm hover:bg-accent/60"
+                                                                        >
+                                                                            {result.display_name
+                                                                                ? formatGeocodedAddress(
+                                                                                    result.display_name
+                                                                                )
+                                                                                : "—"}
+                                                                        </button>
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                </div>
+                                            </FormControl>
+                                            {!citySelected && (
+                                                <div className="text-xs text-muted-foreground">
+                                                    {t("selectCityFirst")}
+                                                </div>
+                                            )}
+                                            {addressCheck.status === "checking" && (
+                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                    <Loader2 className="size-3.5 animate-spin" />
+                                                    {t("addressChecking")}
+                                                </div>
+                                            )}
+                                            {addressCheck.status === "found" && (
+                                                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                                                    <CheckCircle2 className="size-3.5" />
+                                                    {t("addressVerified")}
+                                                </div>
+                                            )}
+                                            {addressCheck.status === "not_found" && (
+                                                <div className="flex items-center gap-1.5 text-xs text-destructive">
+                                                    <AlertTriangle className="size-3.5" />
+                                                    {t("addressNotFound")}
+                                                </div>
+                                            )}
+                                            <FormMessage />
+                                        </FormItem>
+                                    );
+                                }}
                             />
                             <FormField
                                 control={form.control}
