@@ -20,9 +20,8 @@ export function addressFormSchema(t: ValidationMessages) {
         city: z
             .string()
             .trim()
-            .max(100, t("cityTooLong"))
-            .optional()
-            .or(z.literal("")),
+            .min(2, t("cityRequired"))
+            .max(100, t("cityTooLong")),
         street: z
             .string()
             .trim()

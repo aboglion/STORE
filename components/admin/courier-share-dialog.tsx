@@ -122,7 +122,7 @@ export function CourierShareDialog({
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-3 py-2.5" dir="ltr">
+                    <div className="flex w-full min-w-0 max-w-full items-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-3 py-2.5" dir="ltr">
                         <span className="min-w-0 flex-1 truncate font-mono text-xs">
                             {portalUrl}
                         </span>
@@ -135,12 +135,12 @@ export function CourierShareDialog({
                         </Button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                        <Button type="button" variant="outline" className="rounded-xl" onClick={copyLink}>
+                    <div className="grid w-full grid-cols-2 gap-2">
+                        <Button type="button" variant="outline" className="w-full rounded-xl" onClick={copyLink}>
                             {copied ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
                             {t("copyLink")}
                         </Button>
-                        <Button type="button" variant="outline" className="rounded-xl" onClick={shareWhatsApp}>
+                        <Button type="button" variant="outline" className="w-full rounded-xl" onClick={shareWhatsApp}>
                             <MessageCircle className="size-4 text-emerald-600" />
                             {t("whatsApp")}
                         </Button>

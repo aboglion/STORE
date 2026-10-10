@@ -4,13 +4,15 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+    AlertTriangle,
     Banknote,
     Check,
+    CheckCircle2,
     CreditCard,
     Loader2,
     LocateFixed,
@@ -25,7 +27,6 @@ import { toast } from "sonner";
 import {
     AlertDialog,
     AlertDialogAction,
-    AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
     AlertDialogFooter,
@@ -67,12 +68,27 @@ import {
 } from "@/lib/validations/checkout";
 import type { CheckoutPayload } from "@/lib/validations/checkout";
 import { saveRecentOrder } from "@/lib/utils/recent-orders";
+import { findIsraelCity, type IsraelCity } from "@/lib/data/israel-cities";
+import {
+    extractCitySegment,
+    formatGeocodedAddress,
+} from "@/lib/utils/address";
+import {
+    geocodeForward,
+    geocodeReverse,
+} from "@/lib/utils/geocode-client";
 
 import { MobileStickyBar } from "./mobile-sticky-bar";
 
 // Leaflet is client-only — load the picker without SSR.
 const AddressPinPicker = dynamic(
     () => import("./address-pin-picker").then((m) => m.AddressPinPicker),
+    { ssr: false }
+);
+
+// The city dataset is large — code-split it out of the main checkout chunk.
+const CityCombobox = dynamic(
+    () => import("./city-combobox").then((m) => m.CityCombobox),
     { ssr: false }
 );
 
@@ -84,13 +100,35 @@ export function CheckoutView() {
     const locale = useLocale() as Locale;
     const [pending, startTransition] = useTransition();
     const [locating, setLocating] = useState(false);
-    const [showLocationWarning, setShowLocationWarning] = useState(false);
-    const [pendingValues, setPendingValues] = useState<CheckoutFormValues | null>(null);
+    const [showLocationRequired, setShowLocationRequired] = useState(false);
     const [termsAccepted, setTermsAccepted] = useState(true);
     const [marketingOptIn, setMarketingOptIn] = useState(false);
     const [details, setDetails] = useState<Awaited<
         ReturnType<typeof getCartProductDetails>
     >>([]);
+
+    // Address precision state
+    const isAr = locale === "ar";
+    const [mapCenter, setMapCenter] = useState<{
+        lat: number;
+        lng: number;
+        zoom?: number;
+    } | null>(null);
+    const [mapPrompt, setMapPrompt] = useState<string | null>(null);
+    const [mapStatus, setMapStatus] = useState<{
+        message: string;
+        type: "success" | "info" | "warning";
+    } | null>(null);
+    const [addressCheck, setAddressCheck] = useState<{
+        status: "idle" | "checking" | "found" | "not_found";
+        confidence?: string;
+    }>({ status: "idle" });
+
+    // Guards reverse-geocode autofill from re-triggering verification loops.
+    const programmaticRef = useRef(false);
+    const verifyDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const verifySeq = useRef(0);
+    const mapCardRef = useRef<HTMLDivElement | null>(null);
 
     const schema = useMemo(() => checkoutSchema(tv), [tv]);
 
@@ -137,23 +175,112 @@ export function CheckoutView() {
         });
     }, [items]);
 
+    function scrollToMap() {
+        mapCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    /**
+     * Debounced forward geocode of the typed address. When found (street or
+     * building level) the pin and coordinates are set automatically; when not
+     * found the customer is prompted to drop a pin manually on the map.
+     */
+    function verifyAddress() {
+        const fullAddress = form.watch("address.full_address")?.trim() ?? "";
+        if (fullAddress.length < 3) return;
+        if (verifyDebounceRef.current) clearTimeout(verifyDebounceRef.current);
+        const seq = ++verifySeq.current;
+        setAddressCheck({ status: "checking" });
+        verifyDebounceRef.current = setTimeout(async () => {
+            const city = form.watch("address.city")?.trim() ?? "";
+            const result = await geocodeForward({
+                full_address: fullAddress,
+                city: city || null,
+            });
+            if (seq !== verifySeq.current) return;
+            if (
+                result &&
+                result.lat != null &&
+                result.lng != null &&
+                (result.confidence === "high" || result.confidence === "medium")
+            ) {
+                programmaticRef.current = true;
+                form.setValue("lat", result.lat);
+                form.setValue("lng", result.lng);
+                form.setValue("location_source", "geocoded");
+                form.setValue("location_confidence", result.confidence);
+                programmaticRef.current = false;
+                setAddressCheck({ status: "found", confidence: result.confidence });
+                setMapPrompt(null);
+                setMapStatus({ message: t("addressVerified"), type: "success" });
+            } else {
+                form.setValue("lat", null);
+                form.setValue("lng", null);
+                form.setValue("location_source", "manual");
+                form.setValue("location_confidence", null);
+                setAddressCheck({ status: "not_found" });
+                setMapPrompt(t("addressNotFound"));
+                setMapStatus(null);
+                scrollToMap();
+            }
+        }, 600);
+    }
+
+    function handleCityChange(cityName: string, city: IsraelCity | null) {
+        form.setValue("address.city", cityName, { shouldValidate: true });
+        if (city) {
+            setMapCenter({ lat: city.lat, lng: city.lng, zoom: 13 });
+        }
+        // Re-verify the address if one is already typed.
+        if (form.watch("address.full_address")?.trim()) {
+            verifyAddress();
+        }
+    }
+
     function handleGeolocation() {
         if (!navigator.geolocation) {
-            toast.error(t("geolocationUnsupported"));
+            setMapPrompt(t("locateFailedPrompt"));
+            scrollToMap();
             return;
         }
         setLocating(true);
         navigator.geolocation.getCurrentPosition(
-            (position) => {
-                form.setValue("lat", position.coords.latitude);
-                form.setValue("lng", position.coords.longitude);
+            async (position) => {
+                const { latitude, longitude, accuracy } = position.coords;
+                form.setValue("lat", latitude);
+                form.setValue("lng", longitude);
                 form.setValue("location_source", "browser_geolocation");
-                toast.success(t("locationCapturedSuccess"));
+                form.setValue("location_accuracy_m", accuracy ?? null);
+                setMapPrompt(null);
+                setAddressCheck({ status: "found", confidence: "high" });
+                setMapStatus({ message: t("locationCapturedSuccess"), type: "success" });
+                // Reverse geocode the GPS fix to fill address + city.
+                const rev = await geocodeReverse(latitude, longitude);
+                if (rev?.display_name) {
+                    programmaticRef.current = true;
+                    form.setValue(
+                        "address.full_address",
+                        formatGeocodedAddress(rev.display_name)
+                    );
+                    const citySeg = extractCitySegment(rev.display_name);
+                    if (citySeg) {
+                        const matched = findIsraelCity(citySeg);
+                        if (matched) {
+                            form.setValue(
+                                "address.city",
+                                isAr ? matched.nameAr : matched.nameHe
+                            );
+                        } else {
+                            form.setValue("address.city", citySeg);
+                        }
+                    }
+                    programmaticRef.current = false;
+                }
                 setLocating(false);
             },
             () => {
-                toast.error(t("locationFailed"));
                 setLocating(false);
+                setMapPrompt(t("locateFailedPrompt"));
+                scrollToMap();
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
@@ -165,15 +292,14 @@ export function CheckoutView() {
             return;
         }
 
-        // Soft-required location: without coordinates the courier may not
-        // find the customer. Ask once, never hard-block (protects conversion).
+        // Hard requirement: without verified coordinates the courier may not
+        // find the customer. The only way forward is a map pin (manual, GPS
+        // or geocoded) — there is no "continue anyway".
         const hasCoords = values.lat != null && values.lng != null;
-        if (!hasCoords && !pendingValues) {
-            setPendingValues(values);
-            setShowLocationWarning(true);
+        if (!hasCoords) {
+            setShowLocationRequired(true);
             return;
         }
-        setPendingValues(null);
 
         const payload: CheckoutPayload = {
             customer: values,
@@ -295,7 +421,7 @@ export function CheckoutView() {
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card ref={mapCardRef}>
                         <CardHeader>
                             <CardTitle className="flex items-center justify-between gap-2">
                                 <span className="flex items-center gap-2">
@@ -336,8 +462,30 @@ export function CheckoutView() {
                                                 placeholder={t("addressPlaceholder")}
                                                 className="h-11 rounded-xl"
                                                 {...field}
+                                                onBlur={() => {
+                                                    field.onBlur();
+                                                    verifyAddress();
+                                                }}
                                             />
                                         </FormControl>
+                                        {addressCheck.status === "checking" && (
+                                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                <Loader2 className="size-3.5 animate-spin" />
+                                                {t("addressChecking")}
+                                            </div>
+                                        )}
+                                        {addressCheck.status === "found" && (
+                                            <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                                                <CheckCircle2 className="size-3.5" />
+                                                {t("addressVerified")}
+                                            </div>
+                                        )}
+                                        {addressCheck.status === "not_found" && (
+                                            <div className="flex items-center gap-1.5 text-xs text-destructive">
+                                                <AlertTriangle className="size-3.5" />
+                                                {t("addressNotFound")}
+                                            </div>
+                                        )}
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -349,10 +497,10 @@ export function CheckoutView() {
                                     <FormItem>
                                         <FormLabel>{t("city")}</FormLabel>
                                         <FormControl>
-                                            <Input
+                                            <CityCombobox
+                                                value={field.value ?? ""}
+                                                onChange={handleCityChange}
                                                 placeholder={t("cityPlaceholder")}
-                                                className="h-11 rounded-xl"
-                                                {...field}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -364,6 +512,7 @@ export function CheckoutView() {
                                     lat: form.watch("lat") ?? null,
                                     lng: form.watch("lng") ?? null,
                                 }}
+                                center={mapCenter}
                                 onChange={(v) => {
                                     if (v.lat != null && v.lng != null) {
                                         form.setValue("lat", v.lat);
@@ -372,20 +521,44 @@ export function CheckoutView() {
                                     }
                                 }}
                                 onReverseGeocode={(displayName) => {
-                                    if (!displayName) return;
-                                    const current =
-                                        form.watch("address.full_address") ?? "";
-                                    if (!current.trim()) {
-                                        form.setValue("address.full_address", displayName);
+                                    if (!displayName || programmaticRef.current) return;
+                                    // A manual pin is the source of truth — update
+                                    // the address textbox with the resolved place.
+                                    programmaticRef.current = true;
+                                    form.setValue(
+                                        "address.full_address",
+                                        formatGeocodedAddress(displayName)
+                                    );
+                                    const citySeg = extractCitySegment(displayName);
+                                    if (citySeg) {
+                                        const matched = findIsraelCity(citySeg);
+                                        if (matched) {
+                                            form.setValue(
+                                                "address.city",
+                                                isAr ? matched.nameAr : matched.nameHe
+                                            );
+                                        } else if (!form.watch("address.city")?.trim()) {
+                                            form.setValue("address.city", citySeg);
+                                        }
                                     }
+                                    programmaticRef.current = false;
+                                    setAddressCheck({ status: "found", confidence: "high" });
+                                    setMapPrompt(null);
+                                    setMapStatus({
+                                        message: t("pinUpdatedAddress"),
+                                        type: "success",
+                                    });
                                 }}
                                 searchPlaceholder={t("pinSearchPlaceholder")}
+                                promptMessage={mapPrompt}
+                                statusMessage={mapStatus?.message ?? null}
+                                statusType={mapStatus?.type ?? "info"}
                                 heightClassName="h-56"
                             />
                             {form.watch("lat") != null && (
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <MapPin className="size-3.5" />
-                                    {t("locationCaptured")}
+                                    {t("locationPinned")}
                                 </div>
                             )}
                         </CardContent>
@@ -522,7 +695,7 @@ export function CheckoutView() {
                             </Label>
                         </div>
                         <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                            ✓ כל המחירים באתר כוללים מע״מ כחוק
+                            ✓ {t("vatNotice")}
                         </div>
                     </div>
                 </div>
@@ -532,7 +705,7 @@ export function CheckoutView() {
                         <div className="flex items-center justify-between">
                             <h2 className="font-display text-lg font-bold">{t("orderSummary")}</h2>
                             <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                כולל מע״מ כחוק
+                                {t("includingVat")}
                             </span>
                         </div>
                         <Separator className="my-3" />
@@ -578,7 +751,7 @@ export function CheckoutView() {
 
                         <Separator className="my-3" />
                         <div className="flex justify-between text-sm">
-                            <span>{t("itemsTotal")} (כולל מע״מ)</span>
+                            <span>{t("itemsTotal")} ({t("includingVat")})</span>
                             <span className="font-semibold">{formatILS(subtotal, locale)}</span>
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
@@ -626,14 +799,14 @@ export function CheckoutView() {
                             {t("placeOrder")}
                         </Button>
                         <p className="mt-2 text-center text-[11px] text-muted-foreground">
-                            {t("placeOrderHint")} • כל המחירים כוללים מע״מ
+                            {t("placeOrderHint")} • {t("vatNotice")}
                         </p>
                     </div>
                 </div>
 
                 <MobileStickyBar>
                     <div className="flex shrink-0 flex-col">
-                        <span className="text-[10px] text-muted-foreground">{t("totalToPay")} (כולל מע״מ)</span>
+                        <span className="text-[10px] text-muted-foreground">{t("totalToPay")} ({t("includingVat")})</span>
                         <span className="font-display text-lg font-extrabold text-primary">
                             {formatILS(subtotal, locale)}
                         </span>
@@ -651,36 +824,29 @@ export function CheckoutView() {
             </form>
 
             <AlertDialog
-                open={showLocationWarning}
+                open={showLocationRequired}
                 onOpenChange={(open) => {
-                    if (!open) {
-                        setShowLocationWarning(false);
-                        setPendingValues(null);
-                    }
+                    if (!open) setShowLocationRequired(false);
                 }}
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t("locationWarningTitle")}</AlertDialogTitle>
+                        <AlertDialogTitle>{t("locationRequiredTitle")}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            {t("locationWarningDesc")}
+                            {t("locationRequiredDesc")}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel asChild>
-                            <Button type="button" variant="outline">
-                                {t("locationWarningBack")}
-                            </Button>
-                        </AlertDialogCancel>
                         <AlertDialogAction asChild>
                             <Button
                                 type="button"
                                 onClick={() => {
-                                    setShowLocationWarning(false);
-                                    if (pendingValues) onSubmit(pendingValues);
+                                    setShowLocationRequired(false);
+                                    setMapPrompt(t("addressNotFound"));
+                                    scrollToMap();
                                 }}
                             >
-                                {t("locationWarningContinue")}
+                                {t("locationRequiredAction")}
                             </Button>
                         </AlertDialogAction>
                     </AlertDialogFooter>

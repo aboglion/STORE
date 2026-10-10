@@ -50,7 +50,7 @@ export function CourierShareCard({
                 {t("courierLink")}
             </div>
 
-            <div className="mt-3 flex items-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-3 py-2.5">
+            <div className="mt-3 flex w-full min-w-0 max-w-full items-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-3 py-2.5">
                 <span
                     className="min-w-0 flex-1 truncate font-mono text-xs"
                     dir="ltr"

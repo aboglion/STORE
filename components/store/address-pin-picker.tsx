@@ -25,7 +25,7 @@ import {
     geocodeSearch,
     type GeocodeClientResult,
 } from "@/lib/utils/geocode-client";
-import { Crosshair, Locate, Search, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Crosshair, Locate, MapPin, Search, X } from "lucide-react";
 
 export interface PinPickerValue {
     lat: number | null;
@@ -37,14 +37,23 @@ export interface AddressPinPickerProps {
     className?: string;
     /** Initial pin position (e.g. a saved address or GPS fix). */
     value?: PinPickerValue;
+    /** Center the map without placing a pin (e.g. when a city is selected). */
+    center?: { lat: number; lng: number; zoom?: number } | null;
     /** Called whenever the pin settles on a new position. */
     onChange?: (value: PinPickerValue) => void;
     /** Called with the reverse-geocoded address text after a pin settle. */
     onReverseGeocode?: (displayName: string | null) => void;
     /** Placeholder for the address search input. */
     searchPlaceholder?: string;
+    /** Whether to show the top search input (default true). */
+    showSearch?: boolean;
     /** Tailwind height class for the map area (default h-64). */
     heightClassName?: string;
+    /** Banner message prompting the user to mark the location manually */
+    promptMessage?: string | null;
+    /** Status badge message */
+    statusMessage?: string | null;
+    statusType?: "success" | "warning" | "info" | null;
 }
 
 const DEFAULT_CENTER = { lat: 31.91, lng: 34.85 };
@@ -68,10 +77,15 @@ function pinIcon(): L.DivIcon {
 export function AddressPinPicker({
     className,
     value,
+    center,
     onChange,
     onReverseGeocode,
     searchPlaceholder,
+    showSearch = true,
     heightClassName = "h-64",
+    promptMessage,
+    statusMessage,
+    statusType = "info",
 }: AddressPinPickerProps) {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<L.Map | null>(null);
@@ -260,10 +274,26 @@ export function AddressPinPicker({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Center map when center prop changes (e.g. city chosen)
+    useEffect(() => {
+        if (!center || center.lat == null || center.lng == null) return;
+        const map = mapRef.current;
+        if (!map) return;
+        map.setView([center.lat, center.lng], center.zoom ?? 14);
+    }, [center?.lat, center?.lng, center?.zoom]);
+
     // React to external value changes (e.g. the checkout's locate button)
     // without fighting the user's own drags — skip positions we emitted.
     useEffect(() => {
-        if (value?.lat == null || value?.lng == null) return;
+        if (value?.lat == null || value?.lng == null) {
+            if (value?.lat === null && value?.lng === null && pinRef.current) {
+                pinRef.current.remove();
+                pinRef.current = null;
+                accuracyLayer.current?.clearLayers();
+                setPinned(false);
+            }
+            return;
+        }
         const last = lastEmittedRef.current;
         if (last && last.lat === value.lat && last.lng === value.lng) return;
         const map = mapRef.current;
@@ -276,72 +306,111 @@ export function AddressPinPicker({
     return (
         <div
             className={cn(
-                "relative overflow-hidden rounded-xl border border-border/70",
+                "relative overflow-hidden rounded-xl border border-border/70 transition-all",
+                promptMessage && "ring-2 ring-amber-500/60 border-amber-500/50",
                 className
             )}
             dir="ltr"
         >
             <style>{PIN_CSS}</style>
 
-            {/* Search box */}
-            <div className="relative z-[1001]">
-                <Input
-                    type="text"
-                    value={query}
-                    onChange={(e) => handleQueryChange(e.target.value)}
-                    placeholder={searchPlaceholder}
-                    className="h-9 w-full pe-9"
-                    aria-label="search address"
-                />
-                {query ? (
-                    <button
-                        type="button"
-                        className="absolute end-2 top-1.5 text-muted-foreground hover:text-foreground"
-                        onClick={clearQuery}
-                        aria-label="clear search"
-                    >
-                        <X className="size-4" />
-                    </button>
-                ) : searching ? (
-                    <Search className="absolute end-2.5 top-2.5 size-4 animate-pulse" />
-                ) : (
-                    <Search className="absolute end-2.5 top-2.5 size-4 text-muted-foreground" />
-                )}
+            {/* Optional search box */}
+            {showSearch && (
+                <div className="relative z-[1001]">
+                    <Input
+                        type="text"
+                        value={query}
+                        onChange={(e) => handleQueryChange(e.target.value)}
+                        placeholder={searchPlaceholder}
+                        className="h-9 w-full pe-9"
+                        aria-label="search address"
+                    />
+                    {query ? (
+                        <button
+                            type="button"
+                            className="absolute end-2 top-1.5 text-muted-foreground hover:text-foreground"
+                            onClick={clearQuery}
+                            aria-label="clear search"
+                        >
+                            <X className="size-4" />
+                        </button>
+                    ) : searching ? (
+                        <Search className="absolute end-2.5 top-2.5 size-4 animate-pulse" />
+                    ) : (
+                        <Search className="absolute end-2.5 top-2.5 size-4 text-muted-foreground" />
+                    )}
 
-                {showResults && results.length > 0 && (
-                    <div className="absolute z-[1002] mt-1 w-full overflow-hidden rounded-lg border border-border/70 bg-background shadow-lg">
-                        {results.map((result, i) => (
-                            <button
-                                key={i}
-                                type="button"
-                                className="block w-full truncate px-3 py-2 text-start text-sm hover:bg-muted"
-                                onClick={() => selectResult(result)}
-                            >
-                                {result.display_name ?? "—"}
-                            </button>
-                        ))}
-                    </div>
-                )}
-            </div>
+                    {showResults && results.length > 0 && (
+                        <div className="absolute z-[1002] mt-1 w-full overflow-hidden rounded-lg border border-border/70 bg-background shadow-lg">
+                            {results.map((result, i) => (
+                                <button
+                                    key={i}
+                                    type="button"
+                                    className="block w-full truncate px-3 py-2 text-start text-sm hover:bg-muted"
+                                    onClick={() => selectResult(result)}
+                                >
+                                    {result.display_name ?? "—"}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Prompt banner (e.g. manual pin required) */}
+            {promptMessage && (
+                <div
+                    className="absolute inset-x-3 top-3 z-[1000] flex items-center gap-2 rounded-xl border border-amber-500/50 bg-amber-500/25 px-3 py-2 text-xs font-semibold text-amber-950 dark:text-amber-100 shadow-md backdrop-blur-md animate-pulse"
+                    dir="rtl"
+                >
+                    <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <span className="flex-1">{promptMessage}</span>
+                </div>
+            )}
+
+            {/* Status message banner */}
+            {!promptMessage && statusMessage && (
+                <div
+                    className={cn(
+                        "absolute inset-x-3 top-3 z-[1000] flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium shadow-md backdrop-blur-md",
+                        statusType === "success"
+                            ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-950 dark:text-emerald-100"
+                            : "border-border/70 bg-background/90 text-foreground"
+                    )}
+                    dir="rtl"
+                >
+                    {statusType === "success" ? (
+                        <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    ) : (
+                        <MapPin className="size-4 shrink-0 text-primary" />
+                    )}
+                    <span className="flex-1">{statusMessage}</span>
+                </div>
+            )}
 
             {/* Map */}
             <div ref={containerRef} className={cn("w-full", heightClassName)} />
 
             {/* Locate-me control */}
-            <div className="absolute end-3 top-12 z-[1000] flex flex-col gap-2">
+            <div
+                className={cn(
+                    "absolute end-3 z-[1000] flex flex-col gap-2",
+                    showSearch ? "top-12" : "top-3"
+                )}
+            >
                 <Button
                     type="button"
                     size="icon"
                     variant="secondary"
-                    className="size-9 rounded-xl bg-background/95 shadow-soft backdrop-blur"
+                    className="size-9 rounded-xl bg-background/95 shadow-soft backdrop-blur hover:bg-background"
                     onClick={handleLocate}
                     disabled={locating}
                     aria-label="use my location"
                 >
                     {locating ? (
-                        <Crosshair className="size-4 animate-spin" />
+                        <Crosshair className="size-4 animate-spin text-primary" />
                     ) : (
-                        <Locate className="size-4" />
+                        <Locate className="size-4 text-primary" />
                     )}
                 </Button>
             </div>

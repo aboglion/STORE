@@ -43,7 +43,7 @@ export function ProductPurchaseBar({
                             {formatILS(priceAgorot, locale)}
                         </span>
                         <span className="text-[10px] text-muted-foreground font-medium">
-                            (כולל מע״מ)
+                            ({t("includingVat")})
                         </span>
                         {onSale && (
                             <span className="text-xs text-muted-foreground line-through">

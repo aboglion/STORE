@@ -52,7 +52,7 @@ export function ProductBuyPanel({
                             {formatILS(priceAgorot, locale)}
                         </span>
                         <span className="text-xs font-semibold text-muted-foreground">
-                            (כולל מע״מ)
+                            ({t("includingVat")})
                         </span>
                         {onSale && (
                             <span className="text-lg text-muted-foreground line-through">

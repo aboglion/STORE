@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
     composeAddressLine,
+    extractCitySegment,
+    formatGeocodedAddress,
     normalizeAddress,
 } from "@/lib/utils/address";
 import { orderLocationStatus } from "@/lib/utils/location";
@@ -117,5 +119,57 @@ describe("orderLocationStatus", () => {
                 lng: 34.8,
             })
         ).toBe("ok");
+    });
+});
+
+describe("formatGeocodedAddress", () => {
+    it("keeps street and city, drops district/postcode/country", () => {
+        expect(
+            formatGeocodedAddress(
+                "Herzl St 12, Haifa, Haifa District, 3300000, Israel"
+            )
+        ).toBe("Herzl St 12, Haifa");
+    });
+
+    it("handles Hebrew display names", () => {
+        expect(
+            formatGeocodedAddress(
+                "הרצל 12, חיפה, מחוז חיפה, 3300000, ישראל"
+            )
+        ).toBe("הרצל 12, חיפה");
+    });
+
+    it("returns the single segment when there is only one", () => {
+        expect(formatGeocodedAddress("כפר קאסם")).toBe("כפר קאסם");
+    });
+
+    it("returns empty string for empty input", () => {
+        expect(formatGeocodedAddress("")).toBe("");
+        expect(formatGeocodedAddress("   ")).toBe("");
+    });
+
+    it("trims surrounding whitespace of segments", () => {
+        expect(formatGeocodedAddress("  הרצל 12 ,  חיפה , מחוז חיפה ")).toBe(
+            "הרצל 12, חיפה"
+        );
+    });
+});
+
+describe("extractCitySegment", () => {
+    it("returns the second segment as the city", () => {
+        expect(
+            extractCitySegment("Herzl St 12, Haifa, Haifa District, Israel")
+        ).toBe("Haifa");
+    });
+
+    it("returns the city for Hebrew display names", () => {
+        expect(extractCitySegment("הרצל 12, חיפה, מחוז חיפה, ישראל")).toBe(
+            "חיפה"
+        );
+    });
+
+    it("returns null when there is no city segment", () => {
+        expect(extractCitySegment("כפר קאסם")).toBeNull();
+        expect(extractCitySegment("")).toBeNull();
     });
 });

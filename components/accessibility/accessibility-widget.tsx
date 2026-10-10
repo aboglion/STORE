@@ -182,24 +182,7 @@ export function AccessibilityWidget() {
                 {isAr ? "الانتقال إلى المحتوى الرئيسي" : "דלג לתוכן מרכזי"}
             </a>
 
-            {/* Prominent floating accessibility button */}
-            <aside aria-label={isAr ? "إمكانية الوصول" : "כלי נגישות האתר"}>
-                <button
-                    type="button"
-                    onClick={() => setOpen(true)}
-                    className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-[#0060df] px-4 py-2.5 text-white shadow-2xl transition-all duration-200 hover:scale-105 hover:bg-[#004dc0] focus:outline-none focus:ring-4 focus:ring-blue-300 active:scale-95 sm:bottom-6 sm:right-6 cursor-pointer"
-                    aria-label={isAr ? "فتح قائمة إمكانية الوصول" : "פתח תפריט נגישות (ת״י 5568)"}
-                    title={isAr ? "إمكانية الوصول (ת״י 5568)" : "סרגל נגישות (ת״י 5568)"}
-                >
-                    <Accessibility className="size-5 shrink-0" />
-                    <span className="text-xs font-bold tracking-wide">
-                        {isAr ? "إمكانية الوصول" : "נגישות"}
-                    </span>
-                    {hasActiveAdjustments && (
-                        <span className="size-2 rounded-full bg-emerald-400 ring-2 ring-white" />
-                    )}
-                </button>
-            </aside>
+
 
             {/* Accessibility Modal Dialog */}
             <Dialog open={open} onOpenChange={setOpen}>

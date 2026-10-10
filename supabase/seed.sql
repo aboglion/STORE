@@ -26,7 +26,9 @@ insert into categories (name_he, name_ar, slug, sort_order) values
   ('עוגות', 'الكعك', 'cakes', 2),
   ('משקאות', 'المشروبات', 'drinks', 3),
   ('מעדנים', 'المأكولات الفاخرة', 'delicatessen', 4)
-on conflict (slug) do nothing;
+on conflict (slug) do update set
+  name_he = excluded.name_he,
+  name_ar = excluded.name_ar;
 
 -- ------------------------------------------------------------
 -- Demo products (prices in agorot)
@@ -67,7 +69,11 @@ from (values
    2490, null, 0, 3, 2)
 ) as v(category_slug, slug, name_he, name_ar, description_he, description_ar, price_agorot, compare_at_price_agorot, stock_quantity, low_stock_threshold, sort_order)
 join categories c on c.slug = v.category_slug
-on conflict (slug) do nothing;
+on conflict (slug) do update set
+  name_he = excluded.name_he,
+  name_ar = excluded.name_ar,
+  description_he = excluded.description_he,
+  description_ar = excluded.description_ar;
 
 -- ============================================================
 -- BOOTSTRAP YOUR FIRST ADMIN (uncomment after creating the user):

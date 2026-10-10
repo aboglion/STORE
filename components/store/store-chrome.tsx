@@ -60,7 +60,7 @@ export async function StoreChrome({
                                 href="/cancellation"
                                 className="hidden rounded-full px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 lg:inline-flex"
                             >
-                                ביטול עסקה
+                                {t("cancellation")}
                             </Link>
                             <AccessibilityHeaderButton />
                             <LocaleSwitcher />

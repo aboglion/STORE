@@ -200,14 +200,14 @@ export function CartView() {
                         <h2 className="font-display text-lg font-bold">{t("summary")}</h2>
                         <Separator className="my-3" />
                         <div className="flex justify-between text-sm">
-                            <span>{t("itemsTotal")} (כולל מע״מ)</span>
+                            <span>{t("itemsTotal")} ({t("includingVat")})</span>
                             <span className="font-semibold">{formatILS(subtotal, locale)}</span>
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
                             {t("deliveryAtCheckout")}
                         </div>
                         <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                            ✓ המחיר כולל מע״מ כחוק
+                            ✓ {t("vatNotice")}
                         </div>
                         {hasUnavailableItems ? (
                             <Button className="mt-4 w-full" size="lg" disabled>
@@ -230,7 +230,7 @@ export function CartView() {
             {!loading && (
                 <MobileStickyBar>
                     <div className="flex shrink-0 flex-col">
-                        <span className="text-[10px] text-muted-foreground">{t("total")} (כולל מע״מ)</span>
+                        <span className="text-[10px] text-muted-foreground">{t("total")} ({t("includingVat")})</span>
                         <span className="font-display text-lg font-extrabold text-primary">
                             {formatILS(subtotal, locale)}
                         </span>

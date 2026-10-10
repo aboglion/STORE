@@ -52,6 +52,26 @@ describe("message dictionaries", () => {
         expect(heKeys).toEqual(arKeys);
     });
 
+    it("includes required cart and product localization keys in both languages", () => {
+        expect(he.cart).toHaveProperty("perUnit");
+        expect(ar.cart).toHaveProperty("perUnit");
+        expect(he.cart.perUnit).toBe("ליחידה");
+        expect(ar.cart.perUnit).toBe("للقطعة");
+
+        expect(he.cart).toHaveProperty("includingVat");
+        expect(ar.cart).toHaveProperty("includingVat");
+        expect(he.cart).toHaveProperty("vatNotice");
+        expect(ar.cart).toHaveProperty("vatNotice");
+
+        expect(he.product).toHaveProperty("perUnit");
+        expect(ar.product).toHaveProperty("perUnit");
+
+        expect(he.admin.products).toHaveProperty("active");
+        expect(ar.admin.products).toHaveProperty("active");
+        expect(he.admin.products).toHaveProperty("inactive");
+        expect(ar.admin.products).toHaveProperty("inactive");
+    });
+
     it("every Arabic value is a non-empty string", () => {
         const arKeys = flattenKeys(ar as MessageTree);
         for (const key of arKeys) {

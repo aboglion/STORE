@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
     Banknote,
@@ -41,21 +41,32 @@ export function OrderRequestPopup({
     const t = useTranslations("courier");
     const locale = (useLocale() as Locale) ?? "he";
     const [secondsLeft, setSecondsLeft] = useState(durationSec);
+    const onExpireRef = useRef(onExpire);
+    const expiredRef = useRef(false);
+
+    useEffect(() => {
+        onExpireRef.current = onExpire;
+    }, [onExpire]);
 
     useEffect(() => {
         const id = setInterval(() => {
             setSecondsLeft((s) => {
                 if (s <= 1) {
                     clearInterval(id);
-                    onExpire();
                     return 0;
                 }
                 return s - 1;
             });
         }, 1000);
         return () => clearInterval(id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        if (secondsLeft <= 0 && !expiredRef.current) {
+            expiredRef.current = true;
+            onExpireRef.current();
+        }
+    }, [secondsLeft]);
 
     const progress = (secondsLeft / durationSec) * 100;
     const distanceText =
