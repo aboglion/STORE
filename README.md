@@ -71,41 +71,39 @@ npm run setup:dev    # כמו למעלה + הרצת שרת הפיתוח
 5. אם Supabase CLI מוגדר — מריץ המיגרציות; אחרי� מדפיס הוראות ידניות
 6. עם `dev` — מריץ שרת הפיתוח
 
-### 0.5. הרצה מהירה — Docker + Makefile (מומלץ)
+### 0.5. הרצה מהירה וניהול — Makefile (מומלץ)
 
-הדרך הקלה ביותר להריץ את כל המערכת מקומית (Supabase ב-Docker + שרת פיתוח):
+פקודות מרכזיות ב-Makefile:
 
 ```bash
-make run
+make local       # הפעלה מקומית בסביבת פיתוח (Dev): תלויות + Supabase + שרת פיתוח Next.js
+make run         # הפעלה מלאה דרך דוקר לפרודקשן (Docker Production)
+make gp          # העלאה וסנכרון ישיר ל-GitHub (add + commit + push ל-origin master)
 ```
 
-הפקודה עושה הכל בבת אחת:
-1. מתקינה חבילות (`npm install` + Supabase CLI)
-2. מריצה את כל ערימת Supabase ב-Docker (`supabase start`)
-3. בפעם הראשונה: מריצה מיגרציות + `seed.sql` (נתוני דמו)
-4. יוצרת `.env.local` אוטומטית מהערכים המקומיים
-5. יוצרת משתמש אדמין: `admin@example.com` / `admin1234`
-6. מריצה את שרת הפיתוח
-
-כתובות:
+כתובות גישה:
 - חנות: http://localhost:3000
-- דאשבורד: http://localhost:3000/admin/login
+- דאשבורד מנהל: http://localhost:3000/admin/login
 - Supabase Studio: http://127.0.0.1:54323
 
 פקודות נוספות:
 
 ```bash
-make help        # רשימת כל הפקודות
+make help        # רשימת כל הפקודות וההסברים
+make gp          # גיטהאב: git add + commit + push (זמין גם כ-make GP)
+make local       # הרצה מקומית בפיתוח (Next.js Dev Server)
+make run         # הרצה דרך Docker בפרודקשן (Next.js Standalone Container)
+make docker-stop # עצירת שירות הפרודקשן בדוקר
+make docker-logs # צפייה בלוגים של שירות הפרודקשן בדוקר
 make db-start    # הפעלת Supabase (Docker)
 make db-stop     # עצירת Supabase
 make db-reset    # איפוס דאטהבייס (מיגרציות + seed) — הרסני
 make env         # יצירת .env.local מחדש
 make admin       # יצירת משתמש אדמין
-make dev         # שרת פיתוח בלבד
-make build       # בנייה
-make test        # בדיקות
-make lint        # ESLint
-make typecheck   # TypeScript
+make build       # בניית פרודקשן מקומית
+make test        # הרצת בדיקות (Vitest)
+make lint        # בדיקת ESLint
+make typecheck   # בדיקת TypeScript
 ```
 
 > דרישות: Docker רץ + Node 20+. בפעם הראשונה `supabase start` מוריד תמונות Docker (כמה דקות).
