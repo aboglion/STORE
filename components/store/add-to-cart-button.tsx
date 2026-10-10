@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
-import { Check, Plus } from "lucide-react";
+import { Check, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -12,14 +12,18 @@ import { cn } from "@/lib/utils";
 
 export function AddToCartButton({
     productId,
+    productName,
     size = "default",
     fullWidth = false,
     disabled = false,
+    quantity = 1,
 }: {
     productId: string;
-    size?: "default" | "lg" | "sm";
+    productName?: string;
+    size?: "default" | "lg" | "xl" | "sm";
     fullWidth?: boolean;
     disabled?: boolean;
+    quantity?: number;
 }) {
     const { addItem } = useCart();
     const t = useTranslations("product");
@@ -31,11 +35,15 @@ export function AddToCartButton({
             size={size}
             className={cn(
                 fullWidth ? "w-full" : undefined,
-                "rounded-full transition-all duration-150"
+                "rounded-full transition-all duration-150",
+                size === "xl" && "font-bold shadow-soft"
             )}
             disabled={disabled}
+            aria-label={
+                productName ? t("addToCartAria", { name: productName }) : undefined
+            }
             onClick={() => {
-                addItem(productId);
+                addItem(productId, quantity);
                 toast.success(t("addedToast"));
                 setAdded(true);
                 setTimeout(() => setAdded(false), 1400);
@@ -45,12 +53,12 @@ export function AddToCartButton({
                 t("outOfStock")
             ) : added ? (
                 <>
-                    <Check />
+                    <Check className="size-5" />
                     {t("addedToCart")}
                 </>
             ) : (
                 <>
-                    <Plus />
+                    <ShoppingCart className="size-5" />
                     {t("addToCart")}
                 </>
             )}

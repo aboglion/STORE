@@ -143,6 +143,14 @@ export interface Order {
     total_agorot: number;
     customer_notes: string | null;
     location_source: string | null;
+    /** Courier assigned to deliver this order (null = in the store pool). */
+    courier_id: string | null;
+    /** When the order was assigned to a courier. */
+    assigned_at: string | null;
+    /** When the courier marked the order as delivered. */
+    delivered_at: string | null;
+    /** Unguessable token used in the public invoice URL. */
+    invoice_token: string | null;
     placed_at: string;
     updated_at: string;
 }
@@ -193,6 +201,51 @@ export interface AdminProfile {
     role: string;
     created_at: string;
     updated_at: string;
+}
+
+export type CourierVehicle = "car" | "scooter" | "bike" | "foot";
+
+export interface Courier {
+    id: string;
+    full_name: string;
+    phone_norm: string;
+    phone_display: string;
+    /** Shareable portal access token — treat as a secret. */
+    access_token: string;
+    vehicle_type: CourierVehicle;
+    /** Identity color used in markers and badges. */
+    color: string;
+    is_active: boolean;
+    last_lat: number | null;
+    last_lng: number | null;
+    last_location_at: string | null;
+    notes: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export type CourierEventType =
+    | "courier_created"
+    | "courier_updated"
+    | "courier_deactivated"
+    | "courier_activated"
+    | "token_regenerated"
+    | "assigned"
+    | "transferred"
+    | "returned_to_store"
+    | "status_changed"
+    | "problem_reported";
+
+export interface CourierEvent {
+    id: string;
+    courier_id: string | null;
+    order_id: string | null;
+    actor: "admin" | "courier" | "system";
+    event_type: CourierEventType;
+    from_value: string | null;
+    to_value: string | null;
+    note: string | null;
+    created_at: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -277,6 +330,80 @@ export interface OrderWithRelations extends Order {
     customer: Pick<Customer, "id" | "phone_norm" | "phone_display" | "full_name">;
 }
 
+/** Courier row enriched with the counts the admin UI needs. */
+export interface CourierWithStats extends Courier {
+    active_orders_count: number;
+    delivered_today_count: number;
+    delivered_total_count: number;
+}
+
+/** Courier shown in the admin live map: position + active stops. */
+export interface CourierLiveRow {
+    id: string;
+    full_name: string;
+    color: string;
+    vehicle_type: CourierVehicle;
+    is_active: boolean;
+    last_lat: number | null;
+    last_lng: number | null;
+    last_location_at: string | null;
+    active_orders_count: number;
+    stops: Array<{
+        id: string;
+        order_number: string;
+        lat: number | null;
+        lng: number | null;
+        address: string;
+    }>;
+}
+
+/** Order as seen in the courier portal (delivery-focused projection). */
+export interface CourierOrder {
+    id: string;
+    order_number: string;
+    invoice_token: string | null;
+    status: OrderStatus;
+    payment_method: PaymentMethod;
+    payment_status: PaymentStatus;
+    total_agorot: number;
+    /** True when the courier must collect payment on delivery. */
+    cash_to_collect: boolean;
+    customer_name: string;
+    customer_phone: string;
+    address_text: string;
+    address_lat: number | null;
+    address_lng: number | null;
+    customer_notes: string | null;
+    placed_at: string;
+    assigned_at: string | null;
+    delivered_at: string | null;
+    items: Array<{ name: string; quantity: number; line_total_agorot: number }>;
+    events: Array<{
+        created_at: string;
+        to_status: string | null;
+        note: string | null;
+    }>;
+}
+
+/** Root payload returned to the courier portal page. */
+export interface CourierPortalData {
+    courier: Pick<
+        Courier,
+        | "id"
+        | "full_name"
+        | "phone_display"
+        | "vehicle_type"
+        | "color"
+        | "is_active"
+        | "last_lat"
+        | "last_lng"
+        | "last_location_at"
+    >;
+    store: { name: string; contact_phone: string; logo_url: string | null };
+    active_orders: CourierOrder[];
+    delivered_today: CourierOrder[];
+}
+
 // ---------------------------------------------------------------------------
 // App settings (stored in the settings table)
 // ---------------------------------------------------------------------------
@@ -292,6 +419,22 @@ export interface AppSettings {
     store_name: string;
     /** Arabic store name — falls back to store_name when empty. */
     store_name_ar: string;
+    /** Legal business name (חברה / עוסק מורשה). */
+    legal_business_name: string;
+    /** Business ID / Tax ID (ח.פ / ע.מ). */
+    business_id: string;
+    /** Physical business address. */
+    business_address: string;
+    /** Customer support email. */
+    business_email: string;
+    /** Customer service operating hours. */
+    business_hours: string;
+    /** Accessibility officer name. */
+    accessibility_officer_name: string;
+    /** Accessibility officer phone. */
+    accessibility_officer_phone: string;
+    /** Accessibility officer email. */
+    accessibility_officer_email: string;
     delivery_fee_agorot: number;
     free_delivery_threshold_agorot: number;
     low_stock_threshold_default: number;

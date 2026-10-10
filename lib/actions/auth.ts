@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 
 import { z } from "zod";
 
+import { rateLimit } from "@/lib/server/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 export type LoginState = { error?: string } | null;
@@ -15,6 +16,10 @@ export async function login(
     formData: FormData
 ): Promise<LoginState> {
     const te = await getTranslations("admin.errors");
+
+    // Brute-force protection: 5 attempts per minute per IP.
+    const limited = await rateLimit({ key: "login", limit: 5, windowMs: 60_000 });
+    if (!limited.ok) return { error: te("tooManyAttempts") };
 
     const loginSchema = z.object({
         email: z.string().email(te("invalidEmail")),

@@ -81,12 +81,16 @@ export function CustomerOrdersView({
 
     useEffect(() => {
         if (queryOrderNumber && (!selectedOrder || selectedOrder.order_number !== queryOrderNumber)) {
-            getPublicOrder(queryOrderNumber).then((res) => {
+            const stored = getStoredRecentOrders();
+            const entry = stored.find((s) => s.orderNumber === queryOrderNumber);
+            if (!entry?.phone) return;
+            getPublicOrder(queryOrderNumber, entry.phone).then((res) => {
                 if (res) {
                     setSelectedOrder(res);
                     // Also ensure it is in local recent orders
                     saveRecentOrder({
                         orderNumber: res.order_number,
+                        phone: entry.phone,
                         totalAgorot: res.total_agorot,
                         placedAt: res.placed_at,
                         customerName: res.customer_name_snapshot,
@@ -97,7 +101,7 @@ export function CustomerOrdersView({
         }
     }, [queryOrderNumber, selectedOrder]);
 
-    // Load recent orders from localStorage
+    // Load recent orders from localStorage (phone required for lookups)
     useEffect(() => {
         const stored = getStoredRecentOrders();
         if (stored.length === 0) {
@@ -105,8 +109,14 @@ export function CustomerOrdersView({
             return;
         }
 
+        const phone = stored[0]?.phone;
+        if (!phone) {
+            setLoadingRecent(false);
+            return;
+        }
+
         const numbers = stored.map((s) => s.orderNumber);
-        getPublicOrdersByNumbers(numbers)
+        getPublicOrdersByNumbers(numbers, phone)
             .then((orders) => {
                 setRecentOrders(orders);
             })
@@ -122,14 +132,15 @@ export function CustomerOrdersView({
         const n = searchName.trim();
         const num = searchOrderNumber.trim();
 
-        if (!p && !n && !num) {
-            toast.error(t("searchError"));
+        // A valid phone number is required — it authorizes the lookup.
+        if (!p) {
+            toast.error(t("phoneRequired"));
             return;
         }
 
         startSearchTransition(async () => {
             const results = await searchCustomerOrders({
-                phone: p || undefined,
+                phone: p,
                 name: n || undefined,
                 orderNumber: num || undefined,
             });
@@ -147,6 +158,16 @@ export function CustomerOrdersView({
 
     function handleSelectOrder(order: PublicOrder) {
         setSelectedOrder(order);
+        const stored = getStoredRecentOrders();
+        const existing = stored.find((s) => s.orderNumber === order.order_number);
+        saveRecentOrder({
+            orderNumber: order.order_number,
+            phone: existing?.phone ?? searchPhone.trim(),
+            totalAgorot: order.total_agorot,
+            placedAt: order.placed_at,
+            customerName: order.customer_name_snapshot,
+            itemsCount: order.order_items?.reduce((acc, i) => acc + i.quantity, 0),
+        });
         router.replace(`/orders?order=${encodeURIComponent(order.order_number)}`, {
             scroll: false,
         });
@@ -159,8 +180,15 @@ export function CustomerOrdersView({
 
     function handleRefreshOrder() {
         if (!selectedOrder) return;
+        const stored = getStoredRecentOrders();
+        const entry = stored.find((s) => s.orderNumber === selectedOrder.order_number);
+        const phone = entry?.phone ?? searchPhone.trim();
+        if (!phone) {
+            toast.error(t("phoneRequired"));
+            return;
+        }
         startRefreshTransition(async () => {
-            const updated = await getPublicOrder(selectedOrder.order_number);
+            const updated = await getPublicOrder(selectedOrder.order_number, phone);
             if (updated) {
                 setSelectedOrder(updated);
                 toast.success(t("updated"));

@@ -1,5 +1,7 @@
 "use server";
 
+import { z } from "zod";
+
 import { createAdminClient } from "@/lib/supabase/admin";
 import { productImageUrl } from "@/lib/utils/images";
 
@@ -14,6 +16,8 @@ export interface CartProductDetail {
     image_url: string | null;
 }
 
+const cartProductIdsSchema = z.array(z.string().uuid()).max(50);
+
 /**
  * Returns fresh product data for cart rendering. The cart itself is stored
  * in localStorage; prices displayed here always come from the server and are
@@ -22,7 +26,10 @@ export interface CartProductDetail {
 export async function getCartProductDetails(
     productIds: string[]
 ): Promise<CartProductDetail[]> {
-    const ids = Array.from(new Set(productIds));
+    const parsed = cartProductIdsSchema.safeParse(productIds);
+    if (!parsed.success) return [];
+
+    const ids = Array.from(new Set(parsed.data));
     if (ids.length === 0) return [];
 
     const admin = createAdminClient();

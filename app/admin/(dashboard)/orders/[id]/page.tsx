@@ -10,6 +10,7 @@ import {
     PaymentStatusBadge,
 } from "@/components/admin/order-status-badge";
 import { OrderStatusControls } from "@/components/admin/order-status-controls";
+import { OrderCourierCard } from "@/components/admin/order-courier-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/auth";
 import { getOrderById } from "@/lib/data/orders";
+import { getCouriers } from "@/lib/data/couriers";
 import {
     ORDER_STATUS_LABELS,
     PAYMENT_METHOD_LABELS,
@@ -50,10 +52,21 @@ export default async function OrderDetailPage({
     const tRoot = await getTranslations();
 
     const { id } = await params;
-    const detail = await getOrderById(id);
+    const [detail, courierRows] = await Promise.all([
+        getOrderById(id),
+        getCouriers(),
+    ]);
     if (!detail) notFound();
 
     const { order, items, events, customer } = detail;
+
+    const assignableCouriers = courierRows.map((c) => ({
+        id: c.id,
+        full_name: c.full_name,
+        color: c.color,
+        is_active: c.is_active,
+        active_orders_count: c.active_orders_count,
+    }));
     const address = order.address_snapshot as unknown as AddressSnapshot;
 
     const mapQuery = address.lat && address.lng
@@ -95,6 +108,13 @@ export default async function OrderDetailPage({
                     />
                 </CardContent>
             </Card>
+
+            <OrderCourierCard
+                orderId={order.id}
+                assignedCourierId={order.courier_id}
+                assignedAt={order.assigned_at}
+                couriers={assignableCouriers}
+            />
 
             <div className="grid gap-6 lg:grid-cols-2">
                 <Card>

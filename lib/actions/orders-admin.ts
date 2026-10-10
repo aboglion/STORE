@@ -1,11 +1,12 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth";
+import { STORE_CACHE_TAGS } from "@/lib/data/storefront";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
     cancelOrderSchema,
@@ -71,6 +72,8 @@ export async function cancelOrderAction(
 
     revalidatePath("/admin/orders");
     revalidatePath(`/admin/orders/${parsed.data.order_id}`);
+    // Cancellation restores product stock — invalidate the storefront cache.
+    revalidateTag(STORE_CACHE_TAGS.products);
     return undefined;
 }
 

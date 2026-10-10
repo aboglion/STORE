@@ -16,6 +16,14 @@ import { formatILS } from "@/lib/utils/currency";
 
 import { MobileStickyBar } from "./mobile-sticky-bar";
 
+/**
+ * Short-lived client cache for cart product details so quantity edits
+ * (which change `items` but not the set of product ids) never re-hit the
+ * server. Prices are re-validated server-side at checkout regardless.
+ */
+const detailsCache = new Map<string, { data: CartProductDetail[]; at: number }>();
+const DETAILS_CACHE_TTL_MS = 30_000;
+
 export function CartView() {
     const { items, setQuantity, removeItem } = useCart();
     const t = useTranslations("cart");
@@ -24,20 +32,30 @@ export function CartView() {
     const [loading, setLoading] = useState(true);
     const [, startTransition] = useTransition();
 
+    // Stable key of the product set — quantity changes don't refetch.
+    const idsKey = items.map((i) => i.product_id).sort().join(",");
+
     useEffect(() => {
-        const ids = items.map((i) => i.product_id);
+        const ids = idsKey ? idsKey.split(",") : [];
         if (ids.length === 0) {
             setDetails([]);
+            setLoading(false);
+            return;
+        }
+        const cached = detailsCache.get(idsKey);
+        if (cached && Date.now() - cached.at < DETAILS_CACHE_TTL_MS) {
+            setDetails(cached.data);
             setLoading(false);
             return;
         }
         setLoading(true);
         startTransition(async () => {
             const result = await getCartProductDetails(ids);
+            detailsCache.set(idsKey, { data: result, at: Date.now() });
             setDetails(result);
             setLoading(false);
         });
-    }, [items]);
+    }, [idsKey, startTransition]);
 
     if (items.length === 0) {
         return (
@@ -182,11 +200,14 @@ export function CartView() {
                         <h2 className="font-display text-lg font-bold">{t("summary")}</h2>
                         <Separator className="my-3" />
                         <div className="flex justify-between text-sm">
-                            <span>{t("itemsTotal")}</span>
+                            <span>{t("itemsTotal")} (כולל מע״מ)</span>
                             <span className="font-semibold">{formatILS(subtotal, locale)}</span>
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
                             {t("deliveryAtCheckout")}
+                        </div>
+                        <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                            ✓ המחיר כולל מע״מ כחוק
                         </div>
                         {hasUnavailableItems ? (
                             <Button className="mt-4 w-full" size="lg" disabled>
@@ -209,7 +230,7 @@ export function CartView() {
             {!loading && (
                 <MobileStickyBar>
                     <div className="flex shrink-0 flex-col">
-                        <span className="text-xs text-muted-foreground">{t("total")}</span>
+                        <span className="text-[10px] text-muted-foreground">{t("total")} (כולל מע״מ)</span>
                         <span className="font-display text-lg font-extrabold text-primary">
                             {formatILS(subtotal, locale)}
                         </span>

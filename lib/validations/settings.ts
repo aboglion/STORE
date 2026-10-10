@@ -31,6 +31,14 @@ export function settingsFormSchema(t: ValidationMessages) {
             .int()
             .min(0, t("invalidValue")),
         contact_phone: z.string().trim().max(30).optional().default(""),
+        legal_business_name: z.string().trim().max(120).optional().default(""),
+        business_id: z.string().trim().max(30).optional().default(""),
+        business_address: z.string().trim().max(200).optional().default(""),
+        business_email: z.string().trim().max(100).optional().default(""),
+        business_hours: z.string().trim().max(150).optional().default(""),
+        accessibility_officer_name: z.string().trim().max(100).optional().default(""),
+        accessibility_officer_phone: z.string().trim().max(30).optional().default(""),
+        accessibility_officer_email: z.string().trim().max(100).optional().default(""),
     });
 }
 

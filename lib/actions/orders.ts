@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSettings } from "@/lib/data/storefront";
+import { rateLimit } from "@/lib/server/rate-limit";
 import { formatIsraeliPhone, normalizeIsraeliPhone } from "@/lib/utils/phone";
 import { normalizeAddress } from "@/lib/utils/address";
 import {
@@ -51,6 +52,15 @@ export async function createOrder(
         return { ok: false, error: te("invalidPhone") };
     }
 
+    // Spam / stock-drain protection: 5 orders per 10 minutes per IP+phone.
+    const limited = await rateLimit({
+        key: "create-order",
+        limit: 5,
+        windowMs: 10 * 60_000,
+        identifier: phone,
+    });
+    if (!limited.ok) return { ok: false, error: te("tooManyAttempts") };
+
     // 2. Merge duplicate cart lines.
     const merged = new Map<string, number>();
     for (const item of items) {
@@ -67,11 +77,16 @@ export async function createOrder(
     const productIds = Array.from(merged.keys());
     const admin = createAdminClient();
 
-    // 3. Compute subtotal from the database (never from the client).
-    const { data: products } = await admin
-        .from("products")
-        .select("id, name_he, price_agorot, is_active, stock_quantity")
-        .in("id", productIds);
+    // 3. Compute subtotal from the database (never from the client) and
+    //    read the delivery settings in parallel (settings are cached).
+    const [productsResult, settings] = await Promise.all([
+        admin
+            .from("products")
+            .select("id, name_he, price_agorot, is_active, stock_quantity")
+            .in("id", productIds),
+        getSettings(),
+    ]);
+    const { data: products } = productsResult;
 
     interface CheckoutProduct {
         id: string;
@@ -107,7 +122,6 @@ export async function createOrder(
     }
 
     // 4. Delivery fee: free above the configured threshold.
-    const settings = await getSettings();
     const deliveryFee =
         subtotalAgorot >= settings.free_delivery_threshold_agorot
             ? 0

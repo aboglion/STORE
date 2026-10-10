@@ -40,6 +40,7 @@ describe("recent orders client storage helper", () => {
     it("saves a new recent order and retrieves it", () => {
         const order: StoredRecentOrder = {
             orderNumber: "20261009-000001",
+            phone: "+972501234567",
             totalAgorot: 3390,
             placedAt: "2026-10-09T19:09:43.000Z",
             customerName: "גדכדגכ",
@@ -57,11 +58,13 @@ describe("recent orders client storage helper", () => {
     it("deduplicates orders and moves newest to top", () => {
         const order1: StoredRecentOrder = {
             orderNumber: "ORD-1",
+            phone: "+972501234567",
             totalAgorot: 1000,
             placedAt: "2026-10-01",
         };
         const order2: StoredRecentOrder = {
             orderNumber: "ORD-2",
+            phone: "+972501234567",
             totalAgorot: 2000,
             placedAt: "2026-10-02",
         };
@@ -86,8 +89,18 @@ describe("recent orders client storage helper", () => {
     });
 
     it("removes an order by order number", () => {
-        saveRecentOrder({ orderNumber: "A", totalAgorot: 100, placedAt: "1" });
-        saveRecentOrder({ orderNumber: "B", totalAgorot: 200, placedAt: "2" });
+        saveRecentOrder({
+            orderNumber: "A",
+            phone: "+972501234567",
+            totalAgorot: 100,
+            placedAt: "1",
+        });
+        saveRecentOrder({
+            orderNumber: "B",
+            phone: "+972501234567",
+            totalAgorot: 200,
+            placedAt: "2",
+        });
 
         expect(getStoredRecentOrders()).toHaveLength(2);
 

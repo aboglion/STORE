@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 
 import {
     BarChart3,
+    Bike,
     Boxes,
     LayoutDashboard,
     Loader2,
@@ -30,6 +31,7 @@ export const NAV_ITEMS = [
     { href: "/admin/categories", labelKey: "categories", icon: Tags },
     { href: "/admin/inventory", labelKey: "inventory", icon: Boxes },
     { href: "/admin/orders", labelKey: "orders", icon: ShoppingCart },
+    { href: "/admin/couriers", labelKey: "couriers", icon: Bike },
     { href: "/admin/customers", labelKey: "customers", icon: Users },
     { href: "/admin/stats", labelKey: "stats", icon: BarChart3 },
     { href: "/admin/settings", labelKey: "settings", icon: Settings },

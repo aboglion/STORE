@@ -7,6 +7,8 @@ const LOCALE_COOKIE_OPTIONS = {
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
     sameSite: "lax" as const,
+    // Only sent over HTTPS in production.
+    secure: process.env.NODE_ENV === "production",
 };
 
 /**

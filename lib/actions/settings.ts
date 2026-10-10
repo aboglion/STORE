@@ -2,13 +2,14 @@
 
 import { randomUUID } from "crypto";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth";
-import { PRODUCT_IMAGES_BUCKET } from "@/lib/constants";
+import { ALLOWED_IMAGE_TYPES, PRODUCT_IMAGES_BUCKET } from "@/lib/constants";
+import { STORE_CACHE_TAGS } from "@/lib/data/storefront";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { shekelInputToAgorot } from "@/lib/utils/currency";
 import { settingsFormSchema } from "@/lib/validations/settings";
@@ -52,6 +53,14 @@ export async function updateSettings(
             value: { value: parsed.data.low_stock_threshold_default },
         },
         { key: "contact_phone", value: { value: parsed.data.contact_phone } },
+        { key: "legal_business_name", value: { value: parsed.data.legal_business_name } },
+        { key: "business_id", value: { value: parsed.data.business_id } },
+        { key: "business_address", value: { value: parsed.data.business_address } },
+        { key: "business_email", value: { value: parsed.data.business_email } },
+        { key: "business_hours", value: { value: parsed.data.business_hours } },
+        { key: "accessibility_officer_name", value: { value: parsed.data.accessibility_officer_name } },
+        { key: "accessibility_officer_phone", value: { value: parsed.data.accessibility_officer_phone } },
+        { key: "accessibility_officer_email", value: { value: parsed.data.accessibility_officer_email } },
         { key: "logo_url", value: { value: parsed.data.logo_url } },
         { key: "theme", value: { value: parsed.data.theme } },
     ];
@@ -65,6 +74,7 @@ export async function updateSettings(
 
     revalidatePath("/admin/settings");
     revalidatePath("/", "layout");
+    revalidateTag(STORE_CACHE_TAGS.settings);
     return undefined;
 }
 
@@ -86,8 +96,14 @@ export async function uploadStoreLogo(
         return { error: te("fileTooLarge") };
     }
 
+    // MIME allowlist — the extension is derived from the validated type,
+    // never from the client-supplied file name.
+    const ext = ALLOWED_IMAGE_TYPES.get(file.type);
+    if (!ext) {
+        return { error: te("invalidImageType") };
+    }
+
     const admin = createAdminClient();
-    const ext = (file.name.split(".").pop() ?? "png").toLowerCase();
     const storagePath = `logos/${randomUUID()}.${ext}`;
 
     const { error: uploadError } = await admin.storage
@@ -112,6 +128,7 @@ export async function uploadStoreLogo(
     }
 
     revalidatePath("/", "layout");
+    revalidateTag(STORE_CACHE_TAGS.settings);
     return { path: storagePath };
 }
 
@@ -147,5 +164,6 @@ export async function removeStoreLogo(): Promise<LogoActionResult> {
     if (error) return { error: te("deleteLogoFailed") };
 
     revalidatePath("/", "layout");
+    revalidateTag(STORE_CACHE_TAGS.settings);
     return undefined;
 }

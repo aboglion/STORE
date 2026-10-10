@@ -1,6 +1,7 @@
 import "server-only";
 
 import type {
+    Courier,
     Customer,
     Order,
     OrderEvent,
@@ -27,16 +28,23 @@ const PAYMENT_STATUSES: PaymentStatus[] = [
     "refunded",
 ];
 
+/** Order row enriched with its assigned courier (used by the admin UI). */
+export type OrderWithCourier = Order & {
+    courier: Pick<Courier, "id" | "full_name" | "color"> | null;
+};
+
 export interface OrderListFilters {
     status?: string;
     paymentStatus?: string;
+    /** A courier id, or "unassigned" for orders still in the store pool. */
+    courier?: string;
     q?: string;
     page?: number;
     pageSize?: number;
 }
 
 export interface OrderListResult {
-    orders: Order[];
+    orders: OrderWithCourier[];
     total: number;
     page: number;
     pageSize: number;
@@ -55,7 +63,7 @@ export async function getOrders(
 
     let query = admin
         .from("orders")
-        .select("*", { count: "exact" })
+        .select("*, couriers(full_name, color)", { count: "exact" })
         .order("placed_at", { ascending: false })
         .range(from, to);
 
@@ -73,6 +81,11 @@ export async function getOrders(
     ) {
         query = query.eq("payment_status", filters.paymentStatus as PaymentStatus);
     }
+    if (filters.courier === "unassigned") {
+        query = query.is("courier_id", null);
+    } else if (filters.courier) {
+        query = query.eq("courier_id", filters.courier);
+    }
     if (filters.q) {
         query = query.or(
             `order_number.ilike.%${filters.q}%,customer_name_snapshot.ilike.%${filters.q}%,customer_phone_snapshot.ilike.%${filters.q}%`
@@ -84,8 +97,19 @@ export async function getOrders(
 
     const total = count ?? 0;
 
+    const orders: OrderWithCourier[] = (data ?? []).map((row) => {
+        const { couriers, ...order } = row as { couriers: unknown } & Order;
+        return {
+            ...order,
+            courier: (couriers as Pick<
+                Courier,
+                "id" | "full_name" | "color"
+            > | null) ?? null,
+        };
+    });
+
     return {
-        orders: (data ?? []) as Order[],
+        orders,
         total,
         page,
         pageSize,
@@ -135,4 +159,23 @@ export async function getOrderById(id: string): Promise<OrderDetail | null> {
         events: (eventsRes.data ?? []) as OrderEvent[],
         customer: (customerRes.data ?? null) as OrderDetail["customer"],
     };
+}
+
+/**
+ * Resolves an order by its unguessable invoice token (used by the public
+ * invoice page `/invoice/<token>`). Returns null for unknown/invalid tokens.
+ */
+export async function getOrderByInvoiceToken(
+    invoiceToken: string
+): Promise<OrderDetail | null> {
+    const admin = createAdminClient();
+
+    const { data: order } = await admin
+        .from("orders")
+        .select("*")
+        .eq("invoice_token", invoiceToken)
+        .maybeSingle();
+
+    if (!order) return null;
+    return getOrderById(order.id as string);
 }

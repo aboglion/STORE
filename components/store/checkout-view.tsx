@@ -22,6 +22,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     Card,
     CardContent,
@@ -66,6 +67,8 @@ export function CheckoutView() {
     const locale = useLocale() as Locale;
     const [pending, startTransition] = useTransition();
     const [locating, setLocating] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(true);
+    const [marketingOptIn, setMarketingOptIn] = useState(false);
     const [details, setDetails] = useState<Awaited<
         ReturnType<typeof getCartProductDetails>
     >>([]);
@@ -138,6 +141,11 @@ export function CheckoutView() {
     }
 
     function onSubmit(values: CheckoutFormValues) {
+        if (!termsAccepted) {
+            toast.error("יש לאשר את תקנון האתר ומדיניות ביטול עסקה כדי לבצע הזמנה");
+            return;
+        }
+
         const payload: CheckoutPayload = {
             customer: values,
             items: orderItems,
@@ -152,6 +160,7 @@ export function CheckoutView() {
             if (res.orderNumber) {
                 saveRecentOrder({
                     orderNumber: res.orderNumber,
+                    phone: values.phone,
                     totalAgorot: res.totalAgorot ?? 0,
                     placedAt: new Date().toISOString(),
                     customerName: values.full_name,
@@ -435,11 +444,45 @@ export function CheckoutView() {
                             />
                         </CardContent>
                     </Card>
+
+                    {/* Statutory Agreement on Mobile */}
+                    <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-soft space-y-3 lg:hidden">
+                        <div className="flex items-start gap-2.5">
+                            <Checkbox
+                                id="mobile-terms"
+                                checked={termsAccepted}
+                                onCheckedChange={(c) => setTermsAccepted(Boolean(c))}
+                                className="mt-0.5"
+                            />
+                            <Label htmlFor="mobile-terms" className="text-xs leading-relaxed cursor-pointer font-normal">
+                                קראתי ואני מאשר/ת את <Link href="/terms" target="_blank" className="font-bold text-primary underline underline-offset-2">תקנון האתר</Link> ואת <Link href="/cancellation" target="_blank" className="font-bold text-primary underline underline-offset-2">מדיניות ביטול עסקה</Link> כחוק.
+                            </Label>
+                        </div>
+                        <div className="flex items-start gap-2.5 pt-2 border-t border-border/60">
+                            <Checkbox
+                                id="mobile-marketing"
+                                checked={marketingOptIn}
+                                onCheckedChange={(c) => setMarketingOptIn(Boolean(c))}
+                                className="mt-0.5"
+                            />
+                            <Label htmlFor="mobile-marketing" className="text-[11px] text-muted-foreground leading-relaxed cursor-pointer font-normal">
+                                אני מעוניין/ת לקבל עדכונים והטבות בדוא״ל/SMS (ניתן להסיר את ההסכמה בכל עת).
+                            </Label>
+                        </div>
+                        <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                            ✓ כל המחירים באתר כוללים מע״מ כחוק
+                        </div>
+                    </div>
                 </div>
 
                 <div className="hidden lg:block">
                     <div className="sticky top-24 rounded-2xl border border-border/70 bg-card p-5 shadow-soft">
-                        <h2 className="font-display text-lg font-bold">{t("orderSummary")}</h2>
+                        <div className="flex items-center justify-between">
+                            <h2 className="font-display text-lg font-bold">{t("orderSummary")}</h2>
+                            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                כולל מע״מ כחוק
+                            </span>
+                        </div>
                         <Separator className="my-3" />
 
                         <div className="grid gap-3">
@@ -483,11 +526,37 @@ export function CheckoutView() {
 
                         <Separator className="my-3" />
                         <div className="flex justify-between text-sm">
-                            <span>{t("itemsTotal")}</span>
+                            <span>{t("itemsTotal")} (כולל מע״מ)</span>
                             <span className="font-semibold">{formatILS(subtotal, locale)}</span>
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
                             {t("deliveryByCart")}
+                        </div>
+
+                        {/* Statutory Terms agreement & Spam Law checkbox */}
+                        <div className="mt-4 rounded-xl border border-border/80 bg-muted/40 p-3 space-y-2.5 text-xs">
+                            <div className="flex items-start gap-2">
+                                <Checkbox
+                                    id="desktop-terms"
+                                    checked={termsAccepted}
+                                    onCheckedChange={(c) => setTermsAccepted(Boolean(c))}
+                                    className="mt-0.5"
+                                />
+                                <Label htmlFor="desktop-terms" className="text-xs leading-snug cursor-pointer font-normal">
+                                    קראתי ואני מסכים/ה ל<Link href="/terms" target="_blank" className="font-bold text-primary underline underline-offset-2">תקנון האתר</Link> ול<Link href="/cancellation" target="_blank" className="font-bold text-primary underline underline-offset-2">מדיניות ביטול עסקה</Link> כחוק.
+                                </Label>
+                            </div>
+                            <div className="flex items-start gap-2 pt-1 border-t border-border/60">
+                                <Checkbox
+                                    id="desktop-marketing"
+                                    checked={marketingOptIn}
+                                    onCheckedChange={(c) => setMarketingOptIn(Boolean(c))}
+                                    className="mt-0.5"
+                                />
+                                <Label htmlFor="desktop-marketing" className="text-[11px] text-muted-foreground leading-snug cursor-pointer font-normal">
+                                    אני מעוניין/ת לקבל עדכונים ומבצעים בדוא״ל/SMS (ניתן להסיר בכל עת).
+                                </Label>
+                            </div>
                         </div>
 
                         {hasUnavailableItems && (
@@ -499,20 +568,20 @@ export function CheckoutView() {
                             type="submit"
                             className="mt-4 w-full"
                             size="lg"
-                            disabled={pending || hasUnavailableItems}
+                            disabled={pending || hasUnavailableItems || !termsAccepted}
                         >
                             {pending && <Loader2 className="size-4 animate-spin" />}
                             {t("placeOrder")}
                         </Button>
-                        <p className="mt-2 text-center text-xs text-muted-foreground">
-                            {t("placeOrderHint")}
+                        <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                            {t("placeOrderHint")} • כל המחירים כוללים מע״מ
                         </p>
                     </div>
                 </div>
 
                 <MobileStickyBar>
                     <div className="flex shrink-0 flex-col">
-                        <span className="text-xs text-muted-foreground">{t("totalToPay")}</span>
+                        <span className="text-[10px] text-muted-foreground">{t("totalToPay")} (כולל מע״מ)</span>
                         <span className="font-display text-lg font-extrabold text-primary">
                             {formatILS(subtotal, locale)}
                         </span>
@@ -521,7 +590,7 @@ export function CheckoutView() {
                         type="submit"
                         size="lg"
                         className="flex-1"
-                        disabled={pending || hasUnavailableItems}
+                        disabled={pending || hasUnavailableItems || !termsAccepted}
                     >
                         {pending && <Loader2 className="size-4 animate-spin" />}
                         {t("placeOrder")}

@@ -1,9 +1,9 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { StoreChrome } from "@/components/store/store-chrome";
 import { CustomerOrdersView } from "@/components/store/customer-orders-view";
-import { getPublicOrder } from "@/lib/actions/orders-public";
 
 export async function generateMetadata(): Promise<Metadata> {
     const t = await getTranslations("orders");
@@ -13,19 +13,13 @@ export async function generateMetadata(): Promise<Metadata> {
     };
 }
 
-export default async function CustomerOrdersPage({
-    searchParams,
-}: {
-    searchParams: Promise<{ order?: string }>;
-}) {
-    const { order: orderNumber } = await searchParams;
-
-    const initialOrder = orderNumber ? await getPublicOrder(orderNumber) : null;
-
+export default async function CustomerOrdersPage() {
     return (
         <StoreChrome>
             <div className="py-2 sm:py-6">
-                <CustomerOrdersView initialOrder={initialOrder} />
+                <Suspense fallback={null}>
+                    <CustomerOrdersView />
+                </Suspense>
             </div>
         </StoreChrome>
     );

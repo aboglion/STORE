@@ -2,12 +2,13 @@
 
 import { randomUUID } from "crypto";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { z } from "zod";
 
-import { PRODUCT_IMAGES_BUCKET } from "@/lib/constants";
+import { ALLOWED_IMAGE_TYPES, PRODUCT_IMAGES_BUCKET } from "@/lib/constants";
+import { STORE_CACHE_TAGS } from "@/lib/data/storefront";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { shekelInputToAgorot } from "@/lib/utils/currency";
@@ -73,6 +74,7 @@ export async function createProduct(
 
     revalidatePath("/admin/products");
     revalidatePath("/");
+    revalidateTag(STORE_CACHE_TAGS.products);
 }
 
 export async function updateProduct(
@@ -126,6 +128,7 @@ export async function updateProduct(
     revalidatePath(`/admin/products/${id}`);
     revalidatePath("/");
     revalidatePath(`/products/${parsed.data.slug}`);
+    revalidateTag(STORE_CACHE_TAGS.products);
 }
 
 export async function deleteProduct(id: string): Promise<ActionResult> {
@@ -152,6 +155,7 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
 
     revalidatePath("/admin/products");
     revalidatePath("/");
+    revalidateTag(STORE_CACHE_TAGS.products);
 }
 
 // ---------------------------------------------------------------------------
@@ -171,8 +175,14 @@ export async function uploadProductImage(
         return { error: te("fileTooLarge") };
     }
 
+    // MIME allowlist — the extension is derived from the validated type,
+    // never from the client-supplied file name.
+    const ext = ALLOWED_IMAGE_TYPES.get(file.type);
+    if (!ext) {
+        return { error: te("invalidImageType") };
+    }
+
     const admin = createAdminClient();
-    const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase();
     const storagePath = `products/${productId}/${randomUUID()}.${ext}`;
 
     const { error: uploadError } = await admin.storage
@@ -207,6 +217,7 @@ export async function uploadProductImage(
 
     revalidatePath(`/admin/products/${productId}`);
     revalidatePath("/");
+    revalidateTag(STORE_CACHE_TAGS.products);
 }
 
 export async function updateProductImage(
@@ -226,6 +237,7 @@ export async function updateProductImage(
     if (error) return { error: te("updateImageFailed") };
     revalidatePath("/admin/products");
     revalidatePath("/");
+    revalidateTag(STORE_CACHE_TAGS.products);
 }
 
 export async function deleteProductImage(
@@ -258,6 +270,7 @@ export async function deleteProductImage(
 
     revalidatePath(`/admin/products/${productId}`);
     revalidatePath("/");
+    revalidateTag(STORE_CACHE_TAGS.products);
 }
 
 // ---------------------------------------------------------------------------
@@ -290,6 +303,7 @@ export async function createCategory(
 
     revalidatePath("/admin/categories");
     revalidatePath("/");
+    revalidateTag(STORE_CACHE_TAGS.categories);
 }
 
 export async function updateCategory(
@@ -322,6 +336,7 @@ export async function updateCategory(
 
     revalidatePath("/admin/categories");
     revalidatePath("/");
+    revalidateTag(STORE_CACHE_TAGS.categories);
 }
 
 export async function deleteCategory(id: string): Promise<ActionResult> {
@@ -340,6 +355,7 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
 
     revalidatePath("/admin/categories");
     revalidatePath("/");
+    revalidateTag(STORE_CACHE_TAGS.categories);
 }
 
 // ---------------------------------------------------------------------------
@@ -385,4 +401,5 @@ export async function adjustStock(
     revalidatePath("/admin/inventory");
     revalidatePath(`/admin/products/${productId}`);
     revalidatePath("/");
+    revalidateTag(STORE_CACHE_TAGS.products);
 }

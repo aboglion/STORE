@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 
+import { AccessibilityWidget } from "@/components/accessibility/accessibility-widget";
+import { CookieConsentBanner } from "@/components/legal/cookie-consent-banner";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { CartProvider } from "@/contexts/cart-context";
 import { getSettings, getStoreName } from "@/lib/data/storefront";
@@ -8,6 +10,7 @@ import type { Locale } from "@/lib/i18n/config";
 
 import { BottomNav } from "./bottom-nav";
 import { CartButton } from "./cart-button";
+import { StoreFooter } from "./store-footer";
 import { StoreLogo } from "./store-logo";
 
 export async function StoreChrome({
@@ -23,6 +26,9 @@ export async function StoreChrome({
     return (
         <CartProvider>
             <div className="flex min-h-screen flex-col bg-background">
+                <AccessibilityWidget />
+                <CookieConsentBanner />
+
                 <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
                     <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 sm:h-16">
                         <Link
@@ -51,19 +57,23 @@ export async function StoreChrome({
                             >
                                 {t("myOrders")}
                             </Link>
+                            <Link
+                                href="/cancellation"
+                                className="hidden rounded-full px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 lg:inline-flex"
+                            >
+                                ביטול עסקה
+                            </Link>
                             <LocaleSwitcher />
                             <CartButton />
                         </nav>
                     </div>
                 </header>
 
-                <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-5 sm:pt-8 md:pb-10">
+                <main id="main-content" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-12 pt-5 sm:pt-8 md:pb-10">
                     {children}
                 </main>
 
-                <footer className="hidden border-t border-border/60 py-6 text-center text-xs text-muted-foreground md:block">
-                    {storeName} © {new Date().getFullYear()} — {t("footer")}
-                </footer>
+                <StoreFooter settings={settings} storeName={storeName} />
 
                 <BottomNav />
             </div>

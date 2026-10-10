@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Palette, Store } from "lucide-react";
+import { Accessibility, Building2, Loader2, Palette, Store } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -56,6 +56,14 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
             ),
             low_stock_threshold_default: settings.low_stock_threshold_default,
             contact_phone: settings.contact_phone,
+            legal_business_name: settings.legal_business_name || "",
+            business_id: settings.business_id || "",
+            business_address: settings.business_address || "",
+            business_email: settings.business_email || "",
+            business_hours: settings.business_hours || "",
+            accessibility_officer_name: settings.accessibility_officer_name || "",
+            accessibility_officer_phone: settings.accessibility_officer_phone || "",
+            accessibility_officer_email: settings.accessibility_officer_email || "",
         },
     });
 
@@ -291,6 +299,139 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                         </FormItem>
                     )}
                 />
+
+                <Separator />
+
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                    <Building2 className="size-4 text-primary" />
+                    <span>פרטי העסק כחוק (התאמה לדין בישראל)</span>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField
+                        control={form.control}
+                        name="legal_business_name"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>שם העסק הרשמי (עוסק / חברה)</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="לדוגמה: מאפיית הבוטיק בע״מ" {...field} />
+                                </FormControl>
+                                <FormDescription>השם המופיע בתעודת ההתאגדות / רישום העסק</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="business_id"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>מספר ח.פ / ע.מ / ח.צ</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="516000000" dir="ltr" {...field} />
+                                </FormControl>
+                                <FormDescription>מספר זיהוי מס של העסק בישראל</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField
+                        control={form.control}
+                        name="business_address"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>כתובת פיזית של העסק</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="רחוב הרצל 1, תל אביב-יפו" {...field} />
+                                </FormControl>
+                                <FormDescription>חובה לציון בתקנון, בחשבוניות ובהודעות ביטול</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="business_email"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>דוא״ל שירות לקוחות רשמי</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="support@store.co.il" dir="ltr" {...field} />
+                                </FormControl>
+                                <FormDescription>לפניות צרכנים והודעות ביטול עסקה</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <FormField
+                    control={form.control}
+                    name="business_hours"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>שעות פעילות שירות הלקוחות</FormLabel>
+                            <FormControl>
+                                <Input placeholder="א׳-ה׳ 08:00-20:00, ו׳ 08:00-14:00" {...field} />
+                            </FormControl>
+                            <FormDescription>שעות מענה וקבלת קהל כחוק</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <Separator />
+
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                    <Accessibility className="size-4 text-primary" />
+                    <span>פרטי רכז נגישות (חוק שוויון זכויות ות״י 5568)</span>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                    <FormField
+                        control={form.control}
+                        name="accessibility_officer_name"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>שם רכז/ת הנגישות</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="שירות לקוחות ונגישות" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="accessibility_officer_phone"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>טלפון רכז/ת הנגישות</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="03-0000000" dir="ltr" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="accessibility_officer_email"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>דוא״ל רכז/ת הנגישות</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="accessibility@store.co.il" dir="ltr" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
                 <div>
                     <Button type="submit" disabled={pending} size="lg">

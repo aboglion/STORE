@@ -118,4 +118,15 @@ export const REVENUE_STATUSES: OrderStatus[] = [
 /** Storage bucket for product images. Must match 0004_rls.sql. */
 export const PRODUCT_IMAGES_BUCKET = "product-images";
 
+/**
+ * Allowed image upload types (MIME → extension). SVG is intentionally
+ * excluded: it can carry scripts and is not needed for product photos.
+ */
+export const ALLOWED_IMAGE_TYPES: ReadonlyMap<string, string> = new Map([
+    ["image/jpeg", "jpg"],
+    ["image/png", "png"],
+    ["image/webp", "webp"],
+    ["image/avif", "avif"],
+]);
+
 export const CART_STORAGE_KEY = "store-cart-v1";

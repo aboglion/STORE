@@ -17,13 +17,16 @@ import {
 } from "@/components/ui/select";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
 import type { OrderStatus, PaymentStatus } from "@/types/database.types";
+import type { AssignableCourier } from "@/components/admin/order-assign-dialog";
 
 const ALL_ORDER_STATUSES = Object.keys(ORDER_STATUS_LABELS) as OrderStatus[];
 
 export function OrderFilters({
     initial,
+    couriers,
 }: {
-    initial: { q?: string; status?: string; payment?: string };
+    initial: { q?: string; status?: string; payment?: string; courier?: string };
+    couriers: AssignableCourier[];
 }) {
     const router = useRouter();
     const t = useTranslations("admin.orders");
@@ -31,12 +34,14 @@ export function OrderFilters({
     const [q, setQ] = useState(initial.q ?? "");
     const [status, setStatus] = useState(initial.status ?? "all");
     const [payment, setPayment] = useState(initial.payment ?? "all");
+    const [courier, setCourier] = useState(initial.courier ?? "all");
 
     function apply() {
         const params = new URLSearchParams();
         if (q.trim()) params.set("q", q.trim());
         if (status !== "all") params.set("status", status);
         if (payment !== "all") params.set("payment", payment);
+        if (courier !== "all") params.set("courier", courier);
         router.push(`/admin/orders?${params.toString()}`);
     }
 
@@ -84,6 +89,25 @@ export function OrderFilters({
                     <SelectItem value="refunded">{t("refunded")}</SelectItem>
                 </SelectContent>
             </Select>
+
+            {couriers.length > 0 && (
+                <Select value={courier} onValueChange={setCourier}>
+                    <SelectTrigger className="w-full md:w-44">
+                        <SelectValue placeholder={t("allCouriers")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">{t("allCouriers")}</SelectItem>
+                        <SelectItem value="unassigned">
+                            {t("unassigned")}
+                        </SelectItem>
+                        {couriers.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                                {c.full_name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            )}
 
             <Button type="button" variant="secondary" onClick={apply}>
                 {t("filter")}

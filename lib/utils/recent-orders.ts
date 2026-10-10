@@ -2,6 +2,8 @@
 
 export interface StoredRecentOrder {
     orderNumber: string;
+    /** Phone used to authorize lookups of this order (required). */
+    phone: string;
     totalAgorot: number;
     placedAt: string;
     customerName?: string;

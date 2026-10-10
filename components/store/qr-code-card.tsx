@@ -13,6 +13,7 @@ interface QrCodeCardProps {
     orderNumber: string;
     totalAgorot?: number | null;
     customerName?: string | null;
+    phone?: string | null;
     qrDataUrl: string;
     trackingUrl: string;
 }
@@ -21,6 +22,7 @@ export function QrCodeCard({
     orderNumber,
     totalAgorot,
     customerName,
+    phone,
     qrDataUrl,
     trackingUrl,
 }: QrCodeCardProps) {
@@ -32,12 +34,13 @@ export function QrCodeCard({
         if (orderNumber) {
             saveRecentOrder({
                 orderNumber,
+                phone: phone ?? "",
                 totalAgorot: totalAgorot ?? 0,
                 placedAt: new Date().toISOString(),
                 customerName: customerName || undefined,
             });
         }
-    }, [orderNumber, totalAgorot, customerName]);
+    }, [orderNumber, totalAgorot, customerName, phone]);
 
     function handleCopy() {
         if (navigator.clipboard) {
