@@ -91,6 +91,8 @@
         "autoOrManual": "تلقائيًا من المتصفح أو إدخال يدوي",
         "address": "العنوان",
         "addressPlaceholder": "شارع، رقم البيت، مدخل، شقة",
+        "houseNumber": "رقم البيت",
+        "houseNumberPlaceholder": "مثال: 12",
         "city": "المدينة",
         "cityPlaceholder": "اختر مدينة أو قرية في إسرائيل...",
         "locationCaptured": "تم تحديد الموقع تلقائيًا من المتصفح",

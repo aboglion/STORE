@@ -22,7 +22,7 @@ import type { LocationConfidence } from "@/types/database.types";
 
 const NOMINATIM_BASE = "https://nominatim.openstreetmap.org";
 const USER_AGENT =
-    "OmarBakeryDelivery/1.0 (https://omar.example.com; contact@example.com)";
+    "OmarBakeryDelivery/1.0 (https://omar-bakery.com; contact@omar-bakery.com)";
 const TIMEOUT_MS = 4000;
 const CACHE_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 

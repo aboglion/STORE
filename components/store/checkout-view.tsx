@@ -21,7 +21,7 @@ import {
     ShoppingCart,
     User,
 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import {
@@ -161,7 +161,7 @@ export function CheckoutView() {
         defaultValues: {
             full_name: "",
             phone: "",
-            address: { full_address: "", city: "" },
+            address: { full_address: "", city: "", house_number: "" },
             payment_method: "cash",
             customer_notes: "",
             lat: null,
@@ -169,6 +169,10 @@ export function CheckoutView() {
             location_source: "manual",
         },
     });
+
+    // Subscribe to the city value so the address fields appear as soon as a
+    // city/village is selected. Must be called before any early return.
+    const watchedCity = useWatch({ control: form.control, name: "address.city" });
 
     const orderItems = items.map((i) => ({ product_id: i.product_id, quantity: i.quantity }));
 
@@ -201,9 +205,11 @@ export function CheckoutView() {
         setAddressCheck({ status: "checking" });
         verifyDebounceRef.current = setTimeout(async () => {
             const city = form.watch("address.city")?.trim() ?? "";
+            const houseNumber = form.watch("address.house_number")?.trim() ?? "";
             const result = await geocodeForward({
                 full_address: fullAddress,
                 city: city || null,
+                house_number: houseNumber || null,
             });
             if (seq !== verifySeq.current) return;
             if (
@@ -416,6 +422,8 @@ export function CheckoutView() {
         return !detail || !detail.is_active || detail.stock_quantity <= 0;
     });
 
+    const citySelected = Boolean(watchedCity?.trim());
+
     const sectionIcon =
         "flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary";
 
@@ -513,102 +521,6 @@ export function CheckoutView() {
                         <CardContent className="grid gap-4">
                             <FormField
                                 control={form.control}
-                                name="address.full_address"
-                                render={({ field }) => {
-                                    const citySelected = Boolean(
-                                        form.watch("address.city")?.trim()
-                                    );
-                                    return (
-                                        <FormItem>
-                                            <FormLabel>{t("address")}</FormLabel>
-                                            <FormControl>
-                                                <div className="relative">
-                                                    <Input
-                                                        placeholder={t("addressPlaceholder")}
-                                                        className="h-11 rounded-xl"
-                                                        disabled={!citySelected}
-                                                        {...field}
-                                                        onChange={(e) => {
-                                                            field.onChange(e);
-                                                            handleAddressInputChange(
-                                                                e.target.value
-                                                            );
-                                                        }}
-                                                        onBlur={() => {
-                                                            field.onBlur();
-                                                            setTimeout(
-                                                                () =>
-                                                                    setShowAddressResults(
-                                                                        false
-                                                                    ),
-                                                                150
-                                                            );
-                                                            verifyAddress();
-                                                        }}
-                                                    />
-                                                    {addressSearching && (
-                                                        <Loader2 className="pointer-events-none absolute end-3 top-3 size-4 animate-spin text-muted-foreground" />
-                                                    )}
-                                                    {showAddressResults &&
-                                                        addressResults.length > 0 && (
-                                                            <div className="absolute z-[1050] mt-1 w-full overflow-hidden rounded-xl border border-border/70 bg-popover/95 p-1.5 shadow-xl backdrop-blur-md">
-                                                                {addressResults.map(
-                                                                    (result, i) => (
-                                                                        <button
-                                                                            key={`${result.lat}-${result.lng}-${i}`}
-                                                                            type="button"
-                                                                            onMouseDown={(e) =>
-                                                                                e.preventDefault()
-                                                                            }
-                                                                            onClick={() =>
-                                                                                selectAddressResult(
-                                                                                    result
-                                                                                )
-                                                                            }
-                                                                            className="block w-full truncate rounded-lg px-3 py-2 text-start text-sm hover:bg-accent/60"
-                                                                        >
-                                                                            {result.display_name
-                                                                                ? formatGeocodedAddress(
-                                                                                    result.display_name
-                                                                                )
-                                                                                : "—"}
-                                                                        </button>
-                                                                    )
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                </div>
-                                            </FormControl>
-                                            {!citySelected && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    {t("selectCityFirst")}
-                                                </div>
-                                            )}
-                                            {addressCheck.status === "checking" && (
-                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                    <Loader2 className="size-3.5 animate-spin" />
-                                                    {t("addressChecking")}
-                                                </div>
-                                            )}
-                                            {addressCheck.status === "found" && (
-                                                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-                                                    <CheckCircle2 className="size-3.5" />
-                                                    {t("addressVerified")}
-                                                </div>
-                                            )}
-                                            {addressCheck.status === "not_found" && (
-                                                <div className="flex items-center gap-1.5 text-xs text-destructive">
-                                                    <AlertTriangle className="size-3.5" />
-                                                    {t("addressNotFound")}
-                                                </div>
-                                            )}
-                                            <FormMessage />
-                                        </FormItem>
-                                    );
-                                }}
-                            />
-                            <FormField
-                                control={form.control}
                                 name="address.city"
                                 render={({ field }) => (
                                     <FormItem>
@@ -624,6 +536,122 @@ export function CheckoutView() {
                                     </FormItem>
                                 )}
                             />
+                            {citySelected && (
+                                <>
+                                    <FormField
+                                        control={form.control}
+                                        name="address.full_address"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{t("address")}</FormLabel>
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <Input
+                                                            placeholder={t("addressPlaceholder")}
+                                                            className="h-11 rounded-xl"
+                                                            {...field}
+                                                            onChange={(e) => {
+                                                                field.onChange(e);
+                                                                handleAddressInputChange(
+                                                                    e.target.value
+                                                                );
+                                                            }}
+                                                            onBlur={() => {
+                                                                field.onBlur();
+                                                                setTimeout(
+                                                                    () =>
+                                                                        setShowAddressResults(
+                                                                            false
+                                                                        ),
+                                                                    150
+                                                                );
+                                                                verifyAddress();
+                                                            }}
+                                                        />
+                                                        {addressSearching && (
+                                                            <Loader2 className="pointer-events-none absolute end-3 top-3 size-4 animate-spin text-muted-foreground" />
+                                                        )}
+                                                        {showAddressResults &&
+                                                            addressResults.length > 0 && (
+                                                                <div className="absolute z-[1050] mt-1 w-full overflow-hidden rounded-xl border border-border/70 bg-popover/95 p-1.5 shadow-xl backdrop-blur-md">
+                                                                    {addressResults.map(
+                                                                        (result, i) => (
+                                                                            <button
+                                                                                key={`${result.lat}-${result.lng}-${i}`}
+                                                                                type="button"
+                                                                                onMouseDown={(e) =>
+                                                                                    e.preventDefault()
+                                                                                }
+                                                                                onClick={() =>
+                                                                                    selectAddressResult(
+                                                                                        result
+                                                                                    )
+                                                                                }
+                                                                                className="block w-full truncate rounded-lg px-3 py-2 text-start text-sm hover:bg-accent/60"
+                                                                            >
+                                                                                {result.display_name
+                                                                                    ? formatGeocodedAddress(
+                                                                                        result.display_name
+                                                                                    )
+                                                                                    : "—"}
+                                                                            </button>
+                                                                        )
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="address.house_number"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{t("houseNumber")}</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder={t("houseNumberPlaceholder")}
+                                                        className="h-11 rounded-xl"
+                                                        inputMode="numeric"
+                                                        {...field}
+                                                        onBlur={() => {
+                                                            field.onBlur();
+                                                            verifyAddress();
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </>
+                            )}
+                            {!citySelected && (
+                                <div className="rounded-xl border border-dashed border-border/70 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+                                    {t("selectCityFirst")}
+                                </div>
+                            )}
+                            {addressCheck.status === "checking" && (
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Loader2 className="size-3.5 animate-spin" />
+                                    {t("addressChecking")}
+                                </div>
+                            )}
+                            {addressCheck.status === "found" && (
+                                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                                    <CheckCircle2 className="size-3.5" />
+                                    {t("addressVerified")}
+                                </div>
+                            )}
+                            {addressCheck.status === "not_found" && (
+                                <div className="flex items-center gap-1.5 text-xs text-destructive">
+                                    <AlertTriangle className="size-3.5" />
+                                    {t("addressNotFound")}
+                                </div>
+                            )}
                             <AddressPinPicker
                                 value={{
                                     lat: form.watch("lat") ?? null,

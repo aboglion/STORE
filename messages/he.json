@@ -91,6 +91,8 @@
         "autoOrManual": "אוטומטי מהדפדפן או מילוי ידני",
         "address": "כתובת",
         "addressPlaceholder": "רחוב, מספר בית, כניסה, דירה",
+        "houseNumber": "מספר בית",
+        "houseNumberPlaceholder": "לדוגמה 12",
         "city": "עיר",
         "cityPlaceholder": "בחר עיר או כפר בישראל...",
         "locationCaptured": "המיקום נקלט אוטומטית מהדפדפן",
