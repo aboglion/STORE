@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { Search } from "lucide-react";
 
@@ -21,6 +22,7 @@ export function CustomerFilters({
     initial: { q?: string; sort?: string };
 }) {
     const router = useRouter();
+    const t = useTranslations("admin.customers");
     const [q, setQ] = useState(initial.q ?? "");
     const [sort, setSort] = useState(initial.sort ?? "newest");
 
@@ -39,25 +41,25 @@ export function CustomerFilters({
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && apply()}
-                    placeholder="חיפוש לפי שם או טלפון..."
+                    placeholder={t("searchPlaceholder")}
                     className="pr-9"
                 />
             </div>
 
             <Select value={sort} onValueChange={setSort}>
                 <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="מיון" />
+                    <SelectValue placeholder={t("sort")} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="newest">חדשים ביותר</SelectItem>
-                    <SelectItem value="orders">הכי הרבה הזמנות</SelectItem>
-                    <SelectItem value="total">הכי הרבה רכישות</SelectItem>
-                    <SelectItem value="last">הזמנה אחרונה</SelectItem>
+                    <SelectItem value="newest">{t("newest")}</SelectItem>
+                    <SelectItem value="orders">{t("mostOrders")}</SelectItem>
+                    <SelectItem value="total">{t("mostPurchases")}</SelectItem>
+                    <SelectItem value="last">{t("lastOrderSort")}</SelectItem>
                 </SelectContent>
             </Select>
 
             <Button type="button" variant="secondary" onClick={apply}>
-                סינון
+                {t("filter")}
             </Button>
         </div>
     );

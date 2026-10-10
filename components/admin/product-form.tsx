@@ -1,7 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
+import { useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -35,6 +36,7 @@ import {
     updateProduct,
     type ActionResult,
 } from "@/lib/actions/products";
+import { localizedText, type Locale } from "@/lib/i18n/config";
 import { agorotToShekelInput } from "@/lib/utils/currency";
 import {
     productFormSchema,
@@ -48,18 +50,25 @@ export function ProductForm({
     categories,
 }: {
     product?: ProductListItem;
-    categories: { id: string; name_he: string }[];
+    categories: { id: string; name_he: string; name_ar: string | null }[];
 }) {
     const router = useRouter();
+    const t = useTranslations("admin.products");
+    const tv = useTranslations("validation");
+    const locale = useLocale() as Locale;
     const [pending, startTransition] = useTransition();
 
+    const schema = useMemo(() => productFormSchema(tv), [tv]);
+
     const form = useForm<ProductFormValues>({
-        resolver: zodResolver(productFormSchema),
+        resolver: zodResolver(schema),
         defaultValues: product
             ? {
                 name_he: product.name_he,
+                name_ar: product.name_ar ?? "",
                 slug: product.slug,
                 description_he: product.description_he ?? "",
+                description_ar: product.description_ar ?? "",
                 price_shekels: agorotToShekelInput(product.price_agorot),
                 compare_at_price_shekels:
                     product.compare_at_price_agorot != null
@@ -73,8 +82,10 @@ export function ProductForm({
             }
             : {
                 name_he: "",
+                name_ar: "",
                 slug: "",
                 description_he: "",
+                description_ar: "",
                 price_shekels: "",
                 compare_at_price_shekels: "",
                 stock_quantity: 0,
@@ -96,7 +107,7 @@ export function ProductForm({
                 return;
             }
 
-            toast.success(product ? "המוצר עודכן" : "המוצר נוצר");
+            toast.success(product ? t("updatedToast") : t("createdToast"));
             router.push("/admin/products");
             router.refresh();
         });
@@ -114,9 +125,9 @@ export function ProductForm({
                         name="name_he"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>שם מוצר</FormLabel>
+                                <FormLabel>{t("nameLabel")}</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="למשל: לחם מחמצת" {...field} />
+                                    <Input placeholder={t("namePlaceholder")} {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -124,14 +135,13 @@ export function ProductForm({
                     />
                     <FormField
                         control={form.control}
-                        name="slug"
+                        name="name_ar"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Slug</FormLabel>
+                                <FormLabel>{t("nameArLabel")}</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="sourdough" dir="ltr" {...field} />
+                                    <Input placeholder="مثال: خبز العجين المخمر" {...field} />
                                 </FormControl>
-                                <FormDescription>מזהה ייחודי בכתובת האתר</FormDescription>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -140,12 +150,41 @@ export function ProductForm({
 
                 <FormField
                     control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t("slugLabel")}</FormLabel>
+                            <FormControl>
+                                <Input placeholder="sourdough" dir="ltr" {...field} />
+                            </FormControl>
+                            <FormDescription>{t("slugDesc")}</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
                     name="description_he"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>תיאור</FormLabel>
+                            <FormLabel>{t("descriptionLabel")}</FormLabel>
                             <FormControl>
-                                <Textarea placeholder="תיאור המוצר..." {...field} />
+                                <Textarea placeholder={t("descriptionPlaceholder")} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="description_ar"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t("descriptionArLabel")}</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="وصف المنتج..." {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -158,7 +197,7 @@ export function ProductForm({
                         name="price_shekels"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>מחיר (₪)</FormLabel>
+                                <FormLabel>{t("priceLabel")}</FormLabel>
                                 <FormControl>
                                     <Input placeholder="12.50" dir="ltr" {...field} />
                                 </FormControl>
@@ -171,9 +210,9 @@ export function ProductForm({
                         name="compare_at_price_shekels"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>מחיר השוואה (₪)</FormLabel>
+                                <FormLabel>{t("comparePriceLabel")}</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="אופציונלי" dir="ltr" {...field} />
+                                    <Input placeholder={t("optional")} dir="ltr" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -187,7 +226,7 @@ export function ProductForm({
                         name="category_id"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>קטגוריה</FormLabel>
+                                <FormLabel>{t("categoryLabel")}</FormLabel>
                                 <FormControl>
                                     <Select
                                         value={field.value ?? NO_CATEGORY}
@@ -196,13 +235,13 @@ export function ProductForm({
                                         }
                                     >
                                         <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="בחירת קטגוריה" />
+                                            <SelectValue placeholder={t("selectCategory")} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value={NO_CATEGORY}>ללא קטגוריה</SelectItem>
+                                            <SelectItem value={NO_CATEGORY}>{t("noCategory")}</SelectItem>
                                             {categories.map((c) => (
                                                 <SelectItem key={c.id} value={c.id}>
-                                                    {c.name_he}
+                                                    {localizedText(locale, c.name_he, c.name_ar)}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -217,7 +256,7 @@ export function ProductForm({
                         name="stock_quantity"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>כמות במלאי</FormLabel>
+                                <FormLabel>{t("stockLabel")}</FormLabel>
                                 <FormControl>
                                     <Input type="number" min={0} {...field} />
                                 </FormControl>
@@ -230,7 +269,7 @@ export function ProductForm({
                         name="low_stock_threshold"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>סף מלאי נמוך</FormLabel>
+                                <FormLabel>{t("lowStockLabel")}</FormLabel>
                                 <FormControl>
                                     <Input type="number" min={0} {...field} />
                                 </FormControl>
@@ -246,7 +285,7 @@ export function ProductForm({
                         name="sort_order"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>סדר תצוגה</FormLabel>
+                                <FormLabel>{t("sortLabel")}</FormLabel>
                                 <FormControl>
                                     <Input type="number" min={0} {...field} />
                                 </FormControl>
@@ -265,7 +304,7 @@ export function ProductForm({
                                         onCheckedChange={field.onChange}
                                     />
                                 </FormControl>
-                                <FormLabel>מוצר פעיל (מוצג בחנות)</FormLabel>
+                                <FormLabel>{t("activeLabel")}</FormLabel>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -274,7 +313,7 @@ export function ProductForm({
 
                 {product && (
                     <div className="grid gap-2">
-                        <FormLabel>תמונות</FormLabel>
+                        <FormLabel>{t("imagesLabel")}</FormLabel>
                         <ImageUploader
                             productId={product.id}
                             productSlug={product.slug}
@@ -286,14 +325,14 @@ export function ProductForm({
                 <div className="flex gap-3">
                     <Button type="submit" disabled={pending}>
                         {pending && <Loader2 className="size-4 animate-spin" />}
-                        {product ? "שמור שינויים" : "יצירת מוצר"}
+                        {product ? t("saveChanges") : t("createProduct")}
                     </Button>
                     <Button
                         type="button"
                         variant="outline"
                         onClick={() => router.push("/admin/products")}
                     >
-                        ביטול
+                        {t("cancel")}
                     </Button>
                 </div>
             </form>

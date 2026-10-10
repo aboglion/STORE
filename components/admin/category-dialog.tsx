@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -47,20 +48,26 @@ export function CategoryDialog({
     trigger: React.ReactNode;
 }) {
     const router = useRouter();
+    const t = useTranslations("admin.categories");
+    const tv = useTranslations("validation");
     const [open, setOpen] = useState(false);
     const [pending, startTransition] = useTransition();
 
+    const schema = useMemo(() => categoryFormSchema(tv), [tv]);
+
     const form = useForm<CategoryFormValues>({
-        resolver: zodResolver(categoryFormSchema),
+        resolver: zodResolver(schema),
         defaultValues: category
             ? {
                 name_he: category.name_he,
+                name_ar: category.name_ar ?? "",
                 slug: category.slug,
                 is_active: category.is_active,
                 sort_order: category.sort_order,
             }
             : {
                 name_he: "",
+                name_ar: "",
                 slug: "",
                 is_active: true,
                 sort_order: 0,
@@ -78,7 +85,7 @@ export function CategoryDialog({
                 return;
             }
 
-            toast.success(category ? "הקטגוריה עודכנה" : "הקטגוריה נוצרה");
+            toast.success(category ? t("updatedToast") : t("createdToast"));
             setOpen(false);
             router.refresh();
         });
@@ -90,10 +97,10 @@ export function CategoryDialog({
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>
-                        {category ? "עריכת קטגוריה" : "קטגוריה חדשה"}
+                        {category ? t("editCategory") : t("newCategory")}
                     </DialogTitle>
                     <DialogDescription>
-                        קטגוריה מאפשרת למיין מוצרים בחנות.
+                        {t("desc")}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -104,9 +111,22 @@ export function CategoryDialog({
                             name="name_he"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>שם קטגוריה</FormLabel>
+                                    <FormLabel>{t("nameLabel")}</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="למשל: מאפים" {...field} />
+                                        <Input placeholder={t("namePlaceholder")} {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="name_ar"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t("nameArLabel")}</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="مثال: المخبوزات" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -117,7 +137,7 @@ export function CategoryDialog({
                             name="slug"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Slug</FormLabel>
+                                    <FormLabel>{t("slug")}</FormLabel>
                                     <FormControl>
                                         <Input placeholder="baked-goods" dir="ltr" {...field} />
                                     </FormControl>
@@ -131,7 +151,7 @@ export function CategoryDialog({
                                 name="sort_order"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>סדר</FormLabel>
+                                        <FormLabel>{t("sortLabel")}</FormLabel>
                                         <FormControl>
                                             <Input type="number" min={0} {...field} />
                                         </FormControl>
@@ -150,7 +170,7 @@ export function CategoryDialog({
                                                 onCheckedChange={field.onChange}
                                             />
                                         </FormControl>
-                                        <FormLabel>פעילה</FormLabel>
+                                        <FormLabel>{t("activeLabel")}</FormLabel>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -159,7 +179,7 @@ export function CategoryDialog({
                         <DialogFooter>
                             <Button type="submit" disabled={pending}>
                                 {pending && <Loader2 className="size-4 animate-spin" />}
-                                {category ? "שמור" : "צור"}
+                                {category ? t("save") : t("create")}
                             </Button>
                         </DialogFooter>
                     </form>

@@ -1,0 +1,19 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: store-app:prod
+    container_name: store_commerce_prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: .env.local
+        required: false
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - SUPABASE_INTERNAL_URL=http://host.docker.internal:54321
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

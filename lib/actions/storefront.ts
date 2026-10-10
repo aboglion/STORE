@@ -7,6 +7,7 @@ export interface CartProductDetail {
     id: string;
     slug: string;
     name_he: string;
+    name_ar: string | null;
     price_agorot: number;
     stock_quantity: number;
     is_active: boolean;
@@ -28,7 +29,7 @@ export async function getCartProductDetails(
     const { data } = await admin
         .from("products")
         .select(
-            "id, slug, name_he, price_agorot, stock_quantity, is_active, images:product_images(id, storage_path, sort_order)"
+            "id, slug, name_he, name_ar, price_agorot, stock_quantity, is_active, images:product_images(id, storage_path, sort_order)"
         )
         .in("id", ids);
 
@@ -36,6 +37,7 @@ export async function getCartProductDetails(
         id: string;
         slug: string;
         name_he: string;
+        name_ar: string | null;
         price_agorot: number;
         stock_quantity: number;
         is_active: boolean;
@@ -46,6 +48,7 @@ export async function getCartProductDetails(
         id: p.id,
         slug: p.slug,
         name_he: p.name_he,
+        name_ar: p.name_ar,
         price_agorot: p.price_agorot,
         stock_quantity: p.stock_quantity,
         is_active: p.is_active,

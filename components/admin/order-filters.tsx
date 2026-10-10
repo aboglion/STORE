@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { Search } from "lucide-react";
 
@@ -25,6 +26,8 @@ export function OrderFilters({
     initial: { q?: string; status?: string; payment?: string };
 }) {
     const router = useRouter();
+    const t = useTranslations("admin.orders");
+    const tRoot = useTranslations();
     const [q, setQ] = useState(initial.q ?? "");
     const [status, setStatus] = useState(initial.status ?? "all");
     const [payment, setPayment] = useState(initial.payment ?? "all");
@@ -45,7 +48,7 @@ export function OrderFilters({
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && apply()}
-                    placeholder="חיפוש לפי מספר, שם או טלפון..."
+                    placeholder={t("searchPlaceholder")}
                     className="pr-9"
                 />
             </div>
@@ -55,13 +58,13 @@ export function OrderFilters({
                 onValueChange={setStatus}
             >
                 <SelectTrigger className="w-full md:w-44">
-                    <SelectValue placeholder="כל הסטטוסים" />
+                    <SelectValue placeholder={t("allStatuses")} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">כל הסטטוסים</SelectItem>
+                    <SelectItem value="all">{t("allStatuses")}</SelectItem>
                     {ALL_ORDER_STATUSES.map((s) => (
                         <SelectItem key={s} value={s}>
-                            {ORDER_STATUS_LABELS[s]}
+                            {tRoot(ORDER_STATUS_LABELS[s])}
                         </SelectItem>
                     ))}
                 </SelectContent>
@@ -72,18 +75,18 @@ export function OrderFilters({
                 onValueChange={setPayment}
             >
                 <SelectTrigger className="w-full md:w-40">
-                    <SelectValue placeholder="כל התשלומים" />
+                    <SelectValue placeholder={t("allPayments")} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">כל התשלומים</SelectItem>
-                    <SelectItem value="paid">שולם</SelectItem>
-                    <SelectItem value="unpaid">לא שולם</SelectItem>
-                    <SelectItem value="refunded">הוחזר</SelectItem>
+                    <SelectItem value="all">{t("allPayments")}</SelectItem>
+                    <SelectItem value="paid">{t("paid")}</SelectItem>
+                    <SelectItem value="unpaid">{t("unpaid")}</SelectItem>
+                    <SelectItem value="refunded">{t("refunded")}</SelectItem>
                 </SelectContent>
             </Select>
 
             <Button type="button" variant="secondary" onClick={apply}>
-                סינון
+                {t("filter")}
             </Button>
         </div>
     );

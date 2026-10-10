@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { ChevronRight } from "lucide-react";
 
@@ -10,10 +11,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { requireAdmin } from "@/lib/auth";
 import { getCategories, getProductById } from "@/lib/data/products";
+import type { Locale } from "@/lib/i18n/config";
+import { formatDateTime } from "@/lib/utils/dates";
 
-export const metadata: Metadata = {
-    title: "עריכת מוצר",
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations("admin.products");
+    return {
+        title: t("editProduct"),
+    };
+}
 
 export default async function EditProductPage({
     params,
@@ -21,6 +27,9 @@ export default async function EditProductPage({
     params: Promise<{ id: string }>;
 }) {
     await requireAdmin();
+
+    const locale = (await getLocale()) as Locale;
+    const t = await getTranslations("admin.products");
 
     const { id } = await params;
     const [product, categories] = await Promise.all([
@@ -39,9 +48,9 @@ export default async function EditProductPage({
                         className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                     >
                         <ChevronRight className="size-4" />
-                        חזרה למוצרים
+                        {t("backToProducts")}
                     </Link>
-                    <h1 className="text-2xl font-bold">עריכת מוצר</h1>
+                    <h1 className="text-2xl font-bold">{t("editProduct")}</h1>
                 </div>
                 <DeleteProductButton productId={product.id} />
             </div>
@@ -56,17 +65,18 @@ export default async function EditProductPage({
                 <CardContent className="pt-6 text-sm text-muted-foreground">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            נוצר: {new Date(product.created_at).toLocaleString("he-IL")}
+                            {t("created", {
+                                date: formatDateTime(product.created_at, locale),
+                            })}
                         </div>
                         <div>
-                            עודכן: {new Date(product.updated_at).toLocaleString("he-IL")}
+                            {t("updated", {
+                                date: formatDateTime(product.updated_at, locale),
+                            })}
                         </div>
                     </div>
                     <Separator className="my-4" />
-                    <p>
-                        מוצרים שנמחקים משאירים את הנתונים שלהם בהזמנות קיימות. עדכון מחיר
-                        כאן לא משפיע על הזמנות שכבר הוזמנו.
-                    </p>
+                    <p>{t("deletedNote")}</p>
                 </CardContent>
             </Card>
         </div>

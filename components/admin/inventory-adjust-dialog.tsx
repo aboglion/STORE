@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Loader2, PackagePlus } from "lucide-react";
 import { toast } from "sonner";
@@ -30,6 +31,7 @@ export function InventoryAdjustDialog({
     currentStock: number;
 }) {
     const router = useRouter();
+    const t = useTranslations("admin.inventory");
     const [open, setOpen] = useState(false);
     const [pending, startTransition] = useTransition();
     const [quantity, setQuantity] = useState(String(currentStock));
@@ -38,7 +40,7 @@ export function InventoryAdjustDialog({
     function handleSubmit() {
         const parsed = Number(quantity);
         if (!Number.isInteger(parsed) || parsed < 0) {
-            toast.error("נא להזין כמות תקינה");
+            toast.error(t("invalidQuantity"));
             return;
         }
 
@@ -48,7 +50,7 @@ export function InventoryAdjustDialog({
                 toast.error(res.error);
                 return;
             }
-            toast.success("המלאי עודכן");
+            toast.success(t("updatedToast"));
             setOpen(false);
             router.refresh();
         });
@@ -59,20 +61,20 @@ export function InventoryAdjustDialog({
             <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                     <PackagePlus className="size-4" />
-                    עדכון
+                    {t("update")}
                 </Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>עדכון מלאי</DialogTitle>
+                    <DialogTitle>{t("updateTitle")}</DialogTitle>
                     <DialogDescription>
-                        {productName} — כמות נוכחית: {currentStock}
+                        {t("updateDesc", { productName, currentStock })}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="grid gap-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="quantity">כמות חדשה במלאי</Label>
+                        <Label htmlFor="quantity">{t("newQuantity")}</Label>
                         <Input
                             id="quantity"
                             type="number"
@@ -82,12 +84,12 @@ export function InventoryAdjustDialog({
                         />
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="reason">סיבת השינוי (אופציונלי)</Label>
+                        <Label htmlFor="reason">{t("reasonLabel")}</Label>
                         <Input
                             id="reason"
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
-                            placeholder="למשל: הגעת סחורה"
+                            placeholder={t("reasonPlaceholder")}
                         />
                     </div>
                 </div>
@@ -95,7 +97,7 @@ export function InventoryAdjustDialog({
                 <DialogFooter>
                     <Button onClick={handleSubmit} disabled={pending}>
                         {pending && <Loader2 className="size-4 animate-spin" />}
-                        שמירת מלאי
+                        {t("saveStock")}
                     </Button>
                 </DialogFooter>
             </DialogContent>

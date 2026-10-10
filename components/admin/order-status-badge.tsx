@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import { Badge } from "@/components/ui/badge";
 import { ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/constants";
 import type { OrderStatus, PaymentStatus } from "@/types/database.types";
@@ -14,9 +16,12 @@ const STATUS_VARIANTS: Record<
     canceled: "destructive",
 };
 
-export function OrderStatusBadge({ status }: { status: OrderStatus }) {
+export async function OrderStatusBadge({ status }: { status: OrderStatus }) {
+    const t = await getTranslations();
     return (
-        <Badge variant={STATUS_VARIANTS[status]}>{ORDER_STATUS_LABELS[status]}</Badge>
+        <Badge variant={STATUS_VARIANTS[status]}>
+            {t(ORDER_STATUS_LABELS[status])}
+        </Badge>
     );
 }
 
@@ -31,10 +36,11 @@ const PAYMENT_VARIANTS: Record<
     refunded: "secondary",
 };
 
-export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
+export async function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
+    const t = await getTranslations();
     return (
         <Badge variant={PAYMENT_VARIANTS[status]}>
-            {PAYMENT_STATUS_LABELS[status]}
+            {t(PAYMENT_STATUS_LABELS[status])}
         </Badge>
     );
 }

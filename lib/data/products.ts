@@ -22,7 +22,7 @@ export interface ProductListItem extends Product {
 
 export interface ProductListResult {
     products: ProductListItem[];
-    categories: Pick<Category, "id" | "name_he">[];
+    categories: Pick<Category, "id" | "name_he" | "name_ar">[];
     total: number;
     page: number;
     pageSize: number;
@@ -49,7 +49,9 @@ export async function getProducts(
         .range(from, to);
 
     if (filters.q) {
-        query = query.or(`name_he.ilike.%${filters.q}%,slug.ilike.%${filters.q}%`);
+        query = query.or(
+            `name_he.ilike.%${filters.q}%,name_ar.ilike.%${filters.q}%,slug.ilike.%${filters.q}%`
+        );
     }
     if (filters.categoryId) {
         query = query.eq("category_id", filters.categoryId);
@@ -63,14 +65,17 @@ export async function getProducts(
 
     const { data: categories } = await admin
         .from("categories")
-        .select("id, name_he")
+        .select("id, name_he, name_ar")
         .order("sort_order", { ascending: true });
 
     const total = count ?? 0;
 
     return {
         products: (data ?? []) as ProductListItem[],
-        categories: (categories ?? []) as Pick<Category, "id" | "name_he">[],
+        categories: (categories ?? []) as Pick<
+            Category,
+            "id" | "name_he" | "name_ar"
+        >[],
         total,
         page,
         pageSize,
@@ -114,11 +119,12 @@ export async function getLowStockProducts(): Promise<Product[]> {
     const { data, error } = await admin
         .from("products")
         .select("*")
-        .or("stock_quantity.lt.low_stock_threshold")
         .order("stock_quantity", { ascending: true });
 
     if (error) throw new Error(`getLowStockProducts: ${error.message}`);
-    return (data ?? []) as Product[];
+    return ((data ?? []) as Product[]).filter(
+        (p) => p.stock_quantity <= p.low_stock_threshold
+    );
 }
 
 export async function getAllProducts(): Promise<ProductListItem[]> {

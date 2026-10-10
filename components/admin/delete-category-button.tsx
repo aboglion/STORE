@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ import { deleteCategory } from "@/lib/actions/products";
 
 export function DeleteCategoryButton({ categoryId }: { categoryId: string }) {
     const router = useRouter();
+    const t = useTranslations("admin.categories");
     const [pending, startTransition] = useTransition();
 
     function handleDelete() {
@@ -31,7 +33,7 @@ export function DeleteCategoryButton({ categoryId }: { categoryId: string }) {
                 toast.error(res.error);
                 return;
             }
-            toast.success("הקטגוריה נמחקה");
+            toast.success(t("deletedToast"));
             router.refresh();
         });
     }
@@ -45,15 +47,15 @@ export function DeleteCategoryButton({ categoryId }: { categoryId: string }) {
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>למחוק את הקטגוריה?</AlertDialogTitle>
+                    <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
                     <AlertDialogDescription>
-                        מוצרים בקטגוריה יישארו ללא קטגוריה. הפעולה לא ניתנת לביטול.
+                        {t("deleteDesc")}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>ביטול</AlertDialogCancel>
+                    <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDelete} disabled={pending}>
-                        {pending ? <Loader2 className="size-4 animate-spin" /> : "מחיקה"}
+                        {pending ? <Loader2 className="size-4 animate-spin" /> : t("delete")}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

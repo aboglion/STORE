@@ -1,5 +1,7 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
+
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSettings } from "@/lib/data/storefront";
 import { formatIsraeliPhone, normalizeIsraeliPhone } from "@/lib/utils/phone";
@@ -33,9 +35,12 @@ export interface CreateOrderResponse {
 export async function createOrder(
     input: CheckoutPayload
 ): Promise<CreateOrderResponse> {
-    const parsed = checkoutPayloadSchema.safeParse(input);
+    const t = await getTranslations("validation");
+    const te = await getTranslations("errors");
+
+    const parsed = checkoutPayloadSchema(t).safeParse(input);
     if (!parsed.success) {
-        return { ok: false, error: "הנתונים שנשלחו לא תקינים" };
+        return { ok: false, error: te("invalidData") };
     }
 
     const { customer, items } = parsed.data;
@@ -43,7 +48,7 @@ export async function createOrder(
     // 1. Normalize + validate the phone number.
     const phone = normalizeIsraeliPhone(customer.phone);
     if (!phone) {
-        return { ok: false, error: "נא להזין מספר טלפון ישראלי תקין" };
+        return { ok: false, error: te("invalidPhone") };
     }
 
     // 2. Merge duplicate cart lines.
@@ -84,17 +89,19 @@ export async function createOrder(
     for (const line of cartLines) {
         const product = productMap.get(line.product_id);
         if (!product || !product.is_active) {
-            return { ok: false, error: "אחד המוצרים אינו זמין יותר" };
+            return { ok: false, error: te("productUnavailable") };
         }
         if (product.stock_quantity < line.quantity) {
             return {
                 ok: false,
-                error: `אין מספיק מלאי לאחד מהמוצרים (${product.name_he ?? ""})`.trim(),
+                error: te("insufficientStock", {
+                    name: product.name_he ?? "",
+                }),
             };
         }
         // Cap quantities to a sane bound.
         if (line.quantity > 999) {
-            return { ok: false, error: "כמות לא תקינה בסל" };
+            return { ok: false, error: te("invalidQuantity") };
         }
         subtotalAgorot += product.price_agorot * line.quantity;
     }
@@ -143,15 +150,15 @@ export async function createOrder(
     if (error) {
         const message = String(error.message ?? "");
         if (message.includes("INSUFFICIENT_STOCK")) {
-            return { ok: false, error: "כרגע אין מספיק מלאי לאחד המוצרים" };
+            return { ok: false, error: te("insufficientStockNow") };
         }
         if (message.includes("PRODUCT_NOT_FOUND")) {
-            return { ok: false, error: "אחד המוצרים אינו זמין" };
+            return { ok: false, error: te("productUnavailableNow") };
         }
         if (message.includes("EMPTY_CART")) {
-            return { ok: false, error: "הסל ריק" };
+            return { ok: false, error: te("emptyCart") };
         }
-        return { ok: false, error: "יצירת ההזמנה נכשלה, נסה שוב" };
+        return { ok: false, error: te("orderFailed") };
     }
 
     const result = data as CreateOrderResult;

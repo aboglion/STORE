@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ import { deleteProduct } from "@/lib/actions/products";
 
 export function DeleteProductButton({ productId }: { productId: string }) {
     const router = useRouter();
+    const t = useTranslations("admin.products");
     const [pending, startTransition] = useTransition();
 
     function handleDelete() {
@@ -31,7 +33,7 @@ export function DeleteProductButton({ productId }: { productId: string }) {
                 toast.error(res.error);
                 return;
             }
-            toast.success("המוצר נמחק");
+            toast.success(t("deletedToast"));
             router.push("/admin/products");
             router.refresh();
         });
@@ -46,21 +48,20 @@ export function DeleteProductButton({ productId }: { productId: string }) {
                     ) : (
                         <Trash2 className="size-4" />
                     )}
-                    מחק מוצר
+                    {t("deleteProduct")}
                 </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>למחוק את המוצר?</AlertDialogTitle>
+                    <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
                     <AlertDialogDescription>
-                        הפעולה לא ניתנת לביטול. הזמנות קיימות ישמרו את פרטי המוצר כתמונת
-                        מצב.
+                        {t("deleteDesc")}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>ביטול</AlertDialogCancel>
+                    <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDelete} disabled={pending}>
-                        {pending ? "מוחק..." : "מחיקה"}
+                        {pending ? t("deleting") : t("delete")}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

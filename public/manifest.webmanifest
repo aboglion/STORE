@@ -1,11 +1,38 @@
 {
-    "name": "החנות שלי",
-    "short_name": "החנות",
-    "description": "חנות מקוונת — הזמנה קלה ומשלוח עד הבית",
+    "name": [
+        {
+            "lang": "he",
+            "value": "החנות שלי"
+        },
+        {
+            "lang": "ar",
+            "value": "متجري"
+        }
+    ],
+    "short_name": [
+        {
+            "lang": "he",
+            "value": "החנות"
+        },
+        {
+            "lang": "ar",
+            "value": "متجري"
+        }
+    ],
+    "description": [
+        {
+            "lang": "he",
+            "value": "חנות מקוונת — הזמנה קלה ומשלוח עד הבית"
+        },
+        {
+            "lang": "ar",
+            "value": "متجر إلكتروني — طلب سهل وتوصيل حتى البيت"
+        }
+    ],
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#0a0a0a",
+    "background_color": "#FAF6EE",
+    "theme_color": "#95582b",
     "dir": "rtl",
     "lang": "he",
     "icons": [

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 
 import imageCompression from "browser-image-compression";
 import { Loader2, Trash2, Upload } from "lucide-react";
@@ -25,6 +26,8 @@ export function ImageUploader({
     images: ProductImage[];
 }) {
     const inputRef = useRef<HTMLInputElement>(null);
+    const t = useTranslations("admin.images");
+    const ts = useTranslations("admin.settings");
     const [pending, startTransition] = useTransition();
     const [uploading, setUploading] = useState(false);
 
@@ -33,7 +36,7 @@ export function ImageUploader({
         if (!file) return;
 
         if (!file.type.startsWith("image/")) {
-            toast.error("הקובץ שנבחר אינו תמונה");
+            toast.error(ts("notImageToast"));
             return;
         }
 
@@ -50,11 +53,11 @@ export function ImageUploader({
                 if (res?.error) {
                     toast.error(res.error);
                 } else {
-                    toast.success("התמונה הועלתה");
+                    toast.success(t("uploadedToast"));
                 }
             });
         } catch {
-            toast.error("דחיסת התמונה נכשלה");
+            toast.error(ts("compressFailedToast"));
         } finally {
             setUploading(false);
             if (inputRef.current) inputRef.current.value = "";
@@ -65,7 +68,7 @@ export function ImageUploader({
         startTransition(async () => {
             const res = await deleteProductImage(imageId, productId);
             if (res?.error) toast.error(res.error);
-            else toast.success("התמונה נמחקה");
+            else toast.success(t("deletedToast"));
         });
     }
 
@@ -76,13 +79,13 @@ export function ImageUploader({
                     <div className="relative aspect-square overflow-hidden rounded-md border bg-muted">
                         <Image
                             src={demoImageUrl(productSlug)}
-                            alt="תמונת דמו"
+                            alt={t("demoAlt")}
                             fill
                             sizes="120px"
                             className="object-cover"
                         />
                         <span className="absolute bottom-1 left-1 rounded bg-background/80 px-1.5 text-[10px] text-muted-foreground">
-                            דמו
+                            {t("demo")}
                         </span>
                     </div>
                 )}
@@ -93,7 +96,7 @@ export function ImageUploader({
                     >
                         <Image
                             src={productImageUrl(image.storage_path, productSlug)}
-                            alt={image.alt_text ?? `תמונה ${index + 1}`}
+                            alt={image.alt_text ?? t("imageAlt", { index: index + 1 })}
                             fill
                             sizes="120px"
                             className="object-cover"
@@ -129,7 +132,7 @@ export function ImageUploader({
                     ) : (
                         <Upload className="size-5" />
                     )}
-                    <span>{uploading ? "מעלה..." : "הוסף תמונה"}</span>
+                    <span>{uploading ? t("uploading") : t("addImage")}</span>
                 </button>
             </div>
 

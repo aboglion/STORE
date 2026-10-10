@@ -1,10 +1,11 @@
 "use client";
 
-import { useTransition } from "react";
+import { useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Palette, Store } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -19,22 +20,36 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
 import { updateSettings } from "@/lib/actions/settings";
 import { agorotToShekelInput } from "@/lib/utils/currency";
+import { STORE_THEMES } from "@/lib/theme";
+import { cn } from "@/lib/utils";
 import {
     settingsFormSchema,
     type SettingsFormValues,
 } from "@/lib/validations/settings";
-import type { AppSettings } from "@/types/database.types";
+import type { AppSettings, StoreThemeKey } from "@/types/database.types";
+
+import { LogoUploader } from "./logo-uploader";
 
 export function SettingsForm({ settings }: { settings: AppSettings }) {
     const router = useRouter();
+    const t = useTranslations("admin.settings");
+    const tv = useTranslations("validation");
     const [pending, startTransition] = useTransition();
 
+    const schema = useMemo(() => settingsFormSchema(tv), [tv]);
+
     const form = useForm<SettingsFormValues>({
-        resolver: zodResolver(settingsFormSchema),
+        resolver: zodResolver(schema),
         defaultValues: {
             store_name: settings.store_name,
+            store_name_ar: settings.store_name_ar,
+            logo_url: settings.logo_url,
+            theme: settings.theme,
             delivery_fee_shekels: agorotToShekelInput(settings.delivery_fee_agorot),
             free_delivery_threshold_shekels: agorotToShekelInput(
                 settings.free_delivery_threshold_agorot
@@ -51,7 +66,7 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                 toast.error(res.error);
                 return;
             }
-            toast.success("ההגדרות נשמרו");
+            toast.success(t("savedToast"));
             router.refresh();
         });
     }
@@ -60,21 +75,159 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
         <Form {...form}>
             <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="grid max-w-xl gap-6"
+                className="grid max-w-2xl gap-6"
             >
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                    <Store className="size-4 text-primary" />
+                    {t("storeIdentity")}
+                </div>
+
                 <FormField
                     control={form.control}
                     name="store_name"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>שם החנות</FormLabel>
+                            <FormLabel>{t("storeName")}</FormLabel>
                             <FormControl>
-                                <Input placeholder="החנות שלי" {...field} />
+                                <Input
+                                    placeholder={t("storeNamePlaceholder")}
+                                    className="h-11 rounded-xl"
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormDescription>
+                                {t("storeNameDesc")}
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="store_name_ar"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t("storeNameAr")}</FormLabel>
+                            <FormControl>
+                                <Input
+                                    placeholder="متجري"
+                                    className="h-11 rounded-xl"
+                                    {...field}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
+
+                <FormField
+                    control={form.control}
+                    name="logo_url"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t("storeLogo")}</FormLabel>
+                            <FormControl>
+                                <LogoUploader
+                                    value={field.value}
+                                    storeName={form.watch("store_name") || t("storeNamePlaceholder")}
+                                    onChange={(path) =>
+                                        form.setValue("logo_url", path, {
+                                            shouldDirty: true,
+                                        })
+                                    }
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <Separator className="my-1" />
+
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                    <Palette className="size-4 text-primary" />
+                    {t("theme")}
+                </div>
+
+                <FormField
+                    control={form.control}
+                    name="theme"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t("siteColors")}</FormLabel>
+                            <FormControl>
+                                <RadioGroup
+                                    value={field.value}
+                                    onValueChange={(value) =>
+                                        field.onChange(value as StoreThemeKey)
+                                    }
+                                    className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+                                >
+                                    {Object.entries(STORE_THEMES).map(
+                                        ([key, theme]) => {
+                                            const selected = field.value === key;
+                                            const themeLabel = t(`themes.${key}`);
+                                            const themeDesc = t(`themes.${key}Desc`);
+                                            return (
+                                                <div key={key}>
+                                                    <RadioGroupItem
+                                                        value={key}
+                                                        id={`theme-${key}`}
+                                                        className="peer sr-only"
+                                                    />
+                                                    <Label
+                                                        htmlFor={`theme-${key}`}
+                                                        className={cn(
+                                                            "flex cursor-pointer flex-col gap-2 rounded-2xl border p-3 transition-all duration-150 active:scale-[0.98] peer-focus-visible:ring-2 peer-focus-visible:ring-ring/50",
+                                                            selected
+                                                                ? "border-primary bg-primary/5 shadow-soft"
+                                                                : "border-border/70 bg-card hover:border-primary/40"
+                                                        )}
+                                                    >
+                                                        <span className="flex items-center gap-1.5">
+                                                            <span
+                                                                className="size-5 rounded-full border border-black/10 shadow-sm"
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        theme.swatches[1],
+                                                                }}
+                                                            />
+                                                            <span
+                                                                className="size-5 rounded-full border border-black/10"
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        theme.swatches[0],
+                                                                }}
+                                                            />
+                                                        </span>
+                                                        <span className="text-sm font-semibold">
+                                                            {themeLabel}
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {themeDesc}
+                                                        </span>
+                                                    </Label>
+                                                </div>
+                                            );
+                                        }
+                                    )}
+                                </RadioGroup>
+                            </FormControl>
+                            <FormDescription>
+                                {t("themeDesc")}
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <Separator className="my-1" />
+
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                    <Store className="size-4 text-primary" />
+                    {t("shippingInventory")}
+                </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     <FormField
@@ -82,7 +235,7 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                         name="delivery_fee_shekels"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>דמי משלוח (₪)</FormLabel>
+                                <FormLabel>{t("deliveryFee")}</FormLabel>
                                 <FormControl>
                                     <Input placeholder="15" dir="ltr" {...field} />
                                 </FormControl>
@@ -95,12 +248,12 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                         name="free_delivery_threshold_shekels"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>סף משלוח חינם (₪)</FormLabel>
+                                <FormLabel>{t("freeDeliveryThreshold")}</FormLabel>
                                 <FormControl>
                                     <Input placeholder="200" dir="ltr" {...field} />
                                 </FormControl>
                                 <FormDescription>
-                                    מעל סכום זה המשלוח חינם
+                                    {t("freeDeliveryDesc")}
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>
@@ -113,12 +266,12 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                     name="low_stock_threshold_default"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>סף מלאי נמוך ברירת מחדל</FormLabel>
+                            <FormLabel>{t("lowStockDefault")}</FormLabel>
                             <FormControl>
                                 <Input type="number" min={0} {...field} />
                             </FormControl>
                             <FormDescription>
-                                משמש כערך ברירת מחדל למוצרים חדשים
+                                {t("lowStockDefaultDesc")}
                             </FormDescription>
                             <FormMessage />
                         </FormItem>
@@ -130,7 +283,7 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                     name="contact_phone"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>טלפון ליצירת קשר</FormLabel>
+                            <FormLabel>{t("contactPhone")}</FormLabel>
                             <FormControl>
                                 <Input placeholder="03-0000000" dir="ltr" {...field} />
                             </FormControl>
@@ -140,9 +293,9 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                 />
 
                 <div>
-                    <Button type="submit" disabled={pending}>
+                    <Button type="submit" disabled={pending} size="lg">
                         {pending && <Loader2 className="size-4 animate-spin" />}
-                        שמירת הגדרות
+                        {t("saveSettings")}
                     </Button>
                 </div>
             </form>

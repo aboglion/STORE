@@ -41,6 +41,8 @@ export type OrderStatus =
 export interface Category {
     id: string;
     name_he: string;
+    /** Arabic category name — falls back to name_he when empty. */
+    name_ar: string | null;
     slug: string;
     is_active: boolean;
     sort_order: number;
@@ -53,7 +55,11 @@ export interface Product {
     category_id: string | null;
     slug: string;
     name_he: string;
+    /** Arabic product name — falls back to name_he when empty. */
+    name_ar: string | null;
     description_he: string | null;
+    /** Arabic product description — falls back to description_he when empty. */
+    description_ar: string | null;
     price_agorot: number;
     compare_at_price_agorot: number | null;
     stock_quantity: number;
@@ -146,6 +152,8 @@ export interface OrderItem {
     order_id: string;
     product_id: string | null;
     product_name_snapshot: string;
+    /** Arabic product name snapshot — falls back to product_name_snapshot. */
+    product_name_ar_snapshot: string | null;
     unit_price_agorot: number;
     quantity: number;
     line_total_agorot: number;
@@ -273,11 +281,23 @@ export interface OrderWithRelations extends Order {
 // App settings (stored in the settings table)
 // ---------------------------------------------------------------------------
 
+export type StoreThemeKey =
+    | "caramel"
+    | "forest"
+    | "ocean"
+    | "berry"
+    | "midnight";
+
 export interface AppSettings {
     store_name: string;
+    /** Arabic store name — falls back to store_name when empty. */
+    store_name_ar: string;
     delivery_fee_agorot: number;
     free_delivery_threshold_agorot: number;
     low_stock_threshold_default: number;
     currency: string;
     contact_phone: string;
+    /** Storage path of the uploaded store logo in the product-images bucket. */
+    logo_url: string;
+    theme: StoreThemeKey;
 }

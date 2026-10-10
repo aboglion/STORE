@@ -80,9 +80,29 @@ npm run build
 # ------------------------------------------------------------
 # 6. מיגרציות Supabase (אופציונלי — אם CLI מוגדר)
 # ------------------------------------------------------------
-if command -v supabase >/dev/null 2>&1 && [ -f supabase/config.toml ]; then
-  echo "${YELLOW}🗄️  מריץ מיגרציות Supabase...${NC}"
-  supabase db push
+SUPABASE_CMD=""
+if command -v supabase >/dev/null 2>&1; then
+  SUPABASE_CMD="supabase"
+elif npx --no-install supabase --version >/dev/null 2>&1; then
+  SUPABASE_CMD="npx supabase"
+fi
+
+if [ -n "${SUPABASE_CMD}" ] && [ -f supabase/config.toml ]; then
+  if ${SUPABASE_CMD} status >/dev/null 2>&1; then
+    echo "${YELLOW}🗄️  מריץ מיגרציות מקומיות ב-Supabase...${NC}"
+    ${SUPABASE_CMD} migration up --local || true
+    bash scripts/create-admin.sh >/dev/null 2>&1 || true
+  else
+    STATUS_JSON="$(${SUPABASE_CMD} status -o json 2>/dev/null || true)"
+    if echo "${STATUS_JSON}" | grep -q '"linked_project":[^n]'; then
+      echo "${YELLOW}🗄️  מריץ מיגרציות ל-Supabase בענן...${NC}"
+      ${SUPABASE_CMD} db push || true
+    else
+      echo "${YELLOW}ℹ️  Supabase המקומי לא רץ והפרויקט אינו מקושר לענן.${NC}"
+      echo "   להפעלת Supabase מקומית (Docker): make db-start או make run"
+      echo "   או הרץ את המיגרציות ידנית ב-SQL Editor של Supabase."
+    fi
+  fi
 else
   echo "${YELLOW}ℹ️  Supabase CLI לא מוגדר — הרץ ידנית ב-SQL Editor של Supabase:${NC}"
   echo "   supabase/migrations/0001_schema.sql"

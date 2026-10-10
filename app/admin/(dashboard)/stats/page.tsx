@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import {
     MonthlyBarChart,
@@ -17,14 +18,22 @@ import {
 import { requireAdmin } from "@/lib/auth";
 import { getStats } from "@/lib/data/stats";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
+import type { Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
 
-export const metadata: Metadata = {
-    title: "סטטיסטיקות",
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations("admin.stats");
+    return {
+        title: t("title"),
+    };
+}
 
 export default async function AdminStatsPage() {
     await requireAdmin();
+
+    const locale = (await getLocale()) as Locale;
+    const t = await getTranslations("admin.stats");
+    const tRoot = await getTranslations();
 
     const stats = await getStats();
     const averageOrder =
@@ -35,9 +44,9 @@ export default async function AdminStatsPage() {
     return (
         <div className="grid gap-6">
             <div>
-                <h1 className="text-2xl font-bold">סטטיסטיקות</h1>
+                <h1 className="text-2xl font-bold">{t("title")}</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    סיכום מכירות, מוצרים והזמנות
+                    {t("desc")}
                 </p>
             </div>
 
@@ -45,17 +54,17 @@ export default async function AdminStatsPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-sm text-muted-foreground">
-                            סה"כ הכנסות (30 יום)
+                            {t("revenue30")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0 text-2xl font-bold">
-                        {formatILS(stats.totalRevenueAgorot)}
+                        {formatILS(stats.totalRevenueAgorot, locale)}
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-sm text-muted-foreground">
-                            הזמנות (30 יום)
+                            {t("orders30")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0 text-2xl font-bold">
@@ -65,11 +74,11 @@ export default async function AdminStatsPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-sm text-muted-foreground">
-                            ממוצע הזמנה
+                            {t("avgOrder")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0 text-2xl font-bold">
-                        {formatILS(averageOrder)}
+                        {formatILS(averageOrder, locale)}
                     </CardContent>
                 </Card>
             </div>
@@ -77,7 +86,7 @@ export default async function AdminStatsPage() {
             <div className="grid gap-6 lg:grid-cols-2">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">הכנסות יומיות</CardTitle>
+                        <CardTitle className="text-base">{t("dailyRevenue")}</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
                         <RevenueAreaChart data={stats.daily} />
@@ -86,7 +95,7 @@ export default async function AdminStatsPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">הכנסות חודשיות</CardTitle>
+                        <CardTitle className="text-base">{t("monthlyRevenue")}</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
                         <MonthlyBarChart data={stats.monthly} />
@@ -97,7 +106,7 @@ export default async function AdminStatsPage() {
             <div className="grid gap-6 lg:grid-cols-2">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">הזמנות לפי סטטוס</CardTitle>
+                        <CardTitle className="text-base">{t("ordersByStatus")}</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
                         <StatusPieChart data={stats.ordersByStatus} />
@@ -105,7 +114,7 @@ export default async function AdminStatsPage() {
                             {stats.ordersByStatus.map((s) => (
                                 <div key={s.status} className="flex justify-between">
                                     <span className="text-muted-foreground">
-                                        {ORDER_STATUS_LABELS[s.status] ?? s.status}
+                                        {tRoot(ORDER_STATUS_LABELS[s.status]) ?? s.status}
                                     </span>
                                     <span className="font-medium">{s.orders_count}</span>
                                 </div>
@@ -116,22 +125,22 @@ export default async function AdminStatsPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">המוצרים הנמכרים ביותר</CardTitle>
+                        <CardTitle className="text-base">{t("topProducts")}</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>מוצר</TableHead>
-                                    <TableHead>יחידות</TableHead>
-                                    <TableHead>הכנסה</TableHead>
+                                    <TableHead>{t("product")}</TableHead>
+                                    <TableHead>{t("units")}</TableHead>
+                                    <TableHead>{t("revenue")}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {stats.topProducts.length === 0 && (
                                     <TableRow>
                                         <TableCell colSpan={3} className="py-6 text-center text-muted-foreground">
-                                            אין נתונים עדיין
+                                            {t("noData")}
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -141,7 +150,7 @@ export default async function AdminStatsPage() {
                                             {p.product_name}
                                         </TableCell>
                                         <TableCell>{p.units_sold}</TableCell>
-                                        <TableCell>{formatILS(p.revenue_agorot)}</TableCell>
+                                        <TableCell>{formatILS(p.revenue_agorot, locale)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>

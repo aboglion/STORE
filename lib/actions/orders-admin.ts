@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { z } from "zod";
 
@@ -19,8 +20,10 @@ export async function updateOrderStatusAction(
 ): Promise<OrderActionResult> {
     const admin = await requireAdmin();
 
+    const te = await getTranslations("admin.errors");
+
     const parsed = updateOrderStatusSchema.safeParse(values);
-    if (!parsed.success) return { error: "נתונים לא תקינים" };
+    if (!parsed.success) return { error: te("invalidDataShort") };
 
     const { error } = await createAdminClient().rpc("update_order_status", {
         p_order_id: parsed.data.order_id,
@@ -32,9 +35,9 @@ export async function updateOrderStatusAction(
     if (error) {
         const msg = String(error.message ?? "");
         if (msg.includes("INVALID_TRANSITION")) {
-            return { error: "מעבר סטטוס שאינו תקין" };
+            return { error: te("invalidTransition") };
         }
-        return { error: "עדכון הסטטוס נכשל" };
+        return { error: te("updateStatusFailed") };
     }
 
     revalidatePath("/admin/orders");
@@ -47,8 +50,10 @@ export async function cancelOrderAction(
 ): Promise<OrderActionResult> {
     const admin = await requireAdmin();
 
+    const te = await getTranslations("admin.errors");
+
     const parsed = cancelOrderSchema.safeParse(values);
-    if (!parsed.success) return { error: "נתונים לא תקינים" };
+    if (!parsed.success) return { error: te("invalidDataShort") };
 
     const { error } = await createAdminClient().rpc("cancel_order", {
         p_order_id: parsed.data.order_id,
@@ -59,9 +64,9 @@ export async function cancelOrderAction(
     if (error) {
         const msg = String(error.message ?? "");
         if (msg.includes("CANNOT_CANCEL_DELIVERED")) {
-            return { error: "אין אפשרות לבטל הזמנה שנמסרה" };
+            return { error: te("cannotCancelDelivered") };
         }
-        return { error: "ביטול ההזמנה נכשל" };
+        return { error: te("cancelOrderFailed") };
     }
 
     revalidatePath("/admin/orders");
@@ -74,15 +79,17 @@ export async function setPaymentStatusAction(
 ): Promise<OrderActionResult> {
     await requireAdmin();
 
+    const te = await getTranslations("admin.errors");
+
     const parsed = updatePaymentStatusSchema.safeParse(values);
-    if (!parsed.success) return { error: "נתונים לא תקינים" };
+    if (!parsed.success) return { error: te("invalidDataShort") };
 
     const { error } = await createAdminClient()
         .from("orders")
         .update({ payment_status: parsed.data.payment_status })
         .eq("id", parsed.data.order_id);
 
-    if (error) return { error: "עדכון סטטוס התשלום נכשל" };
+    if (error) return { error: te("updatePaymentFailed") };
 
     revalidatePath("/admin/orders");
     revalidatePath(`/admin/orders/${parsed.data.order_id}`);

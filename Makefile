@@ -1,62 +1,109 @@
 # ============================================================
-# מערכת מסחר — Makefile shortcuts
+# מערכת מסחר — Makefile
 # ============================================================
-#   make run        — הכל בפקודה אחת: התקנה + Supabase (Docker) +
-#                     דאטהבייס + .env.local + משתמש אדמין + שרת פיתוח
-#   make help       — רשימת כל הפקודות
+#   make local      — הפעלה מקומית בסביבת פיתוח (Dev)
+#   make run        — הפעלה דרך דוקר לפרודקשן (Docker Production)
+#   make gp         — העלאה ל-GitHub (git add + commit + push)
+#   make help       — רשימת כל הפקודות הזמינות
 # ============================================================
 
 SUPABASE := npx supabase
 
-.PHONY: help install db-start db-stop db-reset db-status env admin dev build test lint typecheck down run PG
+.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install db-start db-stop db-reset db-status env admin build test lint typecheck
 
-help: ## Show all available targets
-	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-12s\033[0m %s\n", $$1, $$2}'
+help: ## הצגת רשימת הפקודות הזמינות
+	@echo "\033[1;33mמערכת מסחר — פקודות Make זמינות:\033[0m"
+	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
-install: ## Install npm dependencies (includes the Supabase CLI)
+# ------------------------------------------------------------
+# Git & GitHub (make gp / make GP)
+# ------------------------------------------------------------
+gp: ## העלאה ל-GitHub (גיטהאב): add, commit ו-push ל-origin master
+	@echo "🚀 מעלה שינויים ל-GitHub..."
+	git add -A
+	@if git diff-index --quiet HEAD -- 2>/dev/null; then \
+		echo "ℹ️  אין שינויים חדשים לקומיט. דוחף קומיטים קיימים..."; \
+	else \
+		git commit -m "$${MSG:-Update and sync project}"; \
+	fi
+	git push origin master
+	@echo "✅ הועלה בהצלחה ל-GitHub!"
+
+GP: gp ## כינוי עבור make gp
+pg: gp ## כינוי עבור make gp
+PG: gp ## כינוי עבור make gp
+
+# ------------------------------------------------------------
+# הפעלה מקומית (Dev)
+# ------------------------------------------------------------
+local: ## הפעלה מקומית בסביבת פיתוח (Dev עם Next.js ו-Supabase)
+	@bash scripts/run.sh
+
+LOCAL: local ## כינוי עבור make local
+dev: local   ## כינוי עבור make local
+
+# ------------------------------------------------------------
+# הפעלה דרך דוקר לפרודקשן (Production via Docker)
+# ------------------------------------------------------------
+run: ## הפעלה מלאה דרך דוקר לפרודקשן (Docker Production)
+	@bash scripts/docker-run.sh
+
+RUN: run        ## כינוי עבור make run
+prod: run       ## כינוי עבור make run
+production: run ## כינוי עבור make run
+
+docker-build: ## בניית תמונת הפרודקשן בדוקר בלבד
+	docker compose build
+
+docker-stop: ## עצירת שירות הפרודקשן בדוקר
+	docker compose down
+
+docker-down: docker-stop ## כינוי לעצירת דוקר
+
+docker-logs: ## צפייה בלוגים של שירות הפרודקשן בדוקר
+	docker compose logs -f
+
+logs: docker-logs ## כינוי לצפייה בלוגים
+
+stop: docker-stop ## כינוי לעצירה
+
+down: ## עצירת כל שירותי הדוקר (כולל Supabase)
+	docker compose down 2>/dev/null || true
+	$(SUPABASE) stop 2>/dev/null || true
+
+# ------------------------------------------------------------
+# פקודות עזר נוספות
+# ------------------------------------------------------------
+install: ## התקנת תלויות פרויקט (npm install)
 	npm install
 
-db-start: ## Start the local Supabase stack (Docker)
+db-start: ## הפעלת שרת Supabase מקומי (Docker)
 	$(SUPABASE) start
 
-db-stop: ## Stop the local Supabase stack
+db-stop: ## עצירת שרת Supabase מקומי
 	$(SUPABASE) stop
 
-db-reset: ## Reset the DB: re-apply migrations + seed.sql (destructive)
+db-reset: ## איפוס מסד הנתונים: הרצת מיגרציות + seed.sql
 	$(SUPABASE) db reset
 	@touch .supabase-initialized
 
-db-status: ## Show local Supabase status
+db-status: ## סטטוס שרתי Supabase מקומיים
 	$(SUPABASE) status
 
-env: ## Generate .env.local from the running local stack
+env: ## יצירת קובץ .env.local משרת ה-Supabase המקומי
 	bash scripts/env-local.sh
 
-admin: ## Create the first admin user (admin@example.com / admin1234)
+admin: ## יצירת משתמש אדמין ראשוני (admin@example.com / admin1234)
 	bash scripts/create-admin.sh
 
-dev: ## Run the Next.js dev server
-	npm run dev
-
-build: ## Production build
+build: ## בניית גרסת פרודקשן מקומית ללא דוקר
 	npm run build
 
-test: ## Unit tests (Vitest)
+test: ## הרצת בדיקות יחידה (Vitest)
 	npm test
 
-lint: ## ESLint
+lint: ## בדיקת תקינות קוד (ESLint)
 	npm run lint
 
-typecheck: ## TypeScript type check
+typecheck: ## בדיקת טיפוסים (TypeScript)
 	npm run typecheck
-
-down: ## Stop the local Supabase stack
-	$(SUPABASE) stop
-
-run: ## ALL-IN-ONE: setup + launch (first run) / quick start (later)
-	@bash scripts/run.sh
-
-PG: ## Push everything to GitHub (origin master)
-	git add -A
-	git commit -m "update" || true
-	git push origin master

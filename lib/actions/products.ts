@@ -3,6 +3,7 @@
 import { randomUUID } from "crypto";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { z } from "zod";
 
@@ -26,15 +27,18 @@ function isUniqueViolation(error: { code?: string } | null): boolean {
 // ---------------------------------------------------------------------------
 
 export async function createProduct(
-    values: z.infer<typeof productFormSchema>
+    values: z.infer<ReturnType<typeof productFormSchema>>
 ): Promise<ActionResult> {
     await requireAdmin();
 
-    const parsed = productFormSchema.safeParse(values);
-    if (!parsed.success) return { error: "הנתונים שנשלחו לא תקינים" };
+    const t = await getTranslations("validation");
+    const te = await getTranslations("admin.errors");
+
+    const parsed = productFormSchema(t).safeParse(values);
+    if (!parsed.success) return { error: te("invalidData") };
 
     const priceAgorot = shekelInputToAgorot(parsed.data.price_shekels);
-    if (priceAgorot === null) return { error: "מחיר לא תקין" };
+    if (priceAgorot === null) return { error: te("invalidPrice") };
 
     const compareAt =
         parsed.data.compare_at_price_shekels &&
@@ -42,7 +46,7 @@ export async function createProduct(
             ? shekelInputToAgorot(parsed.data.compare_at_price_shekels)
             : null;
     if (compareAt === null && parsed.data.compare_at_price_shekels?.trim()) {
-        return { error: "מחיר השוואה לא תקין" };
+        return { error: te("invalidComparePrice") };
     }
 
     const { error } = await createAdminClient()
@@ -51,7 +55,9 @@ export async function createProduct(
             category_id: parsed.data.category_id || null,
             slug: parsed.data.slug,
             name_he: parsed.data.name_he,
+            name_ar: parsed.data.name_ar || null,
             description_he: parsed.data.description_he || null,
+            description_ar: parsed.data.description_ar || null,
             price_agorot: priceAgorot,
             compare_at_price_agorot: compareAt,
             stock_quantity: parsed.data.stock_quantity,
@@ -61,8 +67,8 @@ export async function createProduct(
         });
 
     if (error) {
-        if (isUniqueViolation(error)) return { error: "slug כבר קיים במערכת" };
-        return { error: "שמירת המוצר נכשלה" };
+        if (isUniqueViolation(error)) return { error: te("slugExists") };
+        return { error: te("saveProductFailed") };
     }
 
     revalidatePath("/admin/products");
@@ -71,15 +77,18 @@ export async function createProduct(
 
 export async function updateProduct(
     id: string,
-    values: z.infer<typeof productFormSchema>
+    values: z.infer<ReturnType<typeof productFormSchema>>
 ): Promise<ActionResult> {
     await requireAdmin();
 
-    const parsed = productFormSchema.safeParse(values);
-    if (!parsed.success) return { error: "הנתונים שנשלחו לא תקינים" };
+    const t = await getTranslations("validation");
+    const te = await getTranslations("admin.errors");
+
+    const parsed = productFormSchema(t).safeParse(values);
+    if (!parsed.success) return { error: te("invalidData") };
 
     const priceAgorot = shekelInputToAgorot(parsed.data.price_shekels);
-    if (priceAgorot === null) return { error: "מחיר לא תקין" };
+    if (priceAgorot === null) return { error: te("invalidPrice") };
 
     const compareAt =
         parsed.data.compare_at_price_shekels &&
@@ -87,7 +96,7 @@ export async function updateProduct(
             ? shekelInputToAgorot(parsed.data.compare_at_price_shekels)
             : null;
     if (compareAt === null && parsed.data.compare_at_price_shekels?.trim()) {
-        return { error: "מחיר השוואה לא תקין" };
+        return { error: te("invalidComparePrice") };
     }
 
     const { error } = await createAdminClient()
@@ -96,7 +105,9 @@ export async function updateProduct(
             category_id: parsed.data.category_id || null,
             slug: parsed.data.slug,
             name_he: parsed.data.name_he,
+            name_ar: parsed.data.name_ar || null,
             description_he: parsed.data.description_he || null,
+            description_ar: parsed.data.description_ar || null,
             price_agorot: priceAgorot,
             compare_at_price_agorot: compareAt,
             stock_quantity: parsed.data.stock_quantity,
@@ -107,8 +118,8 @@ export async function updateProduct(
         .eq("id", id);
 
     if (error) {
-        if (isUniqueViolation(error)) return { error: "slug כבר קיים במערכת" };
-        return { error: "עדכון המוצר נכשל" };
+        if (isUniqueViolation(error)) return { error: te("slugExists") };
+        return { error: te("updateProductFailed") };
     }
 
     revalidatePath("/admin/products");
@@ -120,6 +131,7 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<ActionResult> {
     await requireAdmin();
 
+    const te = await getTranslations("admin.errors");
     const admin = createAdminClient();
 
     // Delete image storage files first (best effort), then the row cascades.
@@ -136,7 +148,7 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
 
     const { error } = await admin.from("products").delete().eq("id", id);
 
-    if (error) return { error: "מחיקת המוצר נכשלה" };
+    if (error) return { error: te("deleteProductFailed") };
 
     revalidatePath("/admin/products");
     revalidatePath("/");
@@ -153,8 +165,10 @@ export async function uploadProductImage(
 ): Promise<ActionResult> {
     await requireAdmin();
 
+    const te = await getTranslations("admin.errors");
+
     if (file.size > 10 * 1024 * 1024) {
-        return { error: "הקובץ גדול מדי (מקסימום 10MB)" };
+        return { error: te("fileTooLarge") };
     }
 
     const admin = createAdminClient();
@@ -168,7 +182,7 @@ export async function uploadProductImage(
             upsert: false,
         });
 
-    if (uploadError) return { error: "העלאת התמונה נכשלה" };
+    if (uploadError) return { error: te("uploadImageFailed") };
 
     const { data: last } = await admin
         .from("product_images")
@@ -188,7 +202,7 @@ export async function uploadProductImage(
 
     if (insertError) {
         await admin.storage.from(PRODUCT_IMAGES_BUCKET).remove([storagePath]);
-        return { error: "שמירת התמונה נכשלה" };
+        return { error: te("saveImageFailed") };
     }
 
     revalidatePath(`/admin/products/${productId}`);
@@ -202,12 +216,14 @@ export async function updateProductImage(
 ): Promise<ActionResult> {
     await requireAdmin();
 
+    const te = await getTranslations("admin.errors");
+
     const { error } = await createAdminClient()
         .from("product_images")
         .update({ alt_text: altText.trim() || null, sort_order: sortOrder })
         .eq("id", imageId);
 
-    if (error) return { error: "עדכון התמונה נכשל" };
+    if (error) return { error: te("updateImageFailed") };
     revalidatePath("/admin/products");
     revalidatePath("/");
 }
@@ -218,6 +234,7 @@ export async function deleteProductImage(
 ): Promise<ActionResult> {
     await requireAdmin();
 
+    const te = await getTranslations("admin.errors");
     const admin = createAdminClient();
 
     const { data: image } = await admin
@@ -237,7 +254,7 @@ export async function deleteProductImage(
         .delete()
         .eq("id", imageId);
 
-    if (error) return { error: "מחיקת התמונה נכשלה" };
+    if (error) return { error: te("deleteImageFailed") };
 
     revalidatePath(`/admin/products/${productId}`);
     revalidatePath("/");
@@ -248,23 +265,27 @@ export async function deleteProductImage(
 // ---------------------------------------------------------------------------
 
 export async function createCategory(
-    values: z.infer<typeof categoryFormSchema>
+    values: z.infer<ReturnType<typeof categoryFormSchema>>
 ): Promise<ActionResult> {
     await requireAdmin();
 
-    const parsed = categoryFormSchema.safeParse(values);
-    if (!parsed.success) return { error: "הנתונים שנשלחו לא תקינים" };
+    const t = await getTranslations("validation");
+    const te = await getTranslations("admin.errors");
+
+    const parsed = categoryFormSchema(t).safeParse(values);
+    if (!parsed.success) return { error: te("invalidData") };
 
     const { error } = await createAdminClient().from("categories").insert({
         name_he: parsed.data.name_he,
+        name_ar: parsed.data.name_ar || null,
         slug: parsed.data.slug,
         is_active: parsed.data.is_active,
         sort_order: parsed.data.sort_order,
     });
 
     if (error) {
-        if (isUniqueViolation(error)) return { error: "slug כבר קיים במערכת" };
-        return { error: "שמירת הקטגוריה נכשלה" };
+        if (isUniqueViolation(error)) return { error: te("slugExists") };
+        return { error: te("saveCategoryFailed") };
     }
 
     revalidatePath("/admin/categories");
@@ -273,17 +294,21 @@ export async function createCategory(
 
 export async function updateCategory(
     id: string,
-    values: z.infer<typeof categoryFormSchema>
+    values: z.infer<ReturnType<typeof categoryFormSchema>>
 ): Promise<ActionResult> {
     await requireAdmin();
 
-    const parsed = categoryFormSchema.safeParse(values);
-    if (!parsed.success) return { error: "הנתונים שנשלחו לא תקינים" };
+    const t = await getTranslations("validation");
+    const te = await getTranslations("admin.errors");
+
+    const parsed = categoryFormSchema(t).safeParse(values);
+    if (!parsed.success) return { error: te("invalidData") };
 
     const { error } = await createAdminClient()
         .from("categories")
         .update({
             name_he: parsed.data.name_he,
+            name_ar: parsed.data.name_ar || null,
             slug: parsed.data.slug,
             is_active: parsed.data.is_active,
             sort_order: parsed.data.sort_order,
@@ -291,8 +316,8 @@ export async function updateCategory(
         .eq("id", id);
 
     if (error) {
-        if (isUniqueViolation(error)) return { error: "slug כבר קיים במערכת" };
-        return { error: "עדכון הקטגוריה נכשל" };
+        if (isUniqueViolation(error)) return { error: te("slugExists") };
+        return { error: te("updateCategoryFailed") };
     }
 
     revalidatePath("/admin/categories");
@@ -302,13 +327,15 @@ export async function updateCategory(
 export async function deleteCategory(id: string): Promise<ActionResult> {
     await requireAdmin();
 
+    const te = await getTranslations("admin.errors");
+
     const { error } = await createAdminClient()
         .from("categories")
         .delete()
         .eq("id", id);
 
     if (error) {
-        return { error: "מחיקת הקטגוריה נכשלה" };
+        return { error: te("deleteCategoryFailed") };
     }
 
     revalidatePath("/admin/categories");
@@ -325,6 +352,8 @@ export async function adjustStock(
     reason: string
 ): Promise<ActionResult> {
     await requireAdmin();
+
+    const te = await getTranslations("admin.errors");
     const admin = createAdminClient();
 
     const { data: product } = await admin
@@ -333,7 +362,7 @@ export async function adjustStock(
         .eq("id", productId)
         .maybeSingle();
 
-    if (!product) return { error: "המוצר לא נמצא" };
+    if (!product) return { error: te("productNotFound") };
 
     const delta = newQuantity - product.stock_quantity;
     if (delta === 0) return undefined;
@@ -343,15 +372,15 @@ export async function adjustStock(
         .update({ stock_quantity: newQuantity })
         .eq("id", productId);
 
-    if (updateError) return { error: "עדכון המלאי נכשל" };
+    if (updateError) return { error: te("updateStockFailed") };
 
     const { error: logError } = await admin.from("inventory_logs").insert({
         product_id: productId,
         change_quantity: delta,
-        reason: reason.trim() || "עדכון ידני",
+        reason: reason.trim() || te("manualUpdate"),
     });
 
-    if (logError) return { error: "המלאי עודכן אך רישום היומן נכשל" };
+    if (logError) return { error: te("stockUpdatedLogFailed") };
 
     revalidatePath("/admin/inventory");
     revalidatePath(`/admin/products/${productId}`);

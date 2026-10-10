@@ -1,29 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
-import { ShoppingCart } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/cart-context";
 
 export function CartButton() {
     const { count } = useCart();
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => setMounted(true), []);
+    const t = useTranslations("nav");
 
     return (
-        <Button asChild variant="ghost" size="sm" className="relative">
-            <Link href="/cart">
-                <ShoppingCart className="size-5" />
-                {mounted && count > 0 && (
-                    <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+        <Button asChild variant="ghost" size="icon" className="relative">
+            <Link href="/cart" aria-label={t("cartAria")}>
+                <ShoppingBag className="size-5" />
+                {count > 0 && (
+                    <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground animate-pop-in">
                         {count}
                     </span>
                 )}
-                <span className="hidden sm:inline">סל</span>
             </Link>
         </Button>
     );

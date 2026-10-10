@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { AlertTriangle, ChevronRight, Phone, User } from "lucide-react";
 
@@ -18,12 +19,16 @@ import {
 } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/auth";
 import { getCustomerById } from "@/lib/data/customers";
+import type { Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
 import { formatDate, formatDateTime } from "@/lib/utils/dates";
 
-export const metadata: Metadata = {
-    title: "פרופיל לקוח",
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations("admin.customers");
+    return {
+        title: t("profile"),
+    };
+}
 
 export default async function CustomerProfilePage({
     params,
@@ -31,6 +36,9 @@ export default async function CustomerProfilePage({
     params: Promise<{ id: string }>;
 }) {
     await requireAdmin();
+
+    const locale = (await getLocale()) as Locale;
+    const t = await getTranslations("admin.customers");
 
     const { id } = await params;
     const profile = await getCustomerById(id);
@@ -52,11 +60,11 @@ export default async function CustomerProfilePage({
                     className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                 >
                     <ChevronRight className="size-4" />
-                    חזרה ללקוחות
+                    {t("backToCustomers")}
                 </Link>
                 <div className="flex items-center gap-3">
                     <h1 className="text-2xl font-bold">{stats.full_name}</h1>
-                    <Badge variant="secondary">{stats.orders_count} הזמנות</Badge>
+                    <Badge variant="secondary">{t("ordersCount", { count: stats.orders_count })}</Badge>
                 </div>
                 <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                     <Phone className="size-3.5" />
@@ -69,7 +77,7 @@ export default async function CustomerProfilePage({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base text-amber-600">
                             <AlertTriangle className="size-5" />
-                            כתובות זהות אצל לקוחות אחרים — לבדיקה ידנית
+                            {t("duplicateAddresses")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-2 text-sm">
@@ -78,7 +86,7 @@ export default async function CustomerProfilePage({
                                 <span className="font-medium">{candidate.normalized_address}</span>
                                 <span className="text-muted-foreground">
                                     {" "}
-                                    — {candidate.customers_count} לקוחות
+                                    — {t("customersCount", { count: candidate.customers_count })}
                                 </span>
                             </div>
                         ))}
@@ -90,41 +98,41 @@ export default async function CustomerProfilePage({
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-sm text-muted-foreground">
-                            סה"כ רכישות
+                            {t("totalPurchasesCard")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0 text-2xl font-bold">
-                        {formatILS(stats.total_agorot)}
+                        {formatILS(stats.total_agorot, locale)}
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-sm text-muted-foreground">
-                            ממוצע הזמנה
+                            {t("avgOrder")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0 text-2xl font-bold">
-                        {formatILS(averageOrder)}
+                        {formatILS(averageOrder, locale)}
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-sm text-muted-foreground">
-                            הזמנה אחרונה
+                            {t("lastOrderCard")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0 text-2xl font-bold">
-                        {stats.last_order_at ? formatDate(stats.last_order_at) : "—"}
+                        {stats.last_order_at ? formatDate(stats.last_order_at, locale) : "—"}
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-sm text-muted-foreground">
-                            לקוח מאז
+                            {t("customerSince")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0 text-2xl font-bold">
-                        {stats.first_order_at ? formatDate(stats.first_order_at) : "—"}
+                        {stats.first_order_at ? formatDate(stats.first_order_at, locale) : "—"}
                     </CardContent>
                 </Card>
             </div>
@@ -134,7 +142,7 @@ export default async function CustomerProfilePage({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base">
                             <User className="size-4 text-primary" />
-                            הערות
+                            {t("notes")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
@@ -147,18 +155,18 @@ export default async function CustomerProfilePage({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">מוצרים נפוצים</CardTitle>
+                        <CardTitle className="text-base">{t("frequentProducts")}</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
                         {frequentProducts.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">אין נתונים</p>
+                            <p className="text-sm text-muted-foreground">{t("noData")}</p>
                         ) : (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>מוצר</TableHead>
-                                        <TableHead>כמות</TableHead>
-                                        <TableHead>הכנסה</TableHead>
+                                        <TableHead>{t("product")}</TableHead>
+                                        <TableHead>{t("quantity")}</TableHead>
+                                        <TableHead>{t("revenue")}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -168,7 +176,7 @@ export default async function CustomerProfilePage({
                                                 {p.product_name}
                                             </TableCell>
                                             <TableCell>{p.units}</TableCell>
-                                            <TableCell>{formatILS(p.revenue_agorot)}</TableCell>
+                                            <TableCell>{formatILS(p.revenue_agorot, locale)}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -180,23 +188,23 @@ export default async function CustomerProfilePage({
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">היסטוריית הזמנות</CardTitle>
+                    <CardTitle className="text-base">{t("orderHistory")}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>מספר</TableHead>
-                                <TableHead>תאריך</TableHead>
-                                <TableHead>סה"כ</TableHead>
-                                <TableHead>סטטוס</TableHead>
+                                <TableHead>{t("number")}</TableHead>
+                                <TableHead>{t("date")}</TableHead>
+                                <TableHead>{t("total")}</TableHead>
+                                <TableHead>{t("status")}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {orders.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
-                                        אין הזמנות
+                                        {t("noOrders")}
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -212,10 +220,10 @@ export default async function CustomerProfilePage({
                                         </Link>
                                     </TableCell>
                                     <TableCell className="text-muted-foreground">
-                                        {formatDateTime(order.placed_at)}
+                                        {formatDateTime(order.placed_at, locale)}
                                     </TableCell>
                                     <TableCell className="font-medium">
-                                        {formatILS(order.total_agorot)}
+                                        {formatILS(order.total_agorot, locale)}
                                     </TableCell>
                                     <TableCell>
                                         <OrderStatusBadge status={order.status} />
@@ -229,11 +237,11 @@ export default async function CustomerProfilePage({
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">כתובות</CardTitle>
+                    <CardTitle className="text-base">{t("addresses")}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                     {addresses.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">אין כתובות</p>
+                        <p className="text-sm text-muted-foreground">{t("noAddresses")}</p>
                     ) : (
                         <div className="grid gap-2">
                             {addresses.map((address) => (
@@ -250,7 +258,7 @@ export default async function CustomerProfilePage({
                                         )}
                                     </div>
                                     {address.is_default && (
-                                        <Badge variant="secondary">כתובת ראשית</Badge>
+                                        <Badge variant="secondary">{t("primaryAddress")}</Badge>
                                     )}
                                 </div>
                             ))}

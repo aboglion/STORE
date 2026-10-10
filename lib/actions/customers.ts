@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { z } from "zod";
 
@@ -15,15 +16,17 @@ export async function updateCustomerNotes(
 ): Promise<CustomerActionResult> {
     await requireAdmin();
 
+    const te = await getTranslations("admin.errors");
+
     const parsed = updateCustomerNotesSchema.safeParse(values);
-    if (!parsed.success) return { error: "נתונים לא תקינים" };
+    if (!parsed.success) return { error: te("invalidDataShort") };
 
     const { error } = await createAdminClient()
         .from("customers")
         .update({ notes: parsed.data.notes || null })
         .eq("id", parsed.data.customer_id);
 
-    if (error) return { error: "שמירת ההערות נכשלה" };
+    if (error) return { error: te("saveNotesFailed") };
 
     revalidatePath(`/admin/customers/${parsed.data.customer_id}`);
     return undefined;

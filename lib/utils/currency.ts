@@ -1,14 +1,20 @@
+import type { Locale } from "@/lib/i18n/config";
+
 /**
  * All money in the database is stored as integer agorot.
  * 100 agorot = 1 ILS. Everything below converts to/from display.
  */
 
-/** 1250 agorot → "12.50 ₪" (he-IL formatting) */
-export function formatILS(agorot: number): string {
-    return new Intl.NumberFormat("he-IL", {
+/** 1250 agorot → "12.50 ₪" (Latin digits in both locales) */
+export function formatILS(agorot: number, locale: Locale = "he"): string {
+    return new Intl.NumberFormat(locale === "ar" ? "ar" : "he-IL", {
         style: "currency",
         currency: "ILS",
-    }).format(agorot / 100);
+        numberingSystem: "latn",
+    })
+        .format(agorot / 100)
+        .replace(/[\u200e\u200f]/g, "")
+        .replace(/[\u00a0\u202f]/g, " ");
 }
 
 /** 1250 agorot → "12.50" (for form inputs) */

@@ -10,9 +10,10 @@ export function normalizeAddress(input: string): string {
     return input
         .trim()
         .toLowerCase()
-        .replace(/[.,;'"()\[\]{}<>/\\]/g, "")
-        .replace(/[\u05BE\u05F3\u05F4]/g, "") // Hebrew maqaf, geresh, gershayim
-        .replace(/\s+/g, " ");
+        .replace(/[.,;'"()\[\]{}<>/\\_\-]/g, " ")
+        .replace(/[\u05BE\u05F3\u05F4]/g, " ") // Hebrew maqaf, geresh, gershayim
+        .replace(/\s+/g, " ")
+        .trim();
 }
 
 /**

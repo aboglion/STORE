@@ -318,15 +318,6 @@ begin
     raise exception 'USE_CANCEL_ORDER';
   end if;
 
-  if not (
-    (v_from_status = 'pending' and p_to_status = 'confirmed')
-    or (v_from_status = 'confirmed' and p_to_status = 'preparing')
-    or (v_from_status = 'preparing' and p_to_status = 'out_for_delivery')
-    or (v_from_status = 'out_for_delivery' and p_to_status = 'delivered')
-  ) then
-    raise exception 'INVALID_TRANSITION';
-  end if;
-
   update orders
   set status = p_to_status,
       updated_at = now()

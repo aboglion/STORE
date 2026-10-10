@@ -20,7 +20,7 @@ export function ProductGallery({
 
     if (images.length === 0) {
         return (
-            <div className="relative aspect-square overflow-hidden rounded-xl border bg-muted">
+            <div className="relative aspect-square overflow-hidden rounded-3xl border border-border/70 bg-muted shadow-soft">
                 <Image
                     src={demoImageUrl(productSlug)}
                     alt={productName}
@@ -37,7 +37,7 @@ export function ProductGallery({
 
     return (
         <div className="grid gap-3">
-            <div className="relative aspect-square overflow-hidden rounded-xl border bg-muted">
+            <div className="relative aspect-square overflow-hidden rounded-3xl border border-border/70 bg-muted shadow-soft">
                 <Image
                     src={productImageUrl(current.storage_path, productSlug)}
                     alt={current.alt_text ?? productName}
@@ -54,24 +54,24 @@ export function ProductGallery({
             </div>
 
             {images.length > 1 && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar">
                     {images.map((image, index) => (
                         <button
                             key={image.id}
                             type="button"
                             onClick={() => setSelected(index)}
                             className={cn(
-                                "relative aspect-square size-16 overflow-hidden rounded-md border transition-colors",
+                                "relative aspect-square size-16 shrink-0 overflow-hidden rounded-xl border transition-all duration-150 active:scale-95 sm:size-20",
                                 index === selected
-                                    ? "border-primary ring-2 ring-primary/30"
-                                    : "border-border hover:border-primary/50"
+                                    ? "border-primary ring-2 ring-primary/30 shadow-soft"
+                                    : "border-border/70 hover:border-primary/50"
                             )}
                         >
                             <Image
                                 src={productImageUrl(image.storage_path, productSlug)}
                                 alt={image.alt_text ?? `${productName} ${index + 1}`}
                                 fill
-                                sizes="64px"
+                                sizes="80px"
                                 className="object-cover"
                                 onError={(e) => {
                                     const target = e.currentTarget;

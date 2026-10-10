@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { ChevronRight, MapPin, Phone, User } from "lucide-react";
 
@@ -9,7 +10,6 @@ import {
     PaymentStatusBadge,
 } from "@/components/admin/order-status-badge";
 import { OrderStatusControls } from "@/components/admin/order-status-controls";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -26,13 +26,17 @@ import {
     ORDER_STATUS_LABELS,
     PAYMENT_METHOD_LABELS,
 } from "@/lib/constants";
+import { localizedText, type Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { AddressSnapshot } from "@/types/database.types";
 
-export const metadata: Metadata = {
-    title: "פרטי הזמנה",
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations("admin.orders");
+    return {
+        title: t("details"),
+    };
+}
 
 export default async function OrderDetailPage({
     params,
@@ -41,12 +45,16 @@ export default async function OrderDetailPage({
 }) {
     await requireAdmin();
 
+    const locale = (await getLocale()) as Locale;
+    const t = await getTranslations("admin.orders");
+    const tRoot = await getTranslations();
+
     const { id } = await params;
     const detail = await getOrderById(id);
     if (!detail) notFound();
 
     const { order, items, events, customer } = detail;
-    const address = order.address_snapshot as AddressSnapshot;
+    const address = order.address_snapshot as unknown as AddressSnapshot;
 
     const mapQuery = address.lat && address.lng
         ? `${address.lat},${address.lng}`
@@ -61,7 +69,7 @@ export default async function OrderDetailPage({
                     className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                 >
                     <ChevronRight className="size-4" />
-                    חזרה להזמנות
+                    {t("backToOrders")}
                 </Link>
                 <div className="flex flex-wrap items-center gap-3">
                     <h1 className="font-mono text-2xl font-bold" dir="ltr">
@@ -71,13 +79,13 @@ export default async function OrderDetailPage({
                     <PaymentStatusBadge status={order.payment_status} />
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    הוזמנה ב-{formatDateTime(order.placed_at)}
+                    {t("placedAt", { date: formatDateTime(order.placed_at, locale) })}
                 </p>
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">ניהול הזמנה</CardTitle>
+                    <CardTitle className="text-base">{t("manageOrder")}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                     <OrderStatusControls
@@ -93,7 +101,7 @@ export default async function OrderDetailPage({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base">
                             <User className="size-4 text-primary" />
-                            פרטי לקוח
+                            {t("customerDetails")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-2 text-sm">
@@ -107,12 +115,12 @@ export default async function OrderDetailPage({
                                 href={`/admin/customers/${customer.id}`}
                                 className="mt-1 text-sm text-primary hover:underline"
                             >
-                                לפרופיל הלקוח
+                                {t("toProfile")}
                             </Link>
                         )}
                         {order.customer_notes && (
                             <div className="mt-2 rounded-md bg-muted p-2 text-sm">
-                                <span className="font-medium">הערות לקוח: </span>
+                                <span className="font-medium">{t("customerNotes")}</span>
                                 {order.customer_notes}
                             </div>
                         )}
@@ -123,7 +131,7 @@ export default async function OrderDetailPage({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base">
                             <MapPin className="size-4 text-primary" />
-                            כתובת למשלוח
+                            {t("deliveryAddress")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-2 text-sm">
@@ -142,7 +150,7 @@ export default async function OrderDetailPage({
                             rel="noopener noreferrer"
                             className="mt-1 text-sm text-primary hover:underline"
                         >
-                            פתיחה במפה
+                            {t("openInMap")}
                         </a>
                     </CardContent>
                 </Card>
@@ -150,28 +158,32 @@ export default async function OrderDetailPage({
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">פריטי הזמנה</CardTitle>
+                    <CardTitle className="text-base">{t("orderItems")}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>מוצר</TableHead>
-                                <TableHead>מחיר ליחידה</TableHead>
-                                <TableHead>כמות</TableHead>
-                                <TableHead>סה"כ</TableHead>
+                                <TableHead>{t("product")}</TableHead>
+                                <TableHead>{t("unitPrice")}</TableHead>
+                                <TableHead>{t("quantity")}</TableHead>
+                                <TableHead>{t("lineTotal")}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {items.map((item) => (
                                 <TableRow key={item.id}>
                                     <TableCell className="font-medium">
-                                        {item.product_name_snapshot}
+                                        {localizedText(
+                                            locale,
+                                            item.product_name_snapshot,
+                                            item.product_name_ar_snapshot
+                                        )}
                                     </TableCell>
-                                    <TableCell>{formatILS(item.unit_price_agorot)}</TableCell>
+                                    <TableCell>{formatILS(item.unit_price_agorot, locale)}</TableCell>
                                     <TableCell>{item.quantity}</TableCell>
                                     <TableCell className="font-medium">
-                                        {formatILS(item.line_total_agorot)}
+                                        {formatILS(item.line_total_agorot, locale)}
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -181,30 +193,33 @@ export default async function OrderDetailPage({
                     <Separator className="my-4" />
                     <div className="grid gap-1 text-sm">
                         <div className="flex justify-between">
-                            <span className="text-muted-foreground">סה"כ מוצרים</span>
-                            <span>{formatILS(order.subtotal_agorot)}</span>
+                            <span className="text-muted-foreground">{t("itemsTotal")}</span>
+                            <span>{formatILS(order.subtotal_agorot, locale)}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-muted-foreground">משלוח</span>
+                            <span className="text-muted-foreground">{t("shipping")}</span>
                             <span>
                                 {order.delivery_fee_agorot === 0
-                                    ? "חינם"
-                                    : formatILS(order.delivery_fee_agorot)}
+                                    ? t("free")
+                                    : formatILS(order.delivery_fee_agorot, locale)}
                             </span>
                         </div>
                         {order.discount_agorot > 0 && (
                             <div className="flex justify-between">
-                                <span className="text-muted-foreground">הנחה</span>
-                                <span>-{formatILS(order.discount_agorot)}</span>
+                                <span className="text-muted-foreground">{t("discount")}</span>
+                                <span>-{formatILS(order.discount_agorot, locale)}</span>
                             </div>
                         )}
                         <div className="mt-1 flex justify-between border-t pt-2 font-semibold">
-                            <span>סה"כ לתשלום</span>
-                            <span>{formatILS(order.total_agorot)}</span>
+                            <span>{t("totalToPay")}</span>
+                            <span>{formatILS(order.total_agorot, locale)}</span>
                         </div>
                         <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-                            <span>אופן תשלום</span>
-                            <span>{PAYMENT_METHOD_LABELS[order.payment_method]}</span>
+                            <span>{t("paymentMethod")}</span>
+                            <span>
+                                {tRoot(PAYMENT_METHOD_LABELS[order.payment_method]) ??
+                                    order.payment_method}
+                            </span>
                         </div>
                     </div>
                 </CardContent>
@@ -212,11 +227,11 @@ export default async function OrderDetailPage({
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">היסטוריית סטטוסים</CardTitle>
+                    <CardTitle className="text-base">{t("statusHistory")}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                     {events.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">אין אירועים</p>
+                        <p className="text-sm text-muted-foreground">{t("noEvents")}</p>
                     ) : (
                         <ol className="relative border-s ps-4">
                             {events.map((event) => (
@@ -224,8 +239,8 @@ export default async function OrderDetailPage({
                                     <div className="absolute -start-1.5 mt-1.5 size-3 rounded-full border-2 border-primary bg-background" />
                                     <div className="text-sm font-medium">
                                         {event.from_status
-                                            ? `${ORDER_STATUS_LABELS[event.from_status as keyof typeof ORDER_STATUS_LABELS] ?? event.from_status} → ${ORDER_STATUS_LABELS[event.to_status as keyof typeof ORDER_STATUS_LABELS] ?? event.to_status}`
-                                            : ORDER_STATUS_LABELS[event.to_status as keyof typeof ORDER_STATUS_LABELS] ?? event.to_status}
+                                            ? `${tRoot(ORDER_STATUS_LABELS[event.from_status as keyof typeof ORDER_STATUS_LABELS]) ?? event.from_status} → ${tRoot(ORDER_STATUS_LABELS[event.to_status as keyof typeof ORDER_STATUS_LABELS]) ?? event.to_status}`
+                                            : tRoot(ORDER_STATUS_LABELS[event.to_status as keyof typeof ORDER_STATUS_LABELS]) ?? event.to_status}
                                     </div>
                                     {event.note && (
                                         <div className="text-sm text-muted-foreground">
@@ -233,7 +248,7 @@ export default async function OrderDetailPage({
                                         </div>
                                     )}
                                     <div className="text-xs text-muted-foreground">
-                                        {formatDateTime(event.created_at)}
+                                        {formatDateTime(event.created_at, locale)}
                                     </div>
                                 </li>
                             ))}

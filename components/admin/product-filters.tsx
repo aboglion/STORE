@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Search } from "lucide-react";
 
@@ -14,15 +15,18 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { localizedText, type Locale } from "@/lib/i18n/config";
 
 export function ProductFilters({
     categories,
     initial,
 }: {
-    categories: { id: string; name_he: string }[];
+    categories: { id: string; name_he: string; name_ar: string | null }[];
     initial: { q?: string; category?: string; status?: string };
 }) {
     const router = useRouter();
+    const t = useTranslations("admin.products");
+    const locale = useLocale() as Locale;
     const [q, setQ] = useState(initial.q ?? "");
     const [category, setCategory] = useState(initial.category ?? "all");
     const [status, setStatus] = useState(initial.status ?? "all");
@@ -43,7 +47,7 @@ export function ProductFilters({
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && applyFilters()}
-                    placeholder="חיפוש לפי שם או slug..."
+                    placeholder={t("searchPlaceholder")}
                     className="pr-9"
                 />
             </div>
@@ -61,13 +65,13 @@ export function ProductFilters({
                 }}
             >
                 <SelectTrigger className="w-full sm:w-44">
-                    <SelectValue placeholder="כל הקטגוריות" />
+                    <SelectValue placeholder={t("allCategories")} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">כל הקטגוריות</SelectItem>
+                    <SelectItem value="all">{t("allCategories")}</SelectItem>
                     {categories.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                            {c.name_he}
+                            {localizedText(locale, c.name_he, c.name_ar)}
                         </SelectItem>
                     ))}
                 </SelectContent>
@@ -85,17 +89,17 @@ export function ProductFilters({
                 }}
             >
                 <SelectTrigger className="w-full sm:w-40">
-                    <SelectValue placeholder="כל הסטטוסים" />
+                    <SelectValue placeholder={t("allStatuses")} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">כל הסטטוסים</SelectItem>
-                    <SelectItem value="active">פעיל</SelectItem>
-                    <SelectItem value="inactive">לא פעיל</SelectItem>
+                    <SelectItem value="all">{t("allStatuses")}</SelectItem>
+                    <SelectItem value="active">{t("active")}</SelectItem>
+                    <SelectItem value="inactive">{t("inactive")}</SelectItem>
                 </SelectContent>
             </Select>
 
             <Button type="button" onClick={applyFilters} variant="secondary">
-                סינון
+                {t("filter")}
             </Button>
         </div>
     );

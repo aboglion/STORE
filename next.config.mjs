@@ -1,5 +1,10 @@
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    output: "standalone",
     images: {
         // Local demo placeholders in /public/products are SVGs.
         dangerouslyAllowSVG: true,
@@ -18,6 +23,17 @@ const nextConfig = {
             },
         ],
     },
+    experimental: {
+        optimizePackageImports: [
+            "lucide-react",
+            "recharts",
+            "date-fns",
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-select",
+            "@radix-ui/react-tooltip",
+        ],
+    },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

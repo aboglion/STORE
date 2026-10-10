@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import {
     Area,
     AreaChart,
@@ -16,6 +17,7 @@ import {
 } from "recharts";
 
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
+import type { Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
 import type {
     DailySale,
@@ -32,19 +34,27 @@ const STATUS_COLORS: Record<string, string> = {
     canceled: "#ef4444",
 };
 
-function formatDay(value: string): string {
+function formatDay(value: string, locale: Locale): string {
     const d = new Date(`${value}T00:00:00`);
-    return d.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" });
+    return d.toLocaleDateString(locale === "ar" ? "ar" : "he-IL", {
+        day: "2-digit",
+        month: "2-digit",
+    });
 }
 
-function formatMonth(value: string): string {
+function formatMonth(value: string, locale: Locale): string {
     const d = new Date(`${value}T00:00:00`);
-    return d.toLocaleDateString("he-IL", { month: "short", year: "2-digit" });
+    return d.toLocaleDateString(locale === "ar" ? "ar" : "he-IL", {
+        month: "short",
+        year: "2-digit",
+    });
 }
 
 export function RevenueAreaChart({ data }: { data: DailySale[] }) {
+    const locale = useLocale() as Locale;
+    const t = useTranslations("admin.stats");
     const chartData = [...data].reverse().map((d) => ({
-        day: formatDay(d.day),
+        day: formatDay(d.day, locale),
         revenue: d.revenue_agorot / 100,
     }));
 
@@ -71,7 +81,7 @@ export function RevenueAreaChart({ data }: { data: DailySale[] }) {
                     width={48}
                 />
                 <Tooltip
-                    formatter={(value) => [formatILS(Number(value) * 100), "הכנסות"]}
+                    formatter={(value) => [formatILS(Number(value) * 100, locale), t("revenue")]}
                     contentStyle={{
                         background: "var(--popover)",
                         border: "1px solid var(--border)",
@@ -92,8 +102,10 @@ export function RevenueAreaChart({ data }: { data: DailySale[] }) {
 }
 
 export function MonthlyBarChart({ data }: { data: MonthlySale[] }) {
+    const locale = useLocale() as Locale;
+    const t = useTranslations("admin.stats");
     const chartData = [...data].reverse().map((d) => ({
-        month: formatMonth(d.month),
+        month: formatMonth(d.month, locale),
         revenue: d.revenue_agorot / 100,
     }));
 
@@ -114,7 +126,7 @@ export function MonthlyBarChart({ data }: { data: MonthlySale[] }) {
                     width={48}
                 />
                 <Tooltip
-                    formatter={(value) => [formatILS(Number(value) * 100), "הכנסות"]}
+                    formatter={(value) => [formatILS(Number(value) * 100, locale), t("revenue")]}
                     contentStyle={{
                         background: "var(--popover)",
                         border: "1px solid var(--border)",
@@ -129,8 +141,9 @@ export function MonthlyBarChart({ data }: { data: MonthlySale[] }) {
 }
 
 export function StatusPieChart({ data }: { data: OrdersByStatus[] }) {
+    const t = useTranslations();
     const chartData = data.map((d) => ({
-        name: ORDER_STATUS_LABELS[d.status] ?? d.status,
+        name: t(ORDER_STATUS_LABELS[d.status]) ?? d.status,
         value: d.orders_count,
         color: STATUS_COLORS[d.status] ?? "var(--muted-foreground)",
     }));
@@ -142,8 +155,10 @@ export function StatusPieChart({ data }: { data: OrdersByStatus[] }) {
                     data={chartData}
                     dataKey="value"
                     nameKey="name"
+                    cx="50%"
+                    cy="50%"
                     innerRadius={55}
-                    outerRadius={90}
+                    outerRadius={85}
                     paddingAngle={2}
                 >
                     {chartData.map((entry, index) => (

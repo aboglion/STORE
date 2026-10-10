@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { AlertTriangle, Boxes } from "lucide-react";
 
@@ -20,14 +21,21 @@ import {
     getInventoryLogs,
     getLowStockProducts,
 } from "@/lib/data/products";
+import { localizedText, type Locale } from "@/lib/i18n/config";
 import { formatDateTime } from "@/lib/utils/dates";
 
-export const metadata: Metadata = {
-    title: "מלאי",
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations("admin.inventory");
+    return {
+        title: t("title"),
+    };
+}
 
 export default async function AdminInventoryPage() {
     await requireAdmin();
+
+    const locale = (await getLocale()) as Locale;
+    const t = await getTranslations("admin.inventory");
 
     const [products, lowStock, logs] = await Promise.all([
         getAllProducts(),
@@ -40,9 +48,9 @@ export default async function AdminInventoryPage() {
     return (
         <div className="grid gap-6">
             <div>
-                <h1 className="text-2xl font-bold">מלאי</h1>
+                <h1 className="text-2xl font-bold">{t("title")}</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    ניהול מלאי, התראות מלאי נמוך ויומן שינויים
+                    {t("desc")}
                 </p>
             </div>
 
@@ -51,14 +59,17 @@ export default async function AdminInventoryPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base">
                             <AlertTriangle className="size-5 text-destructive" />
-                            התראות מלאי נמוך ({lowStock.length})
+                            {t("lowStockAlerts", { count: lowStock.length })}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-2">
                         {lowStock.map((p) => (
                             <Link key={p.id} href={`/admin/products/${p.id}`}>
                                 <Badge variant="destructive">
-                                    {p.name_he} — {p.stock_quantity} במלאי
+                                    {t("inStockCount", {
+                                        name: localizedText(locale, p.name_he, p.name_ar),
+                                        count: p.stock_quantity,
+                                    })}
                                 </Badge>
                             </Link>
                         ))}
@@ -66,14 +77,14 @@ export default async function AdminInventoryPage() {
                 </Card>
             )}
 
-            <div className="rounded-md border">
+            <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-soft">
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>מוצר</TableHead>
-                            <TableHead>במלאי</TableHead>
-                            <TableHead>סף מלאי נמוך</TableHead>
-                            <TableHead>סטטוס</TableHead>
+                            <TableHead>{t("product")}</TableHead>
+                            <TableHead>{t("inStock")}</TableHead>
+                            <TableHead>{t("lowStockThreshold")}</TableHead>
+                            <TableHead>{t("status")}</TableHead>
                             <TableHead className="w-32"></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -87,7 +98,7 @@ export default async function AdminInventoryPage() {
                                             href={`/admin/products/${p.id}`}
                                             className="font-medium hover:underline"
                                         >
-                                            {p.name_he}
+                                            {localizedText(locale, p.name_he, p.name_ar)}
                                         </Link>
                                     </TableCell>
                                     <TableCell>
@@ -98,15 +109,15 @@ export default async function AdminInventoryPage() {
                                     <TableCell>{p.low_stock_threshold}</TableCell>
                                     <TableCell>
                                         {isLow ? (
-                                            <span className="text-sm text-destructive">מלאי נמוך</span>
+                                            <span className="text-sm text-destructive">{t("lowStock")}</span>
                                         ) : (
-                                            <span className="text-sm text-muted-foreground">תקין</span>
+                                            <span className="text-sm text-muted-foreground">{t("ok")}</span>
                                         )}
                                     </TableCell>
                                     <TableCell>
                                         <InventoryAdjustDialog
                                             productId={p.id}
-                                            productName={p.name_he}
+                                            productName={localizedText(locale, p.name_he, p.name_ar)}
                                             currentStock={p.stock_quantity}
                                         />
                                     </TableCell>
@@ -121,24 +132,24 @@ export default async function AdminInventoryPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
                         <Boxes className="size-5 text-primary" />
-                        יומן שינויי מלאי
+                        {t("logTitle")}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>תאריך</TableHead>
-                                <TableHead>מוצר</TableHead>
-                                <TableHead>שינוי</TableHead>
-                                <TableHead>סיבה</TableHead>
+                                <TableHead>{t("date")}</TableHead>
+                                <TableHead>{t("product")}</TableHead>
+                                <TableHead>{t("change")}</TableHead>
+                                <TableHead>{t("reason")}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {logs.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
-                                        אין שינויי מלאי עדיין
+                                        {t("emptyLog")}
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -147,10 +158,12 @@ export default async function AdminInventoryPage() {
                                 return (
                                     <TableRow key={log.id}>
                                         <TableCell className="text-muted-foreground">
-                                            {formatDateTime(log.created_at)}
+                                            {formatDateTime(log.created_at, locale)}
                                         </TableCell>
                                         <TableCell>
-                                            {product?.name_he ?? log.product_id}
+                                            {product
+                                                ? localizedText(locale, product.name_he, product.name_ar)
+                                                : log.product_id}
                                         </TableCell>
                                         <TableCell>
                                             <span

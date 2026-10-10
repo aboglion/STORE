@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+.supabase-initialized
+tests
+plans
+coverage
+*.log

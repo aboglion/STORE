@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ export function CustomerNotesEditor({
     initialNotes: string | null;
 }) {
     const router = useRouter();
+    const t = useTranslations("admin.customers");
     const [notes, setNotes] = useState(initialNotes ?? "");
     const [pending, startTransition] = useTransition();
 
@@ -31,7 +33,7 @@ export function CustomerNotesEditor({
                 toast.error(res.error);
                 return;
             }
-            toast.success("ההערות נשמרו");
+            toast.success(t("notesSavedToast"));
             router.refresh();
         });
     }
@@ -41,7 +43,7 @@ export function CustomerNotesEditor({
             <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="הערות פנימיות על הלקוח..."
+                placeholder={t("notesPlaceholder")}
                 rows={4}
             />
             <div>
@@ -56,7 +58,7 @@ export function CustomerNotesEditor({
                     ) : (
                         <Save className="size-4" />
                     )}
-                    שמירת הערות
+                    {t("saveNotes")}
                 </Button>
             </div>
         </div>
