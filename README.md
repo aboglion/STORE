@@ -71,14 +71,22 @@ npm run setup:dev    # כמו למעלה + הרצת שרת הפיתוח
 5. אם Supabase CLI מוגדר — מריץ המיגרציות; אחרי� מדפיס הוראות ידניות
 6. עם `dev` — מריץ שרת הפיתוח
 
-### 0.5. הרצה מהירה וניהול — Makefile (מומלץ)
+### 0.5. הרצה מהירה וניהול — INIT & Makefile (מומלץ ביותר)
 
-פקודות מרכזיות ב-Makefile:
+**פקודת התקנה ואתחול ראשונית על שרת נקי (מתקין Make, Docker, Node ומפעיל):**
+```bash
+./init           # או ./init.sh
+```
+
+**פקודות מרכזיות ב-Makefile:**
 
 ```bash
-make local       # הפעלה מקומית בסביבת פיתוח (Dev): תלויות + Supabase + שרת פיתוח Next.js
-make run         # הפעלה מלאה דרך דוקר לפרודקשן (Docker Production)
-make gp          # העלאה וסנכרון ישיר ל-GitHub (add + commit + push ל-origin master)
+make run          # הפעלה מלאה ב-Docker + הפעלת שירות רקע אוטונומי (Auto-Updater & Boot Recovery)
+make stop         # עצירת כל שירותי המערכת (כולל שירות הרקע וכל קונטיינרי ה-Docker)
+make status       # הצגת סטטוס מפורט של שירות הרקע, ה-Docker והלוגים האחרונים
+make updater-logs # צפייה בלוגים שוטפים של שירות העדכון האוטומטי
+make gp           # העלאה וסנכרון ישיר ל-GitHub (add + commit + push ל-origin master)
+make local        # הפעלה מקומית בסביבת פיתוח (Dev) ללא דוקר
 ```
 
 כתובות גישה:
@@ -86,25 +94,18 @@ make gp          # העלאה וסנכרון ישיר ל-GitHub (add + commit + 
 - דאשבורד מנהל: http://localhost:3000/admin/login
 - Supabase Studio: http://127.0.0.1:54323
 
-פקודות נוספות:
-
-```bash
-make help        # רשימת כל הפקודות וההסברים
-make gp          # גיטהאב: git add + commit + push (זמין גם כ-make GP)
-make local       # הרצה מקומית בפיתוח (Next.js Dev Server)
-make run         # הרצה דרך Docker בפרודקשן (Next.js Standalone Container)
-make docker-stop # עצירת שירות הפרודקשן בדוקר
-make docker-logs # צפייה בלוגים של שירות הפרודקשן בדוקר
-make db-start    # הפעלת Supabase (Docker)
-make db-stop     # עצירת Supabase
-make db-reset    # איפוס דאטהבייס (מיגרציות + seed) — הרסני
-make env         # יצירת .env.local מחדש
-make admin       # יצירת משתמש אדמין
-make build       # בניית פרודקשן מקומית
-make test        # הרצת בדיקות (Vitest)
-make lint        # בדיקת ESLint
-make typecheck   # בדיקת TypeScript
-```
+**כיצד פועל שירות הרקע והעדכון האוטומטי (Auto-Updater & Supervisor):**
+1. **הפעלה ברקע:** בעת הרצת `make run` או `./init`, מותקן ומופעל שירות מערכת (`store-commerce.service`) תחת systemd.
+2. **בדיקת עדכוני GitHub:** השירות דוגם את מאגר ה-GitHub של הפרויקט באופן מחזורי (כל 60 שניות).
+3. **עדכון ללא השבתה (Zero-Downtime Safe Update):**
+   - זיהוי קומיט חדש ב-GitHub.
+   - משיכה נקייה (`git pull --ff-only`).
+   - בניית תמונת ה-Docker החדשה **בזמן שהקונטיינר הקיים ממשיך לשרת לקוחות**.
+   - אם הבנייה נכשלה: ביצוע Rollback מיידי לקומיט הקודם בלי להפיל את האתר.
+   - אם הבנייה הצליחה: הרצת מיגרציות, החלפת הקונטיינר ובדיקת בריאות (Health Check בפורט 3000).
+   - אם בדיקת הבריאות נכשלה: שחזור אוטומטי מלא לגרסה היציבה הקודמת.
+4. **עמידות באתחול שרת (Reboot Survival):** השירות מוגדר לעלייה אוטומטית בעת עליית מערכת ההפעלה (כולל הפעלת Supabase, דוקר ובדיקת תקינות).
+5. **עצירה מלאה:** הרצת `make stop` עוצרת את כל חלקי המערכת — שירות הרקע, קונטיינר החנות ושרת ה-Supabase.
 
 > דרישות: Docker רץ + Node 20+. בפעם הראשונה `supabase start` מוריד תמונות Docker (כמה דקות).
 

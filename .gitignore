@@ -38,3 +38,6 @@ next-env.d.ts
 # local supabase runtime files (created by supabase start)
 /supabase/.temp/
 /supabase/.branches/
+
+# runtime logs & pids
+/logs/

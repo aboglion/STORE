@@ -9,7 +9,7 @@
 
 SUPABASE := npx supabase
 
-.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install db-start db-stop db-reset db-status env admin build test lint typecheck
+.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install db-start db-stop db-reset db-status env admin build test lint typecheck init status service-logs updater-logs
 
 help: ## הצגת רשימת הפקודות הזמינות
 	@echo "\033[1;33mמערכת מסחר — פקודות Make זמינות:\033[0m"
@@ -45,7 +45,7 @@ dev: local   ## כינוי עבור make local
 # ------------------------------------------------------------
 # הפעלה דרך דוקר לפרודקשן (Production via Docker)
 # ------------------------------------------------------------
-run: ## הפעלה מלאה דרך דוקר לפרודקשן (Docker Production)
+run: ## הפעלה מלאה דרך דוקר לפרודקשן + שירות רקע אוטונומי ועמידות באתחול
 	@bash scripts/docker-run.sh
 
 RUN: run        ## כינוי עבור make run
@@ -55,21 +55,34 @@ production: run ## כינוי עבור make run
 docker-build: ## בניית תמונת הפרודקשן בדוקר בלבד
 	docker compose build
 
-docker-stop: ## עצירת שירות הפרודקשן בדוקר
-	docker compose down
+docker-stop: stop ## כינוי עבור make stop
 
-docker-down: docker-stop ## כינוי לעצירת דוקר
+docker-down: stop ## כינוי עבור make stop
 
 docker-logs: ## צפייה בלוגים של שירות הפרודקשן בדוקר
 	docker compose logs -f
 
 logs: docker-logs ## כינוי לצפייה בלוגים
 
-stop: docker-stop ## כינוי לעצירה
+stop: ## עצירת כל שירותי המערכת (כולל שירות הרקע וקונטיינרים של Docker ו-Supabase)
+	@echo "🛑 עוצר את כל שירותי המערכת ושירות הרקע..."
+	@bash scripts/service.sh stop 2>/dev/null || true
+	@docker compose down 2>/dev/null || true
+	@$(SUPABASE) stop 2>/dev/null || true
+	@echo "✅ כל שירותי המערכת נעצרו בהצלחה!"
 
-down: ## עצירת כל שירותי הדוקר (כולל Supabase)
-	docker compose down 2>/dev/null || true
-	$(SUPABASE) stop 2>/dev/null || true
+down: stop ## כינוי עבור make stop
+
+status: ## הצגת סטטוס מלא של המערכת, הדוקר ושירות הרקע
+	@bash scripts/service.sh status
+
+service-logs: ## צפייה בלוגים שוטפים של שירות הרקע והעדכון האוטומטי
+	@bash scripts/service.sh logs
+
+updater-logs: service-logs ## כינוי עבור service-logs
+
+init: ## סקריפט אתחול, התקנת תלויות מערכת (Make, Docker) והרצה
+	@bash ./init.sh
 
 # ------------------------------------------------------------
 # פקודות עזר נוספות
