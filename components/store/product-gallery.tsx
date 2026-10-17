@@ -3,16 +3,26 @@
 import Image from "next/image";
 import { useRef, useState } from "react";
 
-import { demoImageUrl, productImageUrl } from "@/lib/utils/images";
-import type { ProductImage } from "@/types/database.types";
+import { demoImageUrl } from "@/lib/utils/images";
 import { cn } from "@/lib/utils";
+
+/**
+ * A gallery image with its URL already resolved server-side, so the
+ * client never needs to know the storage base URL (which differs
+ * between the browser and the Docker container).
+ */
+export interface GalleryImage {
+    id: string;
+    url: string;
+    alt: string | null;
+}
 
 export function ProductGallery({
     images,
     productName,
     productSlug,
 }: {
-    images: ProductImage[];
+    images: GalleryImage[];
     productName: string;
     productSlug: string;
 }) {
@@ -61,8 +71,8 @@ export function ProductGallery({
                             className="relative h-full w-full shrink-0 snap-center"
                         >
                             <Image
-                                src={productImageUrl(image.storage_path, productSlug)}
-                                alt={image.alt_text ?? `${productName} ${index + 1}`}
+                                src={image.url}
+                                alt={image.alt ?? `${productName} ${index + 1}`}
                                 fill
                                 sizes="(max-width: 768px) 100vw, 50vw"
                                 className="object-cover"
@@ -116,8 +126,8 @@ export function ProductGallery({
                             )}
                         >
                             <Image
-                                src={productImageUrl(image.storage_path, productSlug)}
-                                alt={image.alt_text ?? `${productName} ${index + 1}`}
+                                src={image.url}
+                                alt={image.alt ?? `${productName} ${index + 1}`}
                                 fill
                                 sizes="80px"
                                 className="object-cover"

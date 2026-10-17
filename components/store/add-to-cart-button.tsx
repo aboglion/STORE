@@ -17,6 +17,7 @@ export function AddToCartButton({
     fullWidth = false,
     disabled = false,
     quantity = 1,
+    className,
 }: {
     productId: string;
     productName?: string;
@@ -24,6 +25,7 @@ export function AddToCartButton({
     fullWidth?: boolean;
     disabled?: boolean;
     quantity?: number;
+    className?: string;
 }) {
     const { addItem } = useCart();
     const t = useTranslations("product");
@@ -34,9 +36,10 @@ export function AddToCartButton({
             type="button"
             size={size}
             className={cn(
-                fullWidth ? "w-full" : undefined,
+                fullWidth && "flex-1 w-full min-w-0 shrink",
                 "rounded-full transition-all duration-150",
-                size === "xl" && "font-bold shadow-soft"
+                size === "xl" && "font-bold shadow-soft",
+                className
             )}
             disabled={disabled}
             aria-label={
@@ -53,13 +56,13 @@ export function AddToCartButton({
                 t("outOfStock")
             ) : added ? (
                 <>
-                    <Check className="size-5" />
-                    {t("addedToCart")}
+                    <Check className="size-5 shrink-0" />
+                    <span className="truncate">{t("addedToCart")}</span>
                 </>
             ) : (
                 <>
-                    <ShoppingCart className="size-5" />
-                    {t("addToCart")}
+                    <ShoppingCart className="size-5 shrink-0" />
+                    <span className="truncate">{t("addToCart")}</span>
                 </>
             )}
         </Button>

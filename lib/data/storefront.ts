@@ -139,7 +139,10 @@ const getProductsCached = unstable_cache(
             .from("products")
             .select("*, images:product_images(id, storage_path, alt_text, sort_order)")
             .eq("is_active", true)
-            .order("sort_order", { ascending: true });
+            .order("sort_order", { ascending: true })
+            // PostgREST caps responses at 1000 rows by default — the full
+            // catalog is ~10k products, so raise the cap explicitly.
+            .limit(10000);
         return (data ?? []) as ProductWithImages[];
     },
     ["products"],

@@ -19,8 +19,15 @@ import {
 
 export type ActionResult = { error?: string } | undefined;
 
-function isUniqueViolation(error: { code?: string } | null): boolean {
-    return error?.code === "23505";
+function uniqueViolationTarget(
+    error: { code?: string; message?: string } | null
+): "slug" | "barcode" | null {
+    if (error?.code !== "23505") return null;
+    const message = error.message ?? "";
+    if (message.includes("products_barcode_key") || message.includes("barcode")) {
+        return "barcode";
+    }
+    return "slug";
 }
 
 // ---------------------------------------------------------------------------
@@ -63,6 +70,7 @@ export async function createProduct(
         .insert({
             category_id: parsed.data.category_id || null,
             slug: parsed.data.slug,
+            barcode: parsed.data.barcode || null,
             name_he: parsed.data.name_he,
             name_ar: parsed.data.name_ar || null,
             description_he: parsed.data.description_he || null,
@@ -77,7 +85,9 @@ export async function createProduct(
         });
 
     if (error) {
-        if (isUniqueViolation(error)) return { error: te("slugExists") };
+        const target = uniqueViolationTarget(error);
+        if (target === "barcode") return { error: te("barcodeExists") };
+        if (target === "slug") return { error: te("slugExists") };
         return { error: te("saveProductFailed") };
     }
 
@@ -123,6 +133,7 @@ export async function updateProduct(
         .update({
             category_id: parsed.data.category_id || null,
             slug: parsed.data.slug,
+            barcode: parsed.data.barcode || null,
             name_he: parsed.data.name_he,
             name_ar: parsed.data.name_ar || null,
             description_he: parsed.data.description_he || null,
@@ -138,7 +149,9 @@ export async function updateProduct(
         .eq("id", id);
 
     if (error) {
-        if (isUniqueViolation(error)) return { error: te("slugExists") };
+        const target = uniqueViolationTarget(error);
+        if (target === "barcode") return { error: te("barcodeExists") };
+        if (target === "slug") return { error: te("slugExists") };
         return { error: te("updateProductFailed") };
     }
 
@@ -315,7 +328,7 @@ export async function createCategory(
     });
 
     if (error) {
-        if (isUniqueViolation(error)) return { error: te("slugExists") };
+        if (error.code === "23505") return { error: te("slugExists") };
         return { error: te("saveCategoryFailed") };
     }
 
@@ -348,7 +361,7 @@ export async function updateCategory(
         .eq("id", id);
 
     if (error) {
-        if (isUniqueViolation(error)) return { error: te("slugExists") };
+        if (error.code === "23505") return { error: te("slugExists") };
         return { error: te("updateCategoryFailed") };
     }
 

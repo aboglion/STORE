@@ -35,14 +35,17 @@ export function ProductPurchaseBar({
         compareAtPriceAgorot != null && compareAtPriceAgorot > priceAgorot;
 
     return (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/95 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/85 md:hidden">
-            <div className="mx-auto w-full max-w-5xl px-4 py-3">
+        <div
+            className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 md:hidden"
+            style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0.75rem))" }}
+        >
+            <div className="mx-auto w-full max-w-5xl px-4 pt-2.5 pb-1">
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex items-baseline gap-1.5">
                         <span className="font-display text-xl font-extrabold text-primary">
                             {formatILS(priceAgorot, locale)}
                         </span>
-                        <span className="text-[10px] text-muted-foreground font-medium">
+                        <span className="text-[10px] font-medium text-muted-foreground">
                             ({t("includingVat")})
                         </span>
                         {onSale && (
@@ -51,11 +54,15 @@ export function ProductPurchaseBar({
                             </span>
                         )}
                     </div>
-                    <span className="text-[11px] text-muted-foreground">
-                        {outOfStock ? t("outOfStock") : t("inStock")}
+                    <span className="text-xs font-semibold">
+                        {outOfStock ? (
+                            <span className="text-destructive">{t("outOfStock")}</span>
+                        ) : (
+                            <span className="text-[oklch(0.55_0.12_130)]">{t("inStock")}</span>
+                        )}
                     </span>
                 </div>
-                <div className="mt-2 flex items-center gap-2">
+                <div className="mt-2 flex items-center gap-2.5">
                     {!outOfStock && (
                         <QuantityStepper
                             value={quantity}

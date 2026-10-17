@@ -44,6 +44,8 @@ export interface Category {
     /** Arabic category name — falls back to name_he when empty. */
     name_ar: string | null;
     slug: string;
+    /** Storage path of the category generic image (product placeholder). */
+    image_path: string | null;
     is_active: boolean;
     sort_order: number;
     created_at: string;
@@ -54,6 +56,16 @@ export interface Product {
     id: string;
     category_id: string | null;
     slug: string;
+    /** Verified EAN barcode — unique business key (null for legacy rows). */
+    barcode: string | null;
+    /** Raw barcode as it appeared in the source catalog. */
+    barcode_original: string | null;
+    /** Internal item code from the source catalog. */
+    item_code: string | null;
+    /** Sold by weight (weighed at the counter). */
+    is_weighted: boolean;
+    /** Barcode verification status text from the source catalog. */
+    barcode_status: string | null;
     name_he: string;
     /** Arabic product name — falls back to name_he when empty. */
     name_ar: string | null;

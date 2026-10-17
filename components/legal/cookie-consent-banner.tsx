@@ -41,7 +41,7 @@ export function CookieConsentBanner() {
     return (
         <aside
             aria-label={isAr ? "إشعار الخصوصية وملفات تعريف الارتباط" : "הודעת פרטיות וקבצי עוגיות"}
-            className="fixed bottom-20 inset-x-4 z-40 mx-auto max-w-xl animate-pop-in md:bottom-5 md:left-20 md:right-auto md:max-w-md"
+            className="fixed bottom-28 inset-x-4 z-50 mx-auto max-w-xl animate-pop-in sm:bottom-24 md:bottom-5 md:left-20 md:right-auto md:max-w-md"
         >
             <div className="rounded-2xl border border-border/80 bg-background/95 p-4 shadow-2xl backdrop-blur-md">
                 <div className="flex items-start gap-3">

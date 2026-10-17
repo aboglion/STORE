@@ -70,6 +70,13 @@ const nextConfig = {
                 port: "54321",
                 pathname: "/storage/v1/object/public/**",
             },
+            {
+                // Local Supabase reachable from inside the app container
+                protocol: "http",
+                hostname: "host.docker.internal",
+                port: "54321",
+                pathname: "/storage/v1/object/public/**",
+            },
         ],
     },
     async headers() {

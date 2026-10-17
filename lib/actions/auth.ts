@@ -45,8 +45,18 @@ export async function login(
         return { error: te("invalidCredentials") };
     }
 
+    // Honor the ?next= parameter set by the middleware, but only when it is a
+    // safe internal admin path (prevents open-redirect via query injection).
+    const rawNext = formData.get("next");
+    const redirectPath =
+        typeof rawNext === "string" &&
+            rawNext.startsWith("/admin/") &&
+            !rawNext.startsWith("/admin/login")
+            ? rawNext
+            : "/admin/dashboard";
+
     revalidatePath("/admin", "layout");
-    redirect("/admin/dashboard");
+    redirect(redirectPath);
 }
 
 export async function logout() {

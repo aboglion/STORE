@@ -59,7 +59,13 @@ echo -e "${BLUE}🧹 מנקה קונטיינרים ישנים של האפליק�
 docker compose down 2>/dev/null || true
 
 # 7. בנייה והרצה של קונטיינר הפרודקשן
+# טוען את .env.local לסביבת ה-shell כך ש-docker compose יוכל להעביר
+# את משתני ה-NEXT_PUBLIC_* כ-build args ל-Dockerfile (מוטמעים בזמן build).
 echo -e "${BLUE}🚀 בונה ומפעיל את קונטיינר הפרודקשן ב-Docker...${NC}"
+set -a
+# shellcheck disable=SC1091
+source .env.local
+set +a
 docker compose up --build -d
 
 # 8. הפעלת שירות הרקע וה-Supervisor (כולל עמידות באתחול שרת / Reboot)

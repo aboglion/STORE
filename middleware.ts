@@ -58,7 +58,8 @@ export async function middleware(request: NextRequest) {
     }
 
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        (process.env.SUPABASE_INTERNAL_URL ||
+            process.env.NEXT_PUBLIC_SUPABASE_URL)!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             cookies: {
@@ -84,11 +85,31 @@ export async function middleware(request: NextRequest) {
         }
     );
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    // Best-effort session verification. Inside Docker the Edge runtime cannot
+    // reach the local Supabase stack — NEXT_PUBLIC_SUPABASE_URL points at the
+    // host's 127.0.0.1, which from inside the container is the container
+    // itself, so getUser() errors instead of returning a user. Redirecting to
+    // login in that case traps a successfully signed-in admin in a redirect
+    // loop. Instead, when verification errors out, let the request through:
+    // the admin dashboard layout re-checks the session server-side (using the
+    // internal URL) and redirects unauthenticated visitors to /admin/login.
+    let user: { id: string } | null = null;
+    let verificationError: unknown = null;
+    try {
+        const {
+            data: { user: verifiedUser },
+            error,
+        } = await supabase.auth.getUser();
+        user = verifiedUser;
+        verificationError = error;
+    } catch (e) {
+        verificationError = e;
+    }
 
-    if (!user) {
+    // Only hard-redirect when we are certain there is no session (clean
+    // "no user, no error" result). On a verification error the server-side
+    // check in the admin layout is the source of truth.
+    if (!user && verificationError === null) {
         const url = request.nextUrl.clone();
         url.pathname = "/admin/login";
         url.searchParams.set("next", pathname);

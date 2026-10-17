@@ -9,7 +9,7 @@
 
 SUPABASE := npx supabase
 
-.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install db-start db-stop db-reset db-status env admin build test lint typecheck init status service-logs updater-logs
+.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install db-start db-stop db-reset db-status env admin build test lint typecheck init init-db INIT_DB status service-logs updater-logs
 
 help: ## הצגת רשימת הפקודות הזמינות
 	@echo "\033[1;33mמערכת מסחר — פקודות Make זמינות:\033[0m"
@@ -52,8 +52,8 @@ RUN: run        ## כינוי עבור make run
 prod: run       ## כינוי עבור make run
 production: run ## כינוי עבור make run
 
-docker-build: ## בניית תמונת הפרודקשן בדוקר בלבד
-	docker compose build
+docker-build: ## בניית תמונת הפרודקשן בדוקר בלבד (עם build args מ-.env.local)
+	@set -a; source .env.local; set +a; docker compose build
 
 docker-stop: stop ## כינוי עבור make stop
 
@@ -99,6 +99,26 @@ db-stop: ## עצירת שרת Supabase מקומי
 db-reset: ## איפוס מסד הנתונים: הרצת מיגרציות + seed.sql
 	$(SUPABASE) db reset
 	@touch .supabase-initialized
+
+init-db: ## אתחול מלא של מסד הנתונים: תלויות + Supabase + מיגרציות + ייבוא קטלוג + בדיקות
+	@echo "🚀 מאתחל את מסד הנתונים..."
+	@npm install
+	@$(SUPABASE) start
+	@bash scripts/env-local.sh
+	@$(SUPABASE) migration up
+	@echo "🧪 בדיקת ייבוא יבשה (dry-run)..."
+	@node scripts/import-catalog.mjs --dry-run
+	@echo "📦 ייבוא מלא של הקטלוג..."
+	@node scripts/import-catalog.mjs
+	@echo "🔍 בדיקות תקינות..."
+	@npm run typecheck
+	@npm run lint
+	@npm test
+	@echo "✅ אתחול מסד הנתונים הושלם!"
+
+INIT_DB: init-db ## כינוי עבור make init-db
+init_db: init-db ## כינוי עבור make init-db
+INIT-DB: init-db ## כינוי עבור make init-db
 
 db-status: ## סטטוס שרתי Supabase מקומיים
 	$(SUPABASE) status

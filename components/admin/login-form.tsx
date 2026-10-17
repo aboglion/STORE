@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login, type LoginState } from "@/lib/actions/auth";
 
-export function AdminLoginForm() {
+export function AdminLoginForm({ next }: { next?: string }) {
     const t = useTranslations("admin.login");
     const [state, formAction, pending] = useActionState<LoginState, FormData>(
         login,
@@ -37,6 +37,7 @@ export function AdminLoginForm() {
             </CardHeader>
             <CardContent>
                 <form action={formAction} className="grid gap-4">
+                    {next ? <input type="hidden" name="next" value={next} /> : null}
                     {state?.error && (
                         <div
                             role="alert"

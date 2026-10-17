@@ -80,7 +80,7 @@ export function ProductBuyPanel({
                 )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
                 {!outOfStock && (
                     <QuantityStepper
                         value={quantity}

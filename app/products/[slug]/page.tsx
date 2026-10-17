@@ -9,7 +9,6 @@ import { ProductBuyPanel } from "@/components/store/product-buy-panel";
 import { ProductGallery } from "@/components/store/product-gallery";
 import { ProductPurchaseBar } from "@/components/store/product-purchase-bar";
 import { StoreChrome } from "@/components/store/store-chrome";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
     getPublicProductBySlug,
@@ -66,16 +65,6 @@ export default async function ProductPage({
     const category = categories.find((c) => c.id === product.category_id);
 
     const outOfStock = product.stock_quantity <= 0;
-    const lowStock =
-        !outOfStock && product.stock_quantity <= product.low_stock_threshold;
-    const onSale =
-        product.compare_at_price_agorot != null &&
-        product.compare_at_price_agorot > product.price_agorot;
-    const discountPercent = onSale
-        ? Math.round(
-            (1 - product.price_agorot / product.compare_at_price_agorot!) * 100
-        )
-        : null;
 
     const deliveryInfo =
         product.price_agorot >= settings.free_delivery_threshold_agorot
@@ -123,14 +112,18 @@ export default async function ProductPage({
                 <span className="truncate font-medium text-foreground">{name}</span>
             </div>
 
-            <div className="grid gap-8 md:grid-cols-2">
+            <div className="grid gap-8 pb-28 md:grid-cols-2 md:pb-0">
                 <ProductGallery
-                    images={product.images}
+                    images={product.images.map((img) => ({
+                        id: img.id,
+                        url: productImageUrl(img.storage_path, product.slug),
+                        alt: img.alt_text,
+                    }))}
                     productName={name}
                     productSlug={product.slug}
                 />
 
-                <div className="flex flex-col gap-4 md:pb-0">
+                <div className="flex flex-col gap-4">
                     {/* Title + category chip */}
                     <div>
                         {category && (
@@ -146,35 +139,18 @@ export default async function ProductPage({
                         </h1>
                     </div>
 
-                    {/* Price + stock — mobile only (desktop shows them in the buy panel) */}
-                    <div className="flex items-center gap-3 md:hidden">
-                        <span className="font-display text-3xl font-extrabold text-primary sm:text-4xl">
-                            {formatILS(product.price_agorot, locale)}
-                        </span>
-                        {onSale && (
-                            <span className="text-lg text-muted-foreground line-through">
-                                {formatILS(product.compare_at_price_agorot!, locale)}
-                            </span>
-                        )}
-                        {discountPercent != null && (
-                            <span className="rounded-full bg-[oklch(0.6_0.17_40)]/15 px-2.5 py-1 text-xs font-bold text-[oklch(0.45_0.13_35)]">
-                                {t("discountPercent", { percent: discountPercent })}
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-2 md:hidden">
-                        {outOfStock ? (
-                            <Badge variant="destructive">{t("outOfStock")}</Badge>
-                        ) : lowStock ? (
-                            <Badge className="border-transparent bg-[oklch(0.6_0.17_40)]/15 text-[oklch(0.45_0.13_35)]">
-                                {t("lowStock", { count: product.stock_quantity })}
-                            </Badge>
-                        ) : (
-                            <Badge className="border-transparent bg-[oklch(0.6_0.1_130)]/15 text-[oklch(0.45_0.09_130)]">
-                                {t("inStock")}
-                            </Badge>
-                        )}
+                    {/* Buy panel: price, stock, quantity stepper, add-to-cart & delivery */}
+                    <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 shadow-soft md:sticky md:top-24">
+                        <ProductBuyPanel
+                            productId={product.id}
+                            productName={name}
+                            priceAgorot={product.price_agorot}
+                            compareAtPriceAgorot={product.compare_at_price_agorot}
+                            stockQuantity={product.stock_quantity}
+                            lowStockThreshold={product.low_stock_threshold}
+                            locale={locale}
+                            deliveryInfo={deliveryInfo}
+                        />
                     </div>
 
                     {description && (
@@ -185,22 +161,6 @@ export default async function ProductPage({
                             </p>
                         </>
                     )}
-
-                    {/* Desktop sticky buy panel */}
-                    <div className="hidden md:block">
-                        <div className="sticky top-24 rounded-2xl border border-border/70 bg-card p-5 shadow-soft">
-                            <ProductBuyPanel
-                                productId={product.id}
-                                productName={name}
-                                priceAgorot={product.price_agorot}
-                                compareAtPriceAgorot={product.compare_at_price_agorot}
-                                stockQuantity={product.stock_quantity}
-                                lowStockThreshold={product.low_stock_threshold}
-                                locale={locale}
-                                deliveryInfo={deliveryInfo}
-                            />
-                        </div>
-                    </div>
                 </div>
             </div>
 

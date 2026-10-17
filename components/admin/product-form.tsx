@@ -66,6 +66,7 @@ export function ProductForm({
             ? {
                 name_he: product.name_he,
                 name_ar: product.name_ar ?? "",
+                barcode: product.barcode ?? "",
                 slug: product.slug,
                 description_he: product.description_he ?? "",
                 description_ar: product.description_ar ?? "",
@@ -87,6 +88,7 @@ export function ProductForm({
             : {
                 name_he: "",
                 name_ar: "",
+                barcode: "",
                 slug: "",
                 description_he: "",
                 description_ar: "",
@@ -153,20 +155,36 @@ export function ProductForm({
                     />
                 </div>
 
-                <FormField
-                    control={form.control}
-                    name="slug"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>{t("slugLabel")}</FormLabel>
-                            <FormControl>
-                                <Input placeholder="sourdough" dir="ltr" {...field} />
-                            </FormControl>
-                            <FormDescription>{t("slugDesc")}</FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField
+                        control={form.control}
+                        name="barcode"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{t("barcodeLabel")}</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="7290000040080" dir="ltr" {...field} />
+                                </FormControl>
+                                <FormDescription>{t("barcodeDesc")}</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="slug"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{t("slugLabel")}</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="sourdough" dir="ltr" {...field} />
+                                </FormControl>
+                                <FormDescription>{t("slugDesc")}</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
                 <FormField
                     control={form.control}

@@ -1,8 +1,15 @@
 import { PRODUCT_IMAGES_BUCKET } from "@/lib/constants";
 
-/** Public URL for a storage object in the product-images bucket. */
+/**
+ * Public URL for a storage object in the product-images bucket.
+ * Prefers SUPABASE_INTERNAL_URL (host.docker.internal) so the server-side
+ * image optimizer can reach the local Supabase from inside the Docker
+ * container; falls back to NEXT_PUBLIC_SUPABASE_URL for client components.
+ */
 export function storageImageUrl(storagePath: string): string {
-    const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const base =
+        process.env.SUPABASE_INTERNAL_URL ||
+        process.env.NEXT_PUBLIC_SUPABASE_URL;
     if (!base) return "";
 
     return `${base}/storage/v1/object/public/${PRODUCT_IMAGES_BUCKET}/${storagePath}`;

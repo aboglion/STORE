@@ -14,6 +14,16 @@ export function productFormSchema(t: ValidationMessages) {
             .min(2, t("productName"))
             .max(200, t("nameTooLong")),
         name_ar: z.string().trim().max(200).optional().or(z.literal("")),
+        barcode: z
+            .string()
+            .trim()
+            .max(32, t("barcodeTooLong"))
+            .optional()
+            .or(z.literal(""))
+            .refine(
+                (v) => !v || /^\d{3,14}$/.test(v),
+                t("barcodeInvalid")
+            ),
         slug: z
             .string()
             .trim()

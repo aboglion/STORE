@@ -1,0 +1,365 @@
+{
+  "timestamp": "2026-10-17 22:57:03",
+  "total_checked": 7662,
+  "total_replaced": 4908,
+  "replacement_percentage": 64.06,
+  "by_source": {
+    "shufersal_direct": 3026,
+    "pricez_direct": 1412,
+    "superpharm_direct": 208,
+    "openfoodfacts": 12,
+    "shufersal_name_search": 250
+  },
+  "replaced_samples": [
+    {
+      "barcode": "835811000471",
+      "name": "תמצית בטעם וניל 250 מל`",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/835811000471.jpg",
+      "storage_path": "products/835811000471.jpg"
+    },
+    {
+      "barcode": "7290119377107",
+      "name": "מיני טעמי משפחתית 357 גרם",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/7290119377107.jpg",
+      "storage_path": "products/7290119377107.jpg"
+    },
+    {
+      "barcode": "7290108355994",
+      "name": "מרכך מרוכז 1 ליטר ש.שועל",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/7290108355994.jpg",
+      "storage_path": "products/7290108355994.jpg"
+    },
+    {
+      "barcode": "5900352012605",
+      "name": "חטיף קריספי 49 גרם טעמים",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/5900352012605.jpg",
+      "storage_path": "products/5900352012605.jpg"
+    },
+    {
+      "barcode": "7290000412764",
+      "name": "סנו פזטוקס מעופפים",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/7290000412764.jpg",
+      "storage_path": "products/7290000412764.jpg"
+    },
+    {
+      "barcode": "7290001216231",
+      "name": "טחינה מלאה אל ארז 500 גרם",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/EDC16_Z_P_1216231_1.png",
+      "storage_path": "products/7290001216231.jpg"
+    },
+    {
+      "barcode": "7290014758544",
+      "name": "חמאה 200גר בדצ",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/TTX56_Z_P_7290014758544_1.png",
+      "storage_path": "products/7290014758544.jpg"
+    },
+    {
+      "barcode": "7290119371716",
+      "name": "תפו ציפס 200 גרם טעמים",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/UZL54_Z_P_7290119371716_1.png",
+      "storage_path": "products/7290119371716.jpg"
+    },
+    {
+      "barcode": "7290002057628",
+      "name": "יבנה זיתים מושחרים",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/AUN30_Z_P_2057628_1.png",
+      "storage_path": "products/7290002057628.jpg"
+    },
+    {
+      "barcode": "7290119382989",
+      "name": "צנצנת קוביות ענבים ל",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/LRA68_Z_P_7290119382989_1.png",
+      "storage_path": "products/7290119382989.jpg"
+    },
+    {
+      "barcode": "7290004737900",
+      "name": "חלב כחוש 400 גרם",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/NRX30_Z_P_4737900_1.png",
+      "storage_path": "products/7290004737900.jpg"
+    },
+    {
+      "barcode": "7290116532387",
+      "name": "פינוק סבון ידיים ח.שיאה 950 מל",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/GUM54_Z_P_7290116532387_1.png",
+      "storage_path": "products/7290116532387.jpg"
+    },
+    {
+      "barcode": "7290110557454",
+      "name": "מילקי שכבות בטעם שוקולד",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/IDJ50_Z_P_7290110557454_1.png",
+      "storage_path": "products/7290110557454.jpg"
+    },
+    {
+      "barcode": "7290003411696",
+      "name": "מרקיות  לבן 25 יחידות",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/7290003411696.jpg",
+      "storage_path": "products/7290003411696.jpg"
+    },
+    {
+      "barcode": "835811002116",
+      "name": "מגש כוכב 27 ס\"מ 1 יח`",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/835811002116.jpg",
+      "storage_path": "products/835811002116.jpg"
+    },
+    {
+      "barcode": "7290111344503",
+      "name": "תיתולי האגס אקסטרה קר מידה +4",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/CKM40_Z_P_7290111344503_1.png",
+      "storage_path": "products/7290111344503.jpg"
+    },
+    {
+      "barcode": "7290000211985",
+      "name": "אורז סוגת עגול 1 קג",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/AOG26_Z_P_211985_1.png",
+      "storage_path": "products/7290000211985.jpg"
+    },
+    {
+      "barcode": "7290000461656",
+      "name": "אחד אחד 400גר׳ 12x",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/FWZ28_Z_P_461656_1.png",
+      "storage_path": "products/7290000461656.jpg"
+    },
+    {
+      "barcode": "7290001594025",
+      "name": "קולה 330 מ``ל זכוכית",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/QZQ26_Z_P_1594025_1.png",
+      "storage_path": "products/7290001594025.jpg"
+    },
+    {
+      "barcode": "7290116535807",
+      "name": "פינוק מרכך שיער ארוך 410מ״ל",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/LWA54_Z_P_7290116535807_1.png",
+      "storage_path": "products/7290116535807.jpg"
+    },
+    {
+      "barcode": "7290106572614",
+      "name": "דובנים אסם 40גרם",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/PKH50_Z_P_7290106572614_1.png",
+      "storage_path": "products/7290106572614.jpg"
+    },
+    {
+      "barcode": "7290002019763",
+      "name": "עגבניות מרוסקות 900 פרי ניר",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/WUE28_Z_P_2019763_1.png",
+      "storage_path": "products/7290002019763.jpg"
+    },
+    {
+      "barcode": "87108019",
+      "name": "מנטוס מנטה 1/40 ליימן",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/AZK34_Z_P_87108019_1.png",
+      "storage_path": "products/87108019.jpg"
+    },
+    {
+      "barcode": "5900512983783",
+      "name": "צידר 344 גרם בורגר",
+      "source": "openfoodfacts",
+      "source_url": "https://images.openfoodfacts.org/images/products/590/051/298/3783/front_fr.3.400.jpg",
+      "storage_path": "products/5900512983783.jpg"
+    },
+    {
+      "barcode": "8008343200424",
+      "name": "קונקילי ריגטה רומו 500 גרם",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/KBH38_Z_P_8008343200424_1.png",
+      "storage_path": "products/8008343200424.jpg"
+    },
+    {
+      "barcode": "7290112494276",
+      "name": "קליק ביסקויט 65 גרם 1/16 חדש",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/NGN54_Z_P_7290112494276_1.png",
+      "storage_path": "products/7290112494276.jpg"
+    },
+    {
+      "barcode": "7290000207162",
+      "name": "רסק עגבניות יכין 100 גרם",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/TKT18_Z_P_207162_1.png",
+      "storage_path": "products/7290000207162.jpg"
+    },
+    {
+      "barcode": "7290102031276",
+      "name": "אקטימל 8 תות בננה",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/FLL40_Z_P_7290102031276_1.png",
+      "storage_path": "products/7290102031276.jpg"
+    },
+    {
+      "barcode": "7290003321155",
+      "name": "יוגורט דנונה קראנץ` פקאן",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/XXS20_Z_P_3321155_1.png",
+      "storage_path": "products/7290003321155.jpg"
+    },
+    {
+      "barcode": "7290012938740",
+      "name": "משחת שיניים סנסודיין פרש מינט",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/FTL52_Z_P_7290012938740_1.png",
+      "storage_path": "products/7290012938740.jpg"
+    },
+    {
+      "barcode": "7290008753364",
+      "name": "דוריטוס 55 גרם",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/7290008753364.jpg",
+      "storage_path": "products/7290008753364.jpg"
+    },
+    {
+      "barcode": "8700216661768",
+      "name": "שולדרס שמפו מן אולטרה 625 מ״ל",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/8700216661768.jpg",
+      "storage_path": "products/8700216661768.jpg"
+    },
+    {
+      "barcode": "7290112492531",
+      "name": "פינוק מרכך שיער רגיל 700LLF",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/KRK46_Z_P_7290112492531_1.png",
+      "storage_path": "products/7290112492531.jpg"
+    },
+    {
+      "barcode": "7290002757672",
+      "name": "המבורגר 100% 400 גרם",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/WJH36_Z_P_2757672_1.png",
+      "storage_path": "products/7290002757672.jpg"
+    },
+    {
+      "barcode": "7290018890806",
+      "name": "ג`ת יוגורט 1.5 ל` טעמים",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/7290018890806.jpg",
+      "storage_path": "products/7290018890806.jpg"
+    },
+    {
+      "barcode": "7290011556204",
+      "name": "מיץ לימון 1 ליטר",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/7290011556204.jpg",
+      "storage_path": "products/7290011556204.jpg"
+    },
+    {
+      "barcode": "7792860006218",
+      "name": "בייבי דול 24 גרם",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/ULN56_Z_P_7792860006218_1.png",
+      "storage_path": "products/7792860006218.jpg"
+    },
+    {
+      "barcode": "7290108359572",
+      "name": "כיף 700 מ``ל מרכך",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/7290108359572.jpg",
+      "storage_path": "products/7290108359572.jpg"
+    },
+    {
+      "barcode": "7290014258723",
+      "name": "מטרנה צמחית 700 גרם",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/IKA50_Z_P_7290014258723_1.png",
+      "storage_path": "products/7290014258723.jpg"
+    },
+    {
+      "barcode": "54051140",
+      "name": "אלפרו מעדן סויה וניל",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/GGZ20_Z_P_54051140_1.png",
+      "storage_path": "products/54051140.jpg"
+    },
+    {
+      "barcode": "8690784614665",
+      "name": "דאק ג`ל אסלה 55 מ``ל",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/BIW70_Z_P_8690784614665_1.png",
+      "storage_path": "products/8690784614665.jpg"
+    },
+    {
+      "barcode": "8719200998100",
+      "name": "מזולה לאפיה 200 גרם",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/ZNH54_Z_P_8719200998100_1.png",
+      "storage_path": "products/8719200998100.jpg"
+    },
+    {
+      "barcode": "7290012116025",
+      "name": "כיף 700 מ''ל פיות",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/KSO36_Z_P_7290012116025_1.png",
+      "storage_path": "products/7290012116025.jpg"
+    },
+    {
+      "barcode": "7290018471180",
+      "name": "אננס תפוח גזר, 1 ליטר",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/ZVP48_Z_P_7290018471180_1.png",
+      "storage_path": "products/7290018471180.jpg"
+    },
+    {
+      "barcode": "7290019750550",
+      "name": "שקיות אשפה עלמה גופייה",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/7290019750550.jpg",
+      "storage_path": "products/7290019750550.jpg"
+    },
+    {
+      "barcode": "7290002109488",
+      "name": "קבב אמיתי 100% 440גר",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/ZND32_Z_P_2109488_1.png",
+      "storage_path": "products/7290002109488.jpg"
+    },
+    {
+      "barcode": "7290004537357",
+      "name": "גרעיני תירס מקופאת 800 גרם",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/7290004537357.jpg",
+      "storage_path": "products/7290004537357.jpg"
+    },
+    {
+      "barcode": "7290112496461",
+      "name": "בכוס אקסטרה ירקות 32 גרם ADR2",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/QMO52_Z_P_7290112496461_1.png",
+      "storage_path": "products/7290112496461.jpg"
+    },
+    {
+      "barcode": "7290112965141",
+      "name": "אסם פתיתים אפויים עם ירקות 7*1",
+      "source": "shufersal_direct",
+      "source_url": "https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_zoom/HUS48_Z_P_7290112965141_1.png",
+      "storage_path": "products/7290112965141.jpg"
+    },
+    {
+      "barcode": "7290108359008",
+      "name": "סנו זיפר סליידר 15 L",
+      "source": "pricez_direct",
+      "source_url": "https://m.pricez.co.il/ProductPictures/7290108359008.jpg",
+      "storage_path": "products/7290108359008.jpg"
+    }
+  ]
+}

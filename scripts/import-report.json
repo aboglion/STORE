@@ -1,0 +1,57 @@
+{
+  "csv": "/home/uns/omar/catalog/קטלוג_מוצרים_מתוקן_מלא.csv",
+  "dryRun": false,
+  "totalRecords": 9912,
+  "categories": {
+    "total": 19,
+    "imagesUploaded": 19,
+    "missingImages": [],
+    "uploadErrors": []
+  },
+  "products": {
+    "total": 9907,
+    "skippedNoBarcode": 0,
+    "duplicates": 5,
+    "invalidPrices": 0,
+    "unknownCategories": 0
+  },
+  "images": {
+    "uploaded": 0,
+    "placeholders": 0,
+    "skippedExisting": 2245,
+    "linked": 9907,
+    "uploadErrors": [],
+    "packshots": 2245,
+    "subcategories": 4829,
+    "categoryFallback": 2833,
+    "inserted": 0,
+    "updated": 245
+  },
+  "anomalies": {
+    "duplicateBarcodes": [
+      {
+        "barcode": "7290000056272",
+        "name": "ג.לבנ זיתים 5%"
+      },
+      {
+        "barcode": "80177173",
+        "name": "פסח ממרח נוטלה 350 גר' (15)"
+      },
+      {
+        "barcode": "7290011490027",
+        "name": "פינגווין מדליק +סוכריות 1/12"
+      },
+      {
+        "barcode": "7290012206269",
+        "name": ") פארטי סוכריות פירות חמוץ 170"
+      },
+      {
+        "barcode": "7290116533698",
+        "name": "דאב רולאון 50 מ``ל"
+      }
+    ],
+    "invalidPrices": [],
+    "unknownCategories": [],
+    "skippedNoBarcode": []
+  }
+}
