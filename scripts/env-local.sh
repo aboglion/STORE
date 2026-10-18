@@ -34,4 +34,6 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 TZ=Asia/Jerusalem
 EOF
 
-echo "✅ .env.local written (${API_URL})"
+cp -f .env.local .env
+
+echo "✅ .env.local and .env written (${API_URL})"

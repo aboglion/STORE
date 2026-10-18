@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
     getSubcategoriesForCategory,
     matchesSubcategory,
-    SUBCATEGORIES_BY_CATEGORY_SLUG,
 } from "@/lib/data/subcategories";
 
 describe("Subcategories & Filtering", () => {

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, X, Loader2, Sparkles, ArrowRight, ArrowLeft } from "lucide-react";
+import { Search, X, Loader2, ArrowRight } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

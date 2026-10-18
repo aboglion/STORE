@@ -17,7 +17,7 @@ PID_FILE="$ROOT_DIR/logs/updater.pid"
 LOG_FILE="$ROOT_DIR/logs/updater.log"
 LOCK_FILE="$ROOT_DIR/logs/updater.lock"
 CHECK_INTERVAL="${CHECK_INTERVAL:-60}" # ברירת מחדל: בדיקה כל 60 שניות
-HEALTH_CHECK_URL="${HEALTH_CHECK_URL:-http://127.0.0.1:3000/}"
+HEALTH_CHECK_URL="${HEALTH_CHECK_URL:-http://127.0.0.1:3000/api/health}"
 MAX_LOG_SIZE=10485760 # 10MB
 
 # פונקציית תיעוד מסודרת
@@ -68,6 +68,16 @@ wait_for_docker() {
 # אימות והפעלת שירותי התשתית (Supabase וקונטיינר החנות)
 ensure_services_running() {
     log "INFO" "מוודא שכל שירותי המערכת רצים ותקינים..."
+
+    if [ -f "$ROOT_DIR/.env.local" ]; then
+        set -a
+        source "$ROOT_DIR/.env.local" 2>/dev/null || true
+        set +a
+    elif [ -f "$ROOT_DIR/.env" ]; then
+        set -a
+        source "$ROOT_DIR/.env" 2>/dev/null || true
+        set +a
+    fi
     
     # 1. הפעלת Supabase במידה ואינו רץ
     if [ -f "$ROOT_DIR/supabase/config.toml" ]; then
@@ -90,14 +100,14 @@ ensure_services_running() {
     fi
 }
 
-# בדיקת בריאות האפליקציה (Health check)
+# בדיקת בריאות האפליקציה (Health check — מאמתת תגובת שרת + חיבור למסד הנתונים)
 check_health() {
     local max_wait="${1:-45}"
     local count=0
     while [ "$count" -lt "$max_wait" ]; do
         local http_code
         http_code=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_CHECK_URL" 2>/dev/null || echo "000")
-        if [[ "$http_code" =~ ^(200|201|204|301|302|307|308|404)$ ]]; then
+        if [ "$http_code" = "200" ]; then
             return 0
         fi
         count=$((count + 2))
@@ -198,6 +208,17 @@ run_supervisor() {
             fi
 
             log "INFO" "✅ הקוד נמשך בהצלחה מ-GitHub. בונה כעת את קונטיינר ה-Docker בבטחה..."
+
+            # וידוא טעינת משתני הסביבה העדכניים עבור בניית הדוקר
+            if [ -f "$ROOT_DIR/.env.local" ]; then
+                set -a
+                source "$ROOT_DIR/.env.local" 2>/dev/null || true
+                set +a
+            elif [ -f "$ROOT_DIR/.env" ]; then
+                set -a
+                source "$ROOT_DIR/.env" 2>/dev/null || true
+                set +a
+            fi
 
             # 3. בניית תמונת ה-Docker החדשה בזמן שהקונטיינר הישן עדיין רץ ומשרת לקוחות!
             BUILD_SUCCESS=0

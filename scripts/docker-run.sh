@@ -60,9 +60,9 @@ fi
 mkdir -p "$BACKUP_DIR/.scheduler" "$BACKUP_DIR/.queue"
 chmod 777 "$BACKUP_DIR/.scheduler" "$BACKUP_DIR/.queue" 2>/dev/null || true
 
-# 4. יצירת/אימות .env.local
-if [ ! -f .env.local ]; then
-    echo -e "${BLUE}📝 מייצר קובץ .env.local...${NC}"
+# 4. יצירת/אימות .env.local ו-.env
+if [ ! -f .env.local ] || [ ! -f .env ]; then
+    echo -e "${BLUE}📝 מייצר קובץ .env.local ו-.env...${NC}"
     bash scripts/env-local.sh
 fi
 

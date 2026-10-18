@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import Link from "next/link";
-import { Search, X, SlidersHorizontal, ArrowUpDown, Tag, Sparkles, Wheat } from "lucide-react";
+import { Search, X, ArrowUpDown, Tag, Wheat } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,6 @@ import { ProductCard } from "@/components/store/product-card";
 import {
     getSubcategoriesForCategory,
     matchesSubcategory,
-    type SubcategoryDef,
 } from "@/lib/data/subcategories";
 import type { Category, ProductWithImages } from "@/types/database.types";
 import { localizedText, type Locale } from "@/lib/i18n/config";
