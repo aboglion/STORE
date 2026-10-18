@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -28,11 +29,17 @@ interface StoreFooterProps {
 }
 
 export function StoreFooter({ settings, storeName }: StoreFooterProps) {
+    const pathname = usePathname();
     const [isExpanded, setIsExpanded] = useState(false);
     const t = useTranslations("footer");
     const locale = useLocale() as Locale;
     const isAr = locale === "ar";
     const year = new Date().getFullYear();
+
+    // הסתרת הפוטר מסל הקניות והצ'קאאוט כדי למנוע הפרעה וחסימה של תהליך הרכישה
+    if (pathname.startsWith("/cart") || pathname.startsWith("/checkout")) {
+        return null;
+    }
 
     const legalName =
         isAr && (!settings.legal_business_name || settings.legal_business_name === "מאפיית הבוטיק בע״מ" || settings.legal_business_name === "גולדן מארקט בע״מ")
