@@ -50,6 +50,7 @@ export interface Category {
     sort_order: number;
     created_at: string;
     updated_at: string;
+    product_count?: number;
 }
 
 export interface Product {

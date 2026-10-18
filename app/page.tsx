@@ -6,14 +6,16 @@ import { Wheat } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { CategoryCard } from "@/components/store/category-card";
-import { ProductCard } from "@/components/store/product-card";
 import { StoreChrome } from "@/components/store/store-chrome";
 import { StoreHero } from "@/components/store/store-hero";
+import { GlobalCatalogSearch } from "@/components/store/global-catalog-search";
+import { CategoryProductBrowser } from "@/components/store/category-product-browser";
 import { localizedText, type Locale } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils";
 import {
     getStorefrontCategories,
     getStorefrontProducts,
+    getTotalProductCount,
 } from "@/lib/data/storefront";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -42,9 +44,12 @@ export default async function HomePage({
     const locale = (await getLocale()) as Locale;
     const t = await getTranslations("home");
 
-    const categories = await getStorefrontCategories(locale);
+    const [categories, totalProductsCount] = await Promise.all([
+        getStorefrontCategories(locale),
+        getTotalProductCount(),
+    ]);
 
-    // A category is selected → show that category's products.
+    // A category is selected → show that category's products with advanced filtering and search.
     if (categorySlug) {
         const { products } = await getStorefrontProducts(categorySlug, locale);
         const activeCategory = categories.find((c) => c.slug === categorySlug);
@@ -52,8 +57,12 @@ export default async function HomePage({
         return (
             <StoreChrome>
                 <div className="grid gap-6">
-                    <StoreHero category={activeCategory} />
+                    <StoreHero
+                        category={activeCategory}
+                        totalProductsCount={totalProductsCount}
+                    />
 
+                    {/* Category Navigation Bar */}
                     <nav
                         aria-label={t("categoriesAria")}
                         className="-mx-4 snap-x overflow-x-auto px-4 no-scrollbar"
@@ -63,7 +72,7 @@ export default async function HomePage({
                                 href="/"
                                 className={cn(chipBase, chipIdle)}
                             >
-                                {t("all")}
+                                {t("all")} ({totalProductsCount.toLocaleString()})
                             </Link>
                             {categories.map((category) => (
                                 <Link
@@ -76,16 +85,24 @@ export default async function HomePage({
                                             : chipIdle
                                     )}
                                 >
-                                    {localizedText(
-                                        locale,
-                                        category.name_he,
-                                        category.name_ar
+                                    <span>
+                                        {localizedText(
+                                            locale,
+                                            category.name_he,
+                                            category.name_ar
+                                        )}
+                                    </span>
+                                    {typeof category.product_count === "number" && (
+                                        <span className="ms-1.5 opacity-80 text-xs">
+                                            ({category.product_count})
+                                        </span>
                                     )}
                                 </Link>
                             ))}
                         </div>
                     </nav>
 
+                    {/* Products with in-category filtering & search */}
                     {products.length === 0 ? (
                         <div className="flex flex-col items-center gap-4 py-16 text-center">
                             <div className="flex size-14 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
@@ -99,40 +116,56 @@ export default async function HomePage({
                             </Button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-                            {products.map((product, index) => (
-                                <ProductCard
-                                    key={product.id}
-                                    product={product}
-                                    priority={index < 4}
-                                />
-                            ))}
-                        </div>
+                        <CategoryProductBrowser
+                            products={products}
+                            activeCategory={activeCategory!}
+                            locale={locale}
+                        />
                     )}
                 </div>
             </StoreChrome>
         );
     }
 
-    // Default view — the catalog organized by categories.
+    // Default view — global search and catalog organized by categories.
     return (
         <StoreChrome>
             <div className="grid gap-6">
-                <StoreHero />
+                <StoreHero totalProductsCount={totalProductsCount} />
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-                    {categories.map((category) => (
-                        <CategoryCard
-                            key={category.id}
-                            slug={category.slug}
-                            name={localizedText(
-                                locale,
-                                category.name_he,
-                                category.name_ar
-                            )}
-                            imagePath={category.image_path}
-                        />
-                    ))}
+                {/* Professional Global Search across 9,907+ products & 19 categories */}
+                <GlobalCatalogSearch
+                    categories={categories}
+                    locale={locale}
+                    totalProductsCount={totalProductsCount}
+                />
+
+                {/* Category Tiles Grid with Product Counts */}
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-lg font-extrabold text-foreground tracking-tight sm:text-xl">
+                            מחלקות הסופרמרקט ({categories.length})
+                        </h2>
+                        <span className="text-xs text-muted-foreground font-medium">
+                            {totalProductsCount.toLocaleString()} מוצרים במלאי
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+                        {categories.map((category) => (
+                            <CategoryCard
+                                key={category.id}
+                                slug={category.slug}
+                                name={localizedText(
+                                    locale,
+                                    category.name_he,
+                                    category.name_ar
+                                )}
+                                imagePath={category.image_path}
+                                productCount={category.product_count}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
         </StoreChrome>

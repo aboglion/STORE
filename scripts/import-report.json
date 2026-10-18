@@ -1,5 +1,5 @@
 {
-  "csv": "/home/uns/omar/catalog/קטלוג_מוצרים_מתוקן_מלא.csv",
+  "csv": "/home/uns/STORE/catalog/קטלוג_מוצרים_מתוקן_מלא.csv",
   "dryRun": false,
   "totalRecords": 9912,
   "categories": {
@@ -16,16 +16,16 @@
     "unknownCategories": 0
   },
   "images": {
-    "uploaded": 0,
+    "uploaded": 7153,
     "placeholders": 0,
-    "skippedExisting": 2245,
+    "skippedExisting": 0,
     "linked": 9907,
     "uploadErrors": [],
-    "packshots": 2245,
-    "subcategories": 4829,
-    "categoryFallback": 2833,
-    "inserted": 0,
-    "updated": 245
+    "packshots": 7153,
+    "subcategories": 1612,
+    "categoryFallback": 1142,
+    "inserted": 9907,
+    "updated": 0
   },
   "anomalies": {
     "duplicateBarcodes": [

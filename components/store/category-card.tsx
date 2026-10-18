@@ -12,10 +12,12 @@ export function CategoryCard({
     slug,
     name,
     imagePath,
+    productCount,
 }: {
     slug: string;
     name: string;
     imagePath: string | null;
+    productCount?: number;
 }) {
     const src = imagePath ? storageImageUrl(imagePath) : "";
 
@@ -39,8 +41,15 @@ export function CategoryCard({
                     </span>
                 </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-            <span className="absolute bottom-3 right-3 left-3 text-sm font-bold text-white drop-shadow">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+            
+            {typeof productCount === "number" && productCount > 0 && (
+                <span className="absolute top-2.5 start-2.5 inline-flex items-center rounded-full bg-black/60 px-2.5 py-0.5 text-[11px] font-semibold text-white/95 backdrop-blur-md border border-white/10 shadow-sm">
+                    {productCount.toLocaleString()} מוצרים
+                </span>
+            )}
+
+            <span className="absolute bottom-3 right-3 left-3 text-sm font-bold text-white drop-shadow-md group-hover:text-amber-200 transition-colors">
                 {name}
             </span>
         </Link>

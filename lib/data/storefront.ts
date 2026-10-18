@@ -121,33 +121,76 @@ const getSettingsCached = unstable_cache(
 const getCategoriesCached = unstable_cache(
     async (): Promise<Category[]> => {
         const supabase = createPublicClient();
-        const { data } = await supabase
-            .from("categories")
-            .select("*")
-            .eq("is_active", true)
-            .order("sort_order", { ascending: true });
-        return (data ?? []) as Category[];
+        const [{ data: categories }, { data: counts }] = await Promise.all([
+            supabase
+                .from("categories")
+                .select("*")
+                .eq("is_active", true)
+                .order("sort_order", { ascending: true }),
+            supabase
+                .from("category_product_counts")
+                .select("category_id, product_count"),
+        ]);
+        const countMap = new Map<string, number>(
+            (counts ?? []).map((c: { category_id: string; product_count: number }) => [
+                c.category_id,
+                c.product_count,
+            ])
+        );
+        return ((categories ?? []) as Category[]).map((cat) => ({
+            ...cat,
+            product_count: countMap.get(cat.id) ?? 0,
+        }));
     },
     ["categories"],
     { revalidate: STORE_CACHE_REVALIDATE, tags: [STORE_CACHE_TAGS.categories] }
 );
 
-const getProductsCached = unstable_cache(
-    async (): Promise<ProductWithImages[]> => {
-        const supabase = createPublicClient();
-        const { data } = await supabase
+async function fetchAllProductsForCategory(categoryId: string): Promise<ProductWithImages[]> {
+    const supabase = createPublicClient();
+    const pageSize = 1000;
+    let from = 0;
+    const all: ProductWithImages[] = [];
+    while (true) {
+        const { data, error } = await supabase
             .from("products")
             .select("*, images:product_images(id, storage_path, alt_text, sort_order)")
+            .eq("category_id", categoryId)
             .eq("is_active", true)
             .order("sort_order", { ascending: true })
-            // PostgREST caps responses at 1000 rows by default — the full
-            // catalog is ~10k products, so raise the cap explicitly.
-            .limit(10000);
-        return (data ?? []) as ProductWithImages[];
+            .range(from, from + pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        all.push(...(data as ProductWithImages[]));
+        if (data.length < pageSize) break;
+        from += pageSize;
+    }
+    return all;
+}
+
+const getCategoryProductsCached = unstable_cache(
+    async (categoryId: string): Promise<ProductWithImages[]> => {
+        return fetchAllProductsForCategory(categoryId);
     },
-    ["products"],
+    ["category-products"],
     { revalidate: STORE_CACHE_REVALIDATE, tags: [STORE_CACHE_TAGS.products] }
 );
+
+const getTotalProductsCountCached = unstable_cache(
+    async (): Promise<number> => {
+        const supabase = createPublicClient();
+        const { count } = await supabase
+            .from("products")
+            .select("id", { count: "exact", head: true })
+            .eq("is_active", true);
+        return count ?? 0;
+    },
+    ["total-products-count"],
+    { revalidate: STORE_CACHE_REVALIDATE, tags: [STORE_CACHE_TAGS.products] }
+);
+
+export const getTotalProductCount = cache(async (): Promise<number> => {
+    return getTotalProductsCountCached();
+});
 
 const getProductBySlugCached = unstable_cache(
     async (slug: string): Promise<ProductWithImages | null> => {
@@ -201,20 +244,18 @@ export const getStorefrontProducts = cache(
     ): Promise<{
         products: ProductWithImages[];
     }> => {
-        const [products, categories] = await Promise.all([
-            getProductsCached(),
-            categorySlug ? getStorefrontCategories(locale) : Promise.resolve([]),
-        ]);
-
-        let filtered = products;
-        if (categorySlug) {
-            const category = categories.find((c) => c.slug === categorySlug);
-            if (category) {
-                filtered = products.filter((p) => p.category_id === category.id);
-            }
+        if (!categorySlug) {
+            return { products: [] };
         }
 
-        const sorted = [...filtered].sort((a, b) =>
+        const categories = await getStorefrontCategories(locale);
+        const category = categories.find((c) => c.slug === categorySlug);
+        if (!category) {
+            return { products: [] };
+        }
+
+        const products = await getCategoryProductsCached(category.id);
+        const sorted = [...products].sort((a, b) =>
             localizedText(locale, a.name_he, a.name_ar).localeCompare(
                 localizedText(locale, b.name_he, b.name_ar),
                 locale === "ar" ? "ar" : "he"

@@ -11,10 +11,12 @@ export interface StoreHeroProps {
         name_ar?: string | null;
         image_path?: string | null;
         slug?: string;
+        product_count?: number;
     } | null;
+    totalProductsCount?: number;
 }
 
-export async function StoreHero({ category }: StoreHeroProps = {}) {
+export async function StoreHero({ category, totalProductsCount }: StoreHeroProps = {}) {
     const locale = (await getLocale()) as Locale;
     const t = await getTranslations("home");
 
@@ -28,15 +30,30 @@ export async function StoreHero({ category }: StoreHeroProps = {}) {
         : t("heroSubtitle");
 
     const imageUrl = category?.image_path ? storageImageUrl(category.image_path) : null;
+    const productCount = category?.product_count;
 
     return (
-        <section className="relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-br from-accent via-secondary/70 to-background px-5 py-8 shadow-soft sm:px-8 sm:py-10">
+        <section className="relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-br from-accent via-secondary/70 to-background px-5 py-7 shadow-soft sm:px-8 sm:py-9">
             <div className="pointer-events-none absolute -top-12 -left-12 size-44 rounded-full bg-primary/10 blur-2xl" />
             <div className="pointer-events-none absolute -right-8 -bottom-20 size-56 rounded-full bg-primary-deep/10 blur-2xl" />
 
             <div className="relative flex items-center justify-between gap-6">
                 <div className="flex-1">
-                    <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-4xl">
+                    <div className="mb-2 flex items-center gap-2">
+                        {isCategory ? (
+                            typeof productCount === "number" && (
+                                <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary border border-primary/20">
+                                    {productCount.toLocaleString()} מוצרים במחלקה זו
+                                </span>
+                            )
+                        ) : typeof totalProductsCount === "number" ? (
+                            <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary border border-primary/20">
+                                ✨ למעלה מ-{totalProductsCount.toLocaleString()} מוצרים ב-19 מחלקות
+                            </span>
+                        ) : null}
+                    </div>
+
+                    <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-4xl text-foreground">
                         {title}
                     </h1>
                     <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
