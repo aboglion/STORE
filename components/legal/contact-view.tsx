@@ -37,10 +37,10 @@ export function ContactView({ settings }: ContactViewProps) {
 
     const legalName = settings.legal_business_name || settings.store_name;
     const businessId = settings.business_id || "516000000";
-    const businessAddress = settings.business_address || "רחוב הרצל 1, תל אביב-יפו";
-    const businessPhone = settings.contact_phone || "03-0000000";
-    const businessEmail = settings.business_email || "support@store.co.il";
-    const businessHours = settings.business_hours || "א׳-ה׳ 08:00-20:00, ו׳ 08:00-14:00";
+    const businessAddress = settings.business_address || "מתחם 3, מול היכל התרבות, רהט";
+    const businessPhone = settings.contact_phone || "08-6000000";
+    const businessEmail = settings.business_email || "support@goldenmarket.co.il";
+    const businessHours = settings.business_hours || "א׳-ש׳ 09:00-22:00";
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

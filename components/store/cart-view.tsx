@@ -144,9 +144,16 @@ export function CartView() {
                                                 {t("outOfStock")}
                                             </span>
                                         )}
-                                        <span className="text-sm text-muted-foreground">
-                                            {detail ? formatILS(detail.price_agorot, locale) : "—"} {t("perUnit")}
-                                        </span>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-display text-base font-bold text-foreground">
+                                                {detail ? formatILS(detail.price_agorot * item.quantity, locale) : "—"}
+                                            </span>
+                                            {detail && item.quantity > 1 && (
+                                                <span className="text-xs text-muted-foreground">
+                                                    ({formatILS(detail.price_agorot, locale)} {t("perUnit")})
+                                                </span>
+                                            )}
+                                        </div>
 
                                         <div className="mt-auto flex items-center justify-between gap-2 pt-1">
                                             <div className="flex items-center gap-1 rounded-full bg-muted p-1">

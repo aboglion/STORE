@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { AccessibilityFooterButton } from "@/components/accessibility/accessibility-widget";
+import { PwaInstallTriggerButton } from "@/components/pwa/install-prompt";
 import { StoreLogo } from "@/components/store/store-logo";
 import type { AppSettings } from "@/types/database.types";
 import type { Locale } from "@/lib/i18n/config";
@@ -34,22 +35,22 @@ export function StoreFooter({ settings, storeName }: StoreFooterProps) {
     const year = new Date().getFullYear();
 
     const legalName =
-        isAr && (!settings.legal_business_name || settings.legal_business_name === "מאפיית הבוטיק בע״מ")
+        isAr && (!settings.legal_business_name || settings.legal_business_name === "מאפיית הבוטיק בע״מ" || settings.legal_business_name === "גולדן מארקט בע״מ")
             ? t("defaultLegalName")
             : (settings.legal_business_name || storeName);
 
     const businessId = settings.business_id || "516000000";
 
     const businessAddress =
-        isAr && (!settings.business_address || settings.business_address === "רחוב הרצל 1, תל אביב-יפו")
+        isAr && (!settings.business_address || settings.business_address === "רחוב הרצל 1, תל אביב-יפו" || settings.business_address === "מתחם 3, מול היכל התרבות, רהט")
             ? t("defaultAddress")
             : (settings.business_address || t("defaultAddress"));
 
-    const businessPhone = settings.contact_phone || "03-0000000";
-    const businessEmail = settings.business_email || "support@store.co.il";
+    const businessPhone = settings.contact_phone || "08-6000000";
+    const businessEmail = settings.business_email || "support@goldenmarket.co.il";
 
     const businessHours =
-        isAr && (!settings.business_hours || settings.business_hours === "א׳-ה׳ 08:00-20:00, ו׳ 08:00-14:00")
+        isAr && (!settings.business_hours || settings.business_hours === "א׳-ה׳ 08:00-20:00, ו׳ 08:00-14:00" || settings.business_hours === "א׳-ש׳ 09:00-22:00")
             ? t("defaultBusinessHours")
             : (settings.business_hours || t("defaultBusinessHours"));
 
@@ -230,13 +231,14 @@ export function StoreFooter({ settings, storeName }: StoreFooterProps) {
                                 {t("fullAccessibilityStatement")}
                             </Link>
                         </div>
-                        <div className="pt-1">
+                        <div className="pt-1 space-y-1.5">
                             <Link
                                 href="/orders"
                                 className="inline-flex w-full items-center justify-center rounded-xl border border-border bg-background py-2 text-xs font-semibold text-foreground shadow-sm hover:bg-muted"
                             >
                                 {t("trackOrder")}
                             </Link>
+                            <PwaInstallTriggerButton className="w-full justify-center" />
                         </div>
                     </div>
                 </div>

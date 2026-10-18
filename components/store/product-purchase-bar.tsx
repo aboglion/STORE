@@ -33,6 +33,9 @@ export function ProductPurchaseBar({
     const outOfStock = stockQuantity <= 0;
     const onSale =
         compareAtPriceAgorot != null && compareAtPriceAgorot > priceAgorot;
+    const totalPriceAgorot = priceAgorot * quantity;
+    const totalCompareAtPriceAgorot =
+        compareAtPriceAgorot != null ? compareAtPriceAgorot * quantity : null;
 
     return (
         <div
@@ -43,14 +46,19 @@ export function ProductPurchaseBar({
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex items-baseline gap-1.5">
                         <span className="font-display text-xl font-extrabold text-primary">
-                            {formatILS(priceAgorot, locale)}
+                            {formatILS(totalPriceAgorot, locale)}
                         </span>
                         <span className="text-[10px] font-medium text-muted-foreground">
                             ({t("includingVat")})
                         </span>
-                        {onSale && (
+                        {quantity > 1 && (
+                            <span className="text-[10px] font-medium text-muted-foreground">
+                                • {formatILS(priceAgorot, locale)} {t("perUnit")}
+                            </span>
+                        )}
+                        {onSale && totalCompareAtPriceAgorot != null && (
                             <span className="text-xs text-muted-foreground line-through">
-                                {formatILS(compareAtPriceAgorot!, locale)}
+                                {formatILS(totalCompareAtPriceAgorot, locale)}
                             </span>
                         )}
                     </div>

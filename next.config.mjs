@@ -1,3 +1,5 @@
+process.env.TZ = "Asia/Jerusalem";
+
 import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin();

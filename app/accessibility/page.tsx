@@ -23,10 +23,10 @@ export default async function AccessibilityPage() {
     const settings = await getSettings();
     const legalName = settings.legal_business_name || settings.store_name;
     const businessId = settings.business_id || "516000000";
-    const businessAddress = settings.business_address || "רחוב הרצל 1, תל אביב-יפו";
+    const businessAddress = settings.business_address || "מתחם 3, מול היכל התרבות, רהט";
     const officerName = settings.accessibility_officer_name || "שירות לקוחות ונגישות";
-    const officerPhone = settings.accessibility_officer_phone || settings.contact_phone || "03-0000000";
-    const officerEmail = settings.accessibility_officer_email || settings.business_email || "accessibility@store.co.il";
+    const officerPhone = settings.accessibility_officer_phone || settings.contact_phone || "08-6000000";
+    const officerEmail = settings.accessibility_officer_email || settings.business_email || "accessibility@goldenmarket.co.il";
 
     return (
         <StoreChrome>

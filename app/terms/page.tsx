@@ -14,9 +14,9 @@ export default async function TermsPage() {
     const settings = await getSettings();
     const legalName = settings.legal_business_name || settings.store_name;
     const businessId = settings.business_id || "516000000";
-    const businessAddress = settings.business_address || "רחוב הרצל 1, תל אביב-יפו";
-    const businessPhone = settings.contact_phone || "03-0000000";
-    const businessEmail = settings.business_email || "support@store.co.il";
+    const businessAddress = settings.business_address || "מתחם 3, מול היכל התרבות, רהט";
+    const businessPhone = settings.contact_phone || "08-6000000";
+    const businessEmail = settings.business_email || "support@goldenmarket.co.il";
 
     return (
         <StoreChrome>

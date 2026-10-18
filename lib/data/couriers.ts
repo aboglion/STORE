@@ -14,6 +14,7 @@ import type {
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSettings } from "@/lib/data/storefront";
 import { composeAddressLine } from "@/lib/utils/address";
+import { getIsraelStartOfDayUtc } from "@/lib/utils/dates";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -28,18 +29,7 @@ const ACTIVE_STATUS_FILTER = '("delivered","canceled")';
  * matter which timezone the server process runs in.
  */
 function israelTodayStartUtc(): string {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Asia/Jerusalem",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    }).formatToParts(new Date());
-
-    const map = new Map(parts.map((p) => [p.type, p.value]));
-    const y = map.get("year");
-    const mo = map.get("month");
-    const d = map.get("day");
-    return new Date(`${y}-${mo}-${d}T00:00:00Z`).toISOString();
+    return getIsraelStartOfDayUtc().toISOString();
 }
 
 function toCourierOrder(order: Order & { order_items: OrderItem[] }): CourierOrder {

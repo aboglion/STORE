@@ -37,16 +37,16 @@ export async function generateMetadata(): Promise<Metadata> {
 interface ModuleCardDef {
     href: string;
     key:
-        | "orders"
-        | "products"
-        | "categories"
-        | "inventory"
-        | "receipts"
-        | "finance"
-        | "couriers"
-        | "customers"
-        | "stats"
-        | "settings";
+    | "orders"
+    | "products"
+    | "categories"
+    | "inventory"
+    | "receipts"
+    | "finance"
+    | "couriers"
+    | "customers"
+    | "stats"
+    | "settings";
     icon: React.ComponentType<{ className?: string }>;
     iconBg: string;
     gradientBg: string;
@@ -68,15 +68,15 @@ const MODULE_CARDS: ModuleCardDef[] = [
         badge: (metrics, t) =>
             metrics.pendingOrders > 0
                 ? {
-                      text: t("pendingBadge", { count: metrics.pendingOrders }),
-                      className:
-                          "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
-                  }
+                    text: t("pendingBadge", { count: metrics.pendingOrders }),
+                    className:
+                        "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
+                }
                 : {
-                      text: t("totalBadge", { count: metrics.totalOrders }),
-                      className:
-                          "bg-muted/80 text-muted-foreground border-border/60",
-                  },
+                    text: t("totalBadge", { count: metrics.totalOrders }),
+                    className:
+                        "bg-muted/80 text-muted-foreground border-border/60",
+                },
     },
     {
         href: "/admin/products",
@@ -112,12 +112,12 @@ const MODULE_CARDS: ModuleCardDef[] = [
         badge: (metrics, t) =>
             metrics.lowStockCount > 0
                 ? {
-                      text: t("lowStockBadge", {
-                          count: metrics.lowStockCount,
-                      }),
-                      className:
-                          "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30",
-                  }
+                    text: t("lowStockBadge", {
+                        count: metrics.lowStockCount,
+                    }),
+                    className:
+                        "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30",
+                }
                 : null,
     },
     {
@@ -138,10 +138,10 @@ const MODULE_CARDS: ModuleCardDef[] = [
         badge: (metrics, t) =>
             metrics.activeCouriers > 0
                 ? {
-                      text: t("activeBadge", { count: metrics.activeCouriers }),
-                      className:
-                          "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
-                  }
+                    text: t("activeBadge", { count: metrics.activeCouriers }),
+                    className:
+                        "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+                }
                 : null,
     },
     {
@@ -183,7 +183,7 @@ const MODULE_CARDS: ModuleCardDef[] = [
 ];
 
 export default async function AdminDashboardPage() {
-    const admin = await requireAdmin();
+    await requireAdmin();
     const locale = (await getLocale()) as Locale;
     const t = await getTranslations("admin.dashboard");
     const tnav = await getTranslations("admin.nav");

@@ -25,6 +25,7 @@ export default getRequestConfig(async () => {
 
     return {
         locale,
+        timeZone: "Asia/Jerusalem",
         messages: messagesMap[locale] ?? heMessages,
     };
 });

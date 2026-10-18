@@ -23,6 +23,7 @@ import type {
     DailySale,
     MonthlySale,
     OrdersByStatus,
+    TopCategory,
 } from "@/types/database.types";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -35,16 +36,18 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function formatDay(value: string, locale: Locale): string {
-    const d = new Date(`${value}T00:00:00`);
+    const d = new Date(`${value}T12:00:00Z`);
     return d.toLocaleDateString(locale === "ar" ? "ar" : "he-IL", {
+        timeZone: "Asia/Jerusalem",
         day: "2-digit",
         month: "2-digit",
     });
 }
 
 function formatMonth(value: string, locale: Locale): string {
-    const d = new Date(`${value}T00:00:00`);
+    const d = new Date(`${value}T12:00:00Z`);
     return d.toLocaleDateString(locale === "ar" ? "ar" : "he-IL", {
+        timeZone: "Asia/Jerusalem",
         month: "short",
         year: "2-digit",
     });
@@ -174,6 +177,51 @@ export function StatusPieChart({ data }: { data: OrdersByStatus[] }) {
                     }}
                 />
             </PieChart>
+        </ResponsiveContainer>
+    );
+}
+
+export function TopCategoriesChart({ data }: { data: TopCategory[] }) {
+    const locale = useLocale() as Locale;
+    const t = useTranslations("admin.stats");
+    const chartData = data.map((d) => ({
+        name: d.category_name,
+        revenue: d.revenue_agorot / 100,
+    }));
+
+    return (
+        <ResponsiveContainer width="100%" height={260}>
+            <BarChart
+                data={chartData}
+                layout="vertical"
+                margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
+            >
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                <XAxis
+                    type="number"
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tickLine={false}
+                    axisLine={false}
+                />
+                <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={110}
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tickLine={false}
+                    axisLine={false}
+                />
+                <Tooltip
+                    formatter={(value) => [formatILS(Number(value) * 100, locale), t("revenue")]}
+                    contentStyle={{
+                        background: "var(--popover)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        fontSize: 12,
+                    }}
+                />
+                <Bar dataKey="revenue" fill="var(--chart-3)" radius={[0, 4, 4, 0]} barSize={18} />
+            </BarChart>
         </ResponsiveContainer>
     );
 }

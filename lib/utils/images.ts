@@ -1,24 +1,42 @@
 import { PRODUCT_IMAGES_BUCKET } from "@/lib/constants";
 
+const KNOWN_DEMO_SLUGS = new Set([
+    "baguette",
+    "cheesecake",
+    "chocolate-cake",
+    "coffee-beans",
+    "feta",
+    "olive-mix",
+    "orange-juice",
+    "sourdough",
+]);
+
 /**
  * Public URL for a storage object in the product-images bucket.
- * Prefers SUPABASE_INTERNAL_URL (host.docker.internal) so the server-side
- * image optimizer can reach the local Supabase from inside the Docker
- * container; falls back to NEXT_PUBLIC_SUPABASE_URL for client components.
  */
 export function storageImageUrl(storagePath: string): string {
+    if (!storagePath) return "";
+
     const base =
         process.env.SUPABASE_INTERNAL_URL ||
-        process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (!base) return "";
+        process.env.NEXT_PUBLIC_SUPABASE_URL ||
+        "http://127.0.0.1:54321";
 
-    return `${base}/storage/v1/object/public/${PRODUCT_IMAGES_BUCKET}/${storagePath}`;
+    if (storagePath.startsWith("http://") || storagePath.startsWith("https://")) {
+        return storagePath;
+    }
+
+    const cleanPath = storagePath.startsWith("/")
+        ? storagePath.slice(1)
+        : storagePath;
+
+    return `${base}/storage/v1/object/public/${PRODUCT_IMAGES_BUCKET}/${cleanPath}`;
 }
 
 /**
  * Best available image URL for a product.
  * Uses the first storage image when one exists; otherwise falls back to a
- * local demo placeholder so the catalog never renders an empty box.
+ * demo placeholder so the catalog never renders a broken box.
  */
 export function productImageUrl(
     storagePath: string | null | undefined,
@@ -31,7 +49,10 @@ export function productImageUrl(
     return demoImageUrl(slug);
 }
 
-/** Local demo placeholder for a product, keyed by its slug. */
+/** Demo placeholder for a product, keyed by its slug or fallback generic. */
 export function demoImageUrl(slug: string): string {
-    return `/products/${slug}.svg`;
+    if (slug && KNOWN_DEMO_SLUGS.has(slug)) {
+        return `/products/${slug}.svg`;
+    }
+    return "/products/placeholder.svg";
 }

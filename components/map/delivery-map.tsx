@@ -55,7 +55,7 @@ export interface DeliveryMapProps {
     onSelectStop?: (id: string) => void;
 }
 
-const DEFAULT_CENTER = { lat: 31.91, lng: 34.85 };
+const DEFAULT_CENTER = { lat: 31.3922, lng: 34.7544 }; // Rahat
 const DEFAULT_ZOOM = 10;
 const PIN_SIZE = 36;
 

@@ -23,6 +23,14 @@ const eslintConfig = [
             ],
         },
     },
+    {
+        // Standalone Node runtime scripts (CommonJS, no package "type": "module")
+        // — `require()` is legitimate there, so exempt them from the TS import rule.
+        files: ["scripts/**/*.js"],
+        rules: {
+            "@typescript-eslint/no-require-imports": "off",
+        },
+    },
 ];
 
 export default eslintConfig;

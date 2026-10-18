@@ -1,5 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="14" fill="#0a0a0a"/>
-  <path d="M20 24h24l-2.2 20.2a4 4 0 0 1-4 3.8H26.2a4 4 0 0 1-4-3.8L20 24Z" fill="none" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M25 24v-4a7 7 0 0 1 14 0v4" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A56230"/>
+      <stop offset="50%" stop-color="#95582B"/>
+      <stop offset="100%" stop-color="#6F3C18"/>
+    </linearGradient>
+    <linearGradient id="bagGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#FAF4EB"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  
+  <!-- Rounded container -->
+  <rect width="512" height="512" rx="112" fill="url(#brandGrad)"/>
+  
+  <!-- Subtle inner glow border -->
+  <rect x="4" y="4" width="504" height="504" rx="108" fill="none" stroke="#FFFFFF" stroke-opacity="0.15" stroke-width="4"/>
+  
+  <!-- Shopping Bag Symbol -->
+  <g filter="url(#shadow)" transform="translate(0, 10)">
+    <!-- Handle -->
+    <path d="M196 200 v-36 a60 60 0 0 1 120 0 v36" 
+          fill="none" 
+          stroke="#FAF4EB" 
+          stroke-width="26" 
+          stroke-linecap="round"/>
+    
+    <!-- Bag Body -->
+    <path d="M152 200 h208 l-18 184 a30 30 0 0 1-30 28 h-112 a30 30 0 0 1-30-28 Z" 
+          fill="url(#bagGrad)"/>
+    
+    <!-- Bag Fold / Stitch Accent -->
+    <path d="M152 200 h208" 
+          stroke="#E2D4C3" 
+          stroke-width="6" 
+          stroke-linecap="round"/>
+          
+    <!-- Warm Emblem in center (wheat/leaf motif) -->
+    <path d="M256 260 c-18 20 -20 44 0 66 c20 -22 18 -46 0 -66 Z" 
+          fill="#95582B"/>
+    <path d="M256 326 v20" 
+          stroke="#95582B" 
+          stroke-width="6" 
+          stroke-linecap="round"/>
+  </g>
 </svg>

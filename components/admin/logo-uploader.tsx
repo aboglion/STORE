@@ -73,7 +73,8 @@ export function LogoUploader({
         });
     }
 
-    const src = value ? storageImageUrl(value) : "";
+    const [logoFailed, setLogoFailed] = useState(false);
+    const src = value && !logoFailed ? storageImageUrl(value) : "";
 
     return (
         <div className="flex flex-wrap items-center gap-4">
@@ -85,6 +86,7 @@ export function LogoUploader({
                         width={64}
                         height={64}
                         className="size-full object-contain p-1"
+                        onError={() => setLogoFailed(true)}
                     />
                 ) : (
                     <span className="text-xs font-medium text-muted-foreground">

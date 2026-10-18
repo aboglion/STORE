@@ -56,7 +56,7 @@ export interface AddressPinPickerProps {
     statusType?: "success" | "warning" | "info" | null;
 }
 
-const DEFAULT_CENTER = { lat: 31.91, lng: 34.85 };
+const DEFAULT_CENTER = { lat: 31.3922, lng: 34.7544 }; // Rahat
 const DEFAULT_ZOOM = 10;
 const PIN_ZOOM = 16;
 const PIN_SIZE = 36;
@@ -274,13 +274,18 @@ export function AddressPinPicker({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Center map when center prop changes (e.g. city chosen)
+    // Center map when center prop changes (e.g. city chosen).
+    // The primitives are captured so the effect only depends on the actual
+    // coordinate values, not on the `center` object identity.
+    const centerLat = center?.lat;
+    const centerLng = center?.lng;
+    const centerZoom = center?.zoom;
     useEffect(() => {
-        if (!center || center.lat == null || center.lng == null) return;
+        if (centerLat == null || centerLng == null) return;
         const map = mapRef.current;
         if (!map) return;
-        map.setView([center.lat, center.lng], center.zoom ?? 14);
-    }, [center?.lat, center?.lng, center?.zoom]);
+        map.setView([centerLat, centerLng], centerZoom ?? 14);
+    }, [centerLat, centerLng, centerZoom]);
 
     // React to external value changes (e.g. the checkout's locate button)
     // without fighting the user's own drags — skip positions we emitted.

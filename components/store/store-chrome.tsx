@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { AccessibilityHeaderButton } from "@/components/accessibility/accessibility-widget";
 import { CookieConsentBanner } from "@/components/legal/cookie-consent-banner";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { CartProvider } from "@/contexts/cart-context";
 import { getSettings, getStoreName } from "@/lib/data/storefront";
 import type { Locale } from "@/lib/i18n/config";
@@ -75,6 +76,7 @@ export async function StoreChrome({
 
                 <StoreFooter settings={settings} storeName={storeName} />
 
+                <InstallPrompt />
                 <BottomNav />
             </div>
         </CartProvider>

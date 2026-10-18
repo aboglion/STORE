@@ -41,6 +41,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
 import type { Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
+import { formatTime, toIsraelDatetimeLocal } from "@/lib/utils/dates";
 import type { CourierOrder } from "@/types/database.types";
 
 // Leaflet is client-only — load the picker without SSR.
@@ -71,10 +72,8 @@ interface CourierOrderCardProps {
     onNavigate: (order: CourierOrder) => void;
 }
 
-/** Converts a Date to a datetime-local input value (local time). */
 function toDatetimeLocal(date: Date): string {
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return toIsraelDatetimeLocal(date);
 }
 
 export function CourierOrderCard({
@@ -218,10 +217,7 @@ export function CourierOrderCard({
     }
 
     const etaText = order.eta_at
-        ? new Date(order.eta_at).toLocaleTimeString(locale === "ar" ? "ar-EG" : "he-IL", {
-            hour: "2-digit",
-            minute: "2-digit",
-        })
+        ? formatTime(order.eta_at, locale as Locale)
         : null;
 
     return (
@@ -426,10 +422,7 @@ export function CourierOrderCard({
                                         className="flex items-center gap-2 text-[11px] text-muted-foreground"
                                     >
                                         <span className="font-mono" dir="ltr">
-                                            {new Date(e.created_at).toLocaleTimeString(
-                                                locale === "ar" ? "ar-EG" : "he-IL",
-                                                { hour: "2-digit", minute: "2-digit" }
-                                            )}
+                                            {formatTime(e.created_at, locale as Locale)}
                                         </span>
                                         <span>
                                             {e.to_status

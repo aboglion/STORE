@@ -4,6 +4,8 @@
 # ============================================================
 set -euo pipefail
 
+export TZ="${TZ:-Asia/Jerusalem}"
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
@@ -45,6 +47,19 @@ if [ ! -f "${MARKER}" ]; then
     touch "${MARKER}"
 fi
 
+# 3b. הכנת תיקיית הגיבויים הייעודית (מחוץ לדוקר) והרשאות משותפות
+BACKUP_DIR="${BACKUP_DIR:-/home/uns/store-backups}"
+echo -e "${BLUE}💾 מכין תיקיית גיבויים ייעודית: ${BACKUP_DIR}...${NC}"
+mkdir -p "$BACKUP_DIR"
+if [ "$(id -u)" = "0" ]; then
+    chown 1001:1001 "$BACKUP_DIR" 2>/dev/null || true
+    chmod 775 "$BACKUP_DIR"
+else
+    chmod 777 "$BACKUP_DIR"
+fi
+mkdir -p "$BACKUP_DIR/.scheduler" "$BACKUP_DIR/.queue"
+chmod 777 "$BACKUP_DIR/.scheduler" "$BACKUP_DIR/.queue" 2>/dev/null || true
+
 # 4. יצירת/אימות .env.local
 if [ ! -f .env.local ]; then
     echo -e "${BLUE}📝 מייצר קובץ .env.local...${NC}"
@@ -80,6 +95,7 @@ echo -e "${GREEN}   🛍️  חנות:             http://localhost:3000${NC}"
 echo -e "${GREEN}   🔐 ניהול אדמין:      http://localhost:3000/admin/login${NC}"
 echo -e "${GREEN}   📊 Supabase Studio:  http://127.0.0.1:54323${NC}"
 echo -e "${CYAN}   🔄 שירות רקע:        פעיל (בודק עדכוני GitHub כל 60 שניות)${NC}"
+echo -e "${CYAN}   💾 גיבויים:          ${BACKUP_DIR} (אוטומטי 03:00 ו-16:00, שמירת 30 אחרונים)${NC}"
 echo -e "${CYAN}   ⚡ אתחול שרת (Boot): השירות יעלה מחדש באופן אוטומטי מלא${NC}"
 echo -e "${GREEN}${BOLD}============================================================${NC}"
 echo -e "ℹ️  לצפייה בלוגים של האפליקציה:   make docker-logs"

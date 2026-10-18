@@ -42,7 +42,7 @@ import {
 } from "@/lib/utils/recent-orders";
 import { localizedText, type Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
-import { formatDateTime } from "@/lib/utils/dates";
+import { formatDateTime, formatTime } from "@/lib/utils/dates";
 import { ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -330,10 +330,7 @@ export function CustomerOrdersView({
                                     </div>
                                     <div className="text-sm text-muted-foreground">
                                         {t("etaBody", {
-                                            time: new Date(selectedOrder.eta_at).toLocaleTimeString(
-                                                locale === "ar" ? "ar-EG" : "he-IL",
-                                                { hour: "2-digit", minute: "2-digit" }
-                                            ),
+                                            time: formatTime(selectedOrder.eta_at, locale),
                                         })}
                                     </div>
                                 </div>

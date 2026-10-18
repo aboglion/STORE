@@ -18,6 +18,33 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - TZ=Asia/Jerusalem
       - SUPABASE_INTERNAL_URL=http://host.docker.internal:54321
+      # ------------------------------------------------------------------
+      # Database backup system — backups are stored OUTSIDE Docker on the
+      # host under ${BACKUP_DIR:-/home/uns/store-backups} (bind-mounted as
+      # /backups) so they survive container rebuilds.
+      # ------------------------------------------------------------------
+      - BACKUP_DIR=/backups
+      - BACKUP_STORAGE_DIR=/supabase-storage
+      - BACKUP_TZ=${BACKUP_TZ:-Asia/Jerusalem}
+      # Direct Postgres connection used by pg_dump / pg_restore inside the
+      # container (local Supabase defaults; override via .env.local).
+      - PGHOST=host.docker.internal
+      - PGPORT=${PGPORT:-54322}
+      - PGUSER=${PGUSER:-postgres}
+      - PGPASSWORD=${PGPASSWORD:-postgres}
+      - PGDATABASE=${PGDATABASE:-postgres}
+    volumes:
+      # Persistent backup directory on the host (outside Docker).
+      - ${BACKUP_DIR:-/home/uns/store-backups}:/backups
+      # Supabase Storage files (product images / logos) — read for backup,
+      # restored on the host by backup-host.sh (volume is root-owned).
+      - supabase_storage_omar:/supabase-storage:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+# External volumes created by `npx supabase start` (project "omar").
+volumes:
+  supabase_storage_omar:
+    external: true

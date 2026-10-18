@@ -5,6 +5,8 @@
 # ==============================================================================
 set -euo pipefail
 
+export TZ="${TZ:-Asia/Jerusalem}"
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
@@ -133,12 +135,18 @@ run_supervisor() {
     wait_for_docker || true
     ensure_services_running
 
+    # בדיקת תזמון גיבויים ראשונית מיד לאחר עליית השירות (catch-up)
+    bash "$ROOT_DIR/scripts/backup-host.sh" >> "$LOG_FILE" 2>&1 || true
+
     # השהיה ראשונית קצרה וניתנת להפסקה
     interruptible_sleep 5
 
     while true; do
         rotate_log_if_needed
         cd "$ROOT_DIR" || exit 1
+
+        # בדיקת תזמון גיבויים אוטומטיים + עיבוד תור שחזור Storage (מארח)
+        bash "$ROOT_DIR/scripts/backup-host.sh" >> "$LOG_FILE" 2>&1 || true
 
         # איתור ענף ה-Git הנוכחי (ברירת מחדל: master)
         CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'master')"

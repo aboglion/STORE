@@ -7,7 +7,6 @@ import { ChevronLeft } from "lucide-react";
 
 import { ProductBuyPanel } from "@/components/store/product-buy-panel";
 import { ProductGallery } from "@/components/store/product-gallery";
-import { ProductPurchaseBar } from "@/components/store/product-purchase-bar";
 import { StoreChrome } from "@/components/store/store-chrome";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -163,16 +162,6 @@ export default async function ProductPage({
                     )}
                 </div>
             </div>
-
-            {/* Mobile sticky purchase bar */}
-            <ProductPurchaseBar
-                productId={product.id}
-                productName={name}
-                priceAgorot={product.price_agorot}
-                compareAtPriceAgorot={product.compare_at_price_agorot}
-                stockQuantity={product.stock_quantity}
-                locale={locale}
-            />
         </StoreChrome>
     );
 }

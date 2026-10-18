@@ -47,7 +47,9 @@ export function AddToCartButton({
             }
             onClick={() => {
                 addItem(productId, quantity);
-                toast.success(t("addedToast"));
+                toast.success(t("addedToast"), {
+                    duration: 1800,
+                });
                 setAdded(true);
                 setTimeout(() => setAdded(false), 1400);
             }}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Bike, CornerUpLeft, Loader2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +23,8 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { returnOrdersToStoreAction } from "@/lib/actions/couriers";
+import type { Locale } from "@/lib/i18n/config";
+import { formatDateTime } from "@/lib/utils/dates";
 
 interface OrderCourierCardProps {
     orderId: string;
@@ -38,6 +40,7 @@ export function OrderCourierCard({
     couriers,
 }: OrderCourierCardProps) {
     const t = useTranslations("admin.orders");
+    const locale = useLocale() as Locale;
     const router = useRouter();
 
     const [assignOpen, setAssignOpen] = useState(false);
@@ -83,7 +86,7 @@ export function OrderCourierCard({
                             <div className="text-xs text-muted-foreground">
                                 {t("assignedAt")} ·{" "}
                                 <span dir="ltr">
-                                    {new Date(assignedAt).toLocaleString()}
+                                    {formatDateTime(assignedAt, locale)}
                                 </span>
                             </div>
                         )}

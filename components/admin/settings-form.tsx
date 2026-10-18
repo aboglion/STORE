@@ -119,7 +119,7 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                             <FormLabel>{t("storeNameAr")}</FormLabel>
                             <FormControl>
                                 <Input
-                                    placeholder="متجري"
+                                    placeholder="جولدن ماركت"
                                     className="h-11 rounded-xl"
                                     {...field}
                                 />
@@ -293,7 +293,7 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                         <FormItem>
                             <FormLabel>{t("contactPhone")}</FormLabel>
                             <FormControl>
-                                <Input placeholder="03-0000000" dir="ltr" {...field} />
+                                <Input placeholder="08-6000000" dir="ltr" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -315,7 +315,7 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                             <FormItem>
                                 <FormLabel>שם העסק הרשמי (עוסק / חברה)</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="לדוגמה: מאפיית הבוטיק בע״מ" {...field} />
+                                    <Input placeholder="לדוגמה: גולדן מארקט בע״מ" {...field} />
                                 </FormControl>
                                 <FormDescription>השם המופיע בתעודת ההתאגדות / רישום העסק</FormDescription>
                                 <FormMessage />
@@ -346,7 +346,7 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                             <FormItem>
                                 <FormLabel>כתובת פיזית של העסק</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="רחוב הרצל 1, תל אביב-יפו" {...field} />
+                                    <Input placeholder="מתחם 3, מול היכל התרבות, רהט" {...field} />
                                 </FormControl>
                                 <FormDescription>חובה לציון בתקנון, בחשבוניות ובהודעות ביטול</FormDescription>
                                 <FormMessage />
@@ -360,7 +360,7 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                             <FormItem>
                                 <FormLabel>דוא״ל שירות לקוחות רשמי</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="support@store.co.il" dir="ltr" {...field} />
+                                    <Input placeholder="support@goldenmarket.co.il" dir="ltr" {...field} />
                                 </FormControl>
                                 <FormDescription>לפניות צרכנים והודעות ביטול עסקה</FormDescription>
                                 <FormMessage />
@@ -376,7 +376,7 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                         <FormItem>
                             <FormLabel>שעות פעילות שירות הלקוחות</FormLabel>
                             <FormControl>
-                                <Input placeholder="א׳-ה׳ 08:00-20:00, ו׳ 08:00-14:00" {...field} />
+                                <Input placeholder="א׳-ש׳ 09:00-22:00" {...field} />
                             </FormControl>
                             <FormDescription>שעות מענה וקבלת קהל כחוק</FormDescription>
                             <FormMessage />
@@ -412,7 +412,7 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                             <FormItem>
                                 <FormLabel>טלפון רכז/ת הנגישות</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="03-0000000" dir="ltr" {...field} />
+                                    <Input placeholder="08-6000000" dir="ltr" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -425,7 +425,7 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
                             <FormItem>
                                 <FormLabel>דוא״ל רכז/ת הנגישות</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="accessibility@store.co.il" dir="ltr" {...field} />
+                                    <Input placeholder="accessibility@goldenmarket.co.il" dir="ltr" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>

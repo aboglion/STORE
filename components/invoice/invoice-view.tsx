@@ -117,7 +117,7 @@ export function InvoiceView({ detail, settings }: InvoiceViewProps) {
                                 ח.פ / ע.מ: <span className="font-mono">{settings.business_id || "516000000"}</span>
                             </div>
                             <div className="text-xs text-slate-500">
-                                {settings.business_address || "רחוב הרצל 1, תל אביב-יפו"}
+                                {settings.business_address || "מתחם 3, מול היכל התרבות, רהט"}
                             </div>
                             {settings.contact_phone && (
                                 <div className="text-xs text-slate-500" dir="ltr">
@@ -248,7 +248,7 @@ export function InvoiceView({ detail, settings }: InvoiceViewProps) {
 
                 {/* Statutory Consumer Protection Note */}
                 <div className="border-t border-slate-200 bg-slate-50/70 px-6 py-2.5 text-[11px] text-slate-500 leading-relaxed">
-                    מסמך פרטי עסקה וגילוי נאות בהתאם לחוק הגנת הצרכן, התשמ״א-1981. זכות ביטול עסקת מכר מרחוק תוך 14 יום מקבלת המוצר או מסמך הגילוי (4 חודשים לאוכלוסיות מוגנות כקבוע בחוק), למעט טובין פסידים כהגדרתם בסעיף 14ג(ד) לחוק. הודעת ביטול ניתן למסור באתר בלשונית ביטול עסקה או בטלפון {settings.contact_phone || "03-0000000"}.
+                    מסמך פרטי עסקה וגילוי נאות בהתאם לחוק הגנת הצרכן, התשמ״א-1981. זכות ביטול עסקת מכר מרחוק תוך 14 יום מקבלת המוצר או מסמך הגילוי (4 חודשים לאוכלוסיות מוגנות כקבוע בחוק), למעט טובין פסידים כהגדרתם בסעיף 14ג(ד) לחוק. הודעת ביטול ניתן למסור באתר בלשונית ביטול עסקה או בטלפון {settings.contact_phone || "08-6000000"}.
                 </div>
 
                 {/* Barcode + QR */}

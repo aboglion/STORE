@@ -1,13 +1,13 @@
 import Image from "next/image";
 
-import { Wheat } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 
 import { storageImageUrl } from "@/lib/utils/images";
 import { cn } from "@/lib/utils";
 
 /**
  * Store branding mark — renders the uploaded logo image when available,
- * otherwise falls back to a warm wheat badge in the current theme colors.
+ * otherwise falls back to a supermarket badge in the current theme colors.
  */
 export function StoreLogo({
     logoUrl,
@@ -44,7 +44,7 @@ export function StoreLogo({
                 className
             )}
         >
-            <Wheat className={cn("size-4 sm:size-5", iconClassName)} />
+            <ShoppingBag className={cn("size-4 sm:size-5", iconClassName)} />
         </span>
     );
 }

@@ -35,7 +35,9 @@ export async function submitCancellationNotice(
 
     // Generate statutory reference number
     const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const dateStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" })
+        .format(new Date())
+        .replace(/-/g, "");
     const referenceNumber = `CAN-${dateStr}-${randomSuffix}`;
     const nowIso = new Date().toISOString();
 

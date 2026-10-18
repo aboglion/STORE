@@ -339,6 +339,28 @@ export interface TopProduct {
     orders_count: number;
 }
 
+export interface TopCategory {
+    category_id: string | null;
+    category_name: string;
+    orders_count: number;
+    units_sold: number;
+    revenue_agorot: number;
+}
+
+export interface ProductPerformance {
+    product_id: string;
+    product_name: string;
+    category_id: string | null;
+    category_name: string;
+    is_active: boolean;
+    stock_quantity: number;
+    low_stock_threshold: number;
+    units_sold: number;
+    revenue_agorot: number;
+    orders_count: number;
+    last_sold_at: string | null;
+}
+
 export interface OrdersByStatus {
     status: OrderStatus;
     orders_count: number;

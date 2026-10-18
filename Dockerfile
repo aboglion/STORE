@@ -3,13 +3,16 @@
 # ============================================================
 
 FROM node:22-alpine AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat tzdata
+ENV TZ=Asia/Jerusalem
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
 RUN npm install
 
 FROM node:22-alpine AS builder
+RUN apk add --no-cache tzdata
+ENV TZ=Asia/Jerusalem
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -35,18 +38,31 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+ENV TZ=Asia/Jerusalem
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy static assets and traced standalone output
+# PostgreSQL client tools (pg_dump / pg_restore / psql) + timezone data (Asia/Jerusalem)
+RUN apk add --no-cache postgresql17-client tzdata \
+    || apk add --no-cache postgresql-client tzdata
+RUN cp /usr/share/zoneinfo/Asia/Jerusalem /etc/localtime && echo "Asia/Jerusalem" > /etc/timezone
+
+# Copy static assets, startup script and traced standalone output
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/messages ./messages
+COPY scripts/start-container.js ./start-container.js
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Backup & restore scripts executed inside the container (manual UI actions
+# and the host-side scheduled trigger via `docker exec`).
+COPY --from=builder /app/scripts/db-backup.sh ./scripts/db-backup.sh
+COPY --from=builder /app/scripts/db-restore.sh ./scripts/db-restore.sh
+RUN chmod +x ./scripts/db-backup.sh ./scripts/db-restore.sh
 
 USER nextjs
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["node", "start-container.js"]

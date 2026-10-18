@@ -9,7 +9,7 @@
 
 SUPABASE := npx supabase
 
-.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install db-start db-stop db-reset db-status env admin build test lint typecheck init init-db INIT_DB status service-logs updater-logs
+.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install db-start db-stop db-reset db-status env admin build test lint typecheck init init-db INIT_DB status service-logs updater-logs backup restore backups backup-host
 
 help: ## הצגת רשימת הפקודות הזמינות
 	@echo "\033[1;33mמערכת מסחר — פקודות Make זמינות:\033[0m"
@@ -140,3 +140,19 @@ lint: ## בדיקת תקינות קוד (ESLint)
 
 typecheck: ## בדיקת טיפוסים (TypeScript)
 	npm run typecheck
+
+# ------------------------------------------------------------
+# גיבויים ושחזור מסד נתונים (מחוץ לדוקר — /home/uns/store-backups)
+# ------------------------------------------------------------
+backup: ## יצירת גיבוי מיידי של הדאטאבייס + תמונות (בתוך הקונטיינר)
+	docker exec store_commerce_prod sh /app/scripts/db-backup.sh manual
+
+restore: ## שחזור גיבוי קיים: make restore BACKUP=<id>
+	@test -n "$(BACKUP)" || (echo "❌ יש לציין: make restore BACKUP=<backup-id>" && exit 1)
+	docker exec store_commerce_prod sh /app/scripts/db-restore.sh $(BACKUP)
+
+backups: ## הצגת רשימת הגיבויים השמורים (החדשים ביותר ראשונים)
+	@BD="$${BACKUP_DIR:-/home/uns/store-backups}"; ls -1t "$$BD" 2>/dev/null | grep -E '^[0-9]{8}T[0-9]{6}Z_(manual|scheduled|pre-restore)$$' || echo "אין גיבויים עדיין"
+
+backup-host: ## הפעלה ידנית של תזמון הגיבויים ועיבוד תור ה-Storage (מארח)
+	bash scripts/backup-host.sh

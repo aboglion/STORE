@@ -186,8 +186,9 @@ export default async function AdminFinancePage() {
                                     <TableRow key={row.month}>
                                         <TableCell className="font-medium">
                                             {new Date(
-                                                `${row.month}T00:00:00`
+                                                `${row.month}T12:00:00Z`
                                             ).toLocaleDateString(locale === "ar" ? "ar-EG" : "he-IL", {
+                                                timeZone: "Asia/Jerusalem",
                                                 month: "long",
                                                 year: "numeric",
                                             })}

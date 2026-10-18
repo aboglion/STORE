@@ -31,21 +31,21 @@ describe("store themes configuration", () => {
 describe("settings form validation schema", () => {
     it("accepts valid settings data with all fields", () => {
         const valid = {
-            store_name: "מאפיית הבוטיק",
-            store_name_ar: "مخبز البوتيك",
+            store_name: "גולדן מארקט",
+            store_name_ar: "جولدن ماركت",
             logo_url: "logos/store-logo.png",
             theme: "forest",
             delivery_fee_shekels: "15.00",
             free_delivery_threshold_shekels: "150.00",
             low_stock_threshold_default: 5,
-            contact_phone: "03-5551234",
+            contact_phone: "08-5551234",
         };
 
         const result = settingsFormSchema(t).safeParse(valid);
         expect(result.success).toBe(true);
         if (result.success) {
-            expect(result.data.store_name).toBe("מאפיית הבוטיק");
-            expect(result.data.store_name_ar).toBe("مخبز البوتيك");
+            expect(result.data.store_name).toBe("גולדן מארקט");
+            expect(result.data.store_name_ar).toBe("جولدن ماركت");
             expect(result.data.theme).toBe("forest");
             expect(result.data.logo_url).toBe("logos/store-logo.png");
         }

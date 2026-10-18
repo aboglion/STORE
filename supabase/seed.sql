@@ -7,16 +7,24 @@
 -- Settings
 -- ------------------------------------------------------------
 insert into settings (key, value) values
-  ('store_name', jsonb_build_object('value', 'החנות שלי')),
-  ('store_name_ar', jsonb_build_object('value', 'متجري')),
+  ('store_name', jsonb_build_object('value', 'גולדן מארקט')),
+  ('store_name_ar', jsonb_build_object('value', 'جولدن ماركت')),
+  ('legal_business_name', jsonb_build_object('value', 'גולדן מארקט בע״מ')),
+  ('business_address', jsonb_build_object('value', 'מתחם 3, מול היכל התרבות, רהט')),
+  ('business_email', jsonb_build_object('value', 'support@goldenmarket.co.il')),
+  ('business_hours', jsonb_build_object('value', 'א׳-ש׳ 09:00-22:00')),
+  ('accessibility_officer_name', jsonb_build_object('value', 'שירות לקוחות ונגישות')),
+  ('accessibility_officer_phone', jsonb_build_object('value', '08-6000000')),
+  ('accessibility_officer_email', jsonb_build_object('value', 'accessibility@goldenmarket.co.il')),
   ('delivery_fee_agorot', jsonb_build_object('value', 1500)),           -- 15.00 ₪
   ('free_delivery_threshold_agorot', jsonb_build_object('value', 20000)), -- 200.00 ₪
   ('low_stock_threshold_default', jsonb_build_object('value', 5)),
   ('currency', jsonb_build_object('value', 'ILS')),
-  ('contact_phone', jsonb_build_object('value', '03-0000000')),
+  ('contact_phone', jsonb_build_object('value', '08-6000000')),
   ('logo_url', jsonb_build_object('value', '')),
-  ('theme', jsonb_build_object('value', 'caramel'))
-on conflict (key) do nothing;
+  ('theme', jsonb_build_object('value', 'midnight'))
+on conflict (key) do update set
+  value = excluded.value;
 
 -- ------------------------------------------------------------
 -- Demo categories

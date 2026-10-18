@@ -4,6 +4,8 @@ import type {
     DailySale,
     MonthlySale,
     OrdersByStatus,
+    ProductPerformance,
+    TopCategory,
     TopProduct,
 } from "@/types/database.types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -12,6 +14,8 @@ export interface StatsData {
     daily: DailySale[];
     monthly: MonthlySale[];
     topProducts: TopProduct[];
+    topCategories: TopCategory[];
+    productPerformance: ProductPerformance[];
     ordersByStatus: OrdersByStatus[];
     totalRevenueAgorot: number;
     totalOrders: number;
@@ -20,7 +24,14 @@ export interface StatsData {
 export async function getStats(): Promise<StatsData> {
     const admin = createAdminClient();
 
-    const [dailyRes, monthlyRes, topRes, byStatusRes] = await Promise.all([
+    const [
+        dailyRes,
+        monthlyRes,
+        topRes,
+        topCategoriesRes,
+        performanceRes,
+        byStatusRes,
+    ] = await Promise.all([
         admin
             .from("daily_sales")
             .select("*")
@@ -32,12 +43,16 @@ export async function getStats(): Promise<StatsData> {
             .order("month", { ascending: false })
             .limit(12),
         admin.from("top_products").select("*").limit(10),
+        admin.from("top_categories").select("*").limit(10),
+        admin.from("product_performance").select("*").limit(500),
         admin.from("orders_by_status").select("*"),
     ]);
 
     const daily = (dailyRes.data ?? []) as DailySale[];
     const monthly = (monthlyRes.data ?? []) as MonthlySale[];
     const topProducts = (topRes.data ?? []) as TopProduct[];
+    const topCategories = (topCategoriesRes.data ?? []) as TopCategory[];
+    const productPerformance = (performanceRes.data ?? []) as ProductPerformance[];
     const ordersByStatus = (byStatusRes.data ?? []) as OrdersByStatus[];
 
     const totalRevenueAgorot = daily.reduce(
@@ -50,6 +65,8 @@ export async function getStats(): Promise<StatsData> {
         daily,
         monthly,
         topProducts,
+        topCategories,
+        productPerformance,
         ordersByStatus,
         totalRevenueAgorot,
         totalOrders,

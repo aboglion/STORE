@@ -9,6 +9,7 @@ import {
     BarChart3,
     Bike,
     Boxes,
+    DatabaseBackup,
     LayoutDashboard,
     Loader2,
     LogOut,
@@ -38,6 +39,7 @@ export const NAV_ITEMS = [
     { href: "/admin/couriers", labelKey: "couriers", icon: Bike },
     { href: "/admin/customers", labelKey: "customers", icon: Users },
     { href: "/admin/stats", labelKey: "stats", icon: BarChart3 },
+    { href: "/admin/backups", labelKey: "backups", icon: DatabaseBackup },
     { href: "/admin/settings", labelKey: "settings", icon: Settings },
 ] as const;
 

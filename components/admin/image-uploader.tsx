@@ -72,6 +72,8 @@ export function ImageUploader({
         });
     }
 
+    const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+
     return (
         <div className="grid gap-3">
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
@@ -89,37 +91,43 @@ export function ImageUploader({
                         </span>
                     </div>
                 )}
-                {images.map((image, index) => (
-                    <div
-                        key={image.id}
-                        className="group relative aspect-square overflow-hidden rounded-md border bg-muted"
-                    >
-                        <Image
-                            src={productImageUrl(image.storage_path, productSlug)}
-                            alt={image.alt_text ?? t("imageAlt", { index: index + 1 })}
-                            fill
-                            sizes="120px"
-                            className="object-cover"
-                            onError={(e) => {
-                                const target = e.currentTarget;
-                                const fallback = demoImageUrl(productSlug);
-                                if (!target.src.endsWith(fallback)) {
-                                    target.src = fallback;
-                                }
-                            }}
-                        />
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-1 right-1 size-7 opacity-0 transition-opacity group-hover:opacity-100"
-                            disabled={pending}
-                            onClick={() => handleDelete(image.id)}
+                {images.map((image, index) => {
+                    const isFailed = !!failedImages[image.id];
+                    const src = isFailed
+                        ? demoImageUrl(productSlug)
+                        : productImageUrl(image.storage_path, productSlug);
+
+                    return (
+                        <div
+                            key={image.id}
+                            className="group relative aspect-square overflow-hidden rounded-md border bg-muted"
                         >
-                            <Trash2 className="size-3.5" />
-                        </Button>
-                    </div>
-                ))}
+                            <Image
+                                src={src}
+                                alt={image.alt_text ?? t("imageAlt", { index: index + 1 })}
+                                fill
+                                sizes="120px"
+                                className="object-cover"
+                                onError={() => {
+                                    setFailedImages((prev) => ({
+                                        ...prev,
+                                        [image.id]: true,
+                                    }));
+                                }}
+                            />
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 size-7 opacity-0 transition-opacity group-hover:opacity-100"
+                                disabled={pending}
+                                onClick={() => handleDelete(image.id)}
+                            >
+                                <Trash2 className="size-3.5" />
+                            </Button>
+                        </div>
+                    );
+                })}
 
                 <button
                     type="button"
