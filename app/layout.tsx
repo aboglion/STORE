@@ -78,6 +78,7 @@ export async function generateMetadata(): Promise<Metadata> {
         },
         other: {
             "mobile-web-app-capable": "yes",
+            "apple-mobile-web-app-capable": "yes",
         },
         icons: {
             icon: [
@@ -155,6 +156,25 @@ export default async function RootLayout({
             data-theme={theme}
             className={`${notoSansHebrew.variable} ${frankRuhlLibre.variable} ${notoSansArabic.variable} ${cairo.variable}`}
         >
+            <head>
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `
+(function() {
+  window.__pwaDeferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    window.__pwaDeferredPrompt = e;
+    window.dispatchEvent(new CustomEvent('pwa-prompt-available'));
+  });
+  window.addEventListener('appinstalled', function() {
+    window.__pwaDeferredPrompt = null;
+  });
+})();
+`,
+                    }}
+                />
+            </head>
             <body className="min-h-screen font-sans antialiased">
                 <NextIntlClientProvider locale={locale} messages={messages} timeZone="Asia/Jerusalem">
                     {!isAdmin && <MaintenanceGuard />}
