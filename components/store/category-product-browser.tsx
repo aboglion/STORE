@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Search, X, ArrowUpDown, Tag, Wheat } from "lucide-react";
+import {
+    Search,
+    X,
+    ArrowUpDown,
+    Tag,
+    Wheat,
+    ChevronRight,
+    ChevronLeft,
+} from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,12 +21,38 @@ import {
 import type { Category, ProductWithImages } from "@/types/database.types";
 import { localizedText, type Locale } from "@/lib/i18n/config";
 
-const BATCH_SIZE = 48;
+const PRODUCTS_PER_PAGE = 40;
 
 interface CategoryProductBrowserProps {
     products: ProductWithImages[];
     activeCategory: Category;
     locale: Locale;
+}
+
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+    if (total <= 7) {
+        return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const pages: (number | "...")[] = [];
+    pages.push(1);
+
+    if (current > 3) {
+        pages.push("...");
+    }
+
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+
+    for (let i = start; i <= end; i++) {
+        pages.push(i);
+    }
+
+    if (current < total - 2) {
+        pages.push("...");
+    }
+
+    pages.push(total);
+    return pages;
 }
 
 export function CategoryProductBrowser({
@@ -31,9 +65,9 @@ export function CategoryProductBrowser({
     const [sortBy, setSortBy] = useState<"recommended" | "price_asc" | "price_desc" | "name_asc">("recommended");
     const [onlyOnSale, setOnlyOnSale] = useState(false);
     const [priceRange, setPriceRange] = useState<"all" | "under_15" | "15_30" | "over_30">("all");
-    const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+    const [currentPage, setCurrentPage] = useState(1);
 
-    const loadMoreRef = useRef<HTMLDivElement>(null);
+    const browserTopRef = useRef<HTMLDivElement>(null);
 
     // Available subcategories for this category
     const subcategoryDefs = useMemo(() => {
@@ -122,28 +156,33 @@ export function CategoryProductBrowser({
         subcategoryDefs,
     ]);
 
-    // Reset pagination when filters change
+    // Reset pagination to page 1 when any filter changes
     useEffect(() => {
-        setVisibleCount(BATCH_SIZE);
+        setCurrentPage(1);
     }, [searchQuery, selectedSubcategory, onlyOnSale, priceRange, sortBy]);
 
-    const displayedProducts = filteredProducts.slice(0, visibleCount);
-    const hasMore = visibleCount < filteredProducts.length;
+    // Total pages calculation
+    const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
 
-    // IntersectionObserver to auto-load more on scroll
+    // Ensure currentPage is within bounds
     useEffect(() => {
-        if (!hasMore || !loadMoreRef.current) return;
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0]?.isIntersecting) {
-                    setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filteredProducts.length));
-                }
-            },
-            { rootMargin: "300px" }
-        );
-        observer.observe(loadMoreRef.current);
-        return () => observer.disconnect();
-    }, [hasMore, filteredProducts.length]);
+        if (currentPage > totalPages) {
+            setCurrentPage(1);
+        }
+    }, [currentPage, totalPages]);
+
+    // Slice products for current page: strictly up to 40 items
+    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    const endIndex = Math.min(startIndex + PRODUCTS_PER_PAGE, filteredProducts.length);
+    const displayedProducts = filteredProducts.slice(startIndex, endIndex);
+
+    const handlePageChange = (newPage: number) => {
+        const clamped = Math.max(1, Math.min(newPage, totalPages));
+        setCurrentPage(clamped);
+        if (browserTopRef.current) {
+            browserTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    };
 
     const hasActiveFilters =
         searchQuery.trim() !== "" ||
@@ -158,6 +197,7 @@ export function CategoryProductBrowser({
         setOnlyOnSale(false);
         setPriceRange("all");
         setSortBy("recommended");
+        setCurrentPage(1);
     };
 
     const categoryTitle = localizedText(
@@ -167,7 +207,7 @@ export function CategoryProductBrowser({
     );
 
     return (
-        <div className="space-y-5">
+        <div ref={browserTopRef} className="space-y-5 scroll-mt-20">
             {/* Control Bar: In-Category Search + Sort */}
             <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card/60 p-3.5 shadow-soft backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
                 {/* Search in category */}
@@ -320,12 +360,14 @@ export function CategoryProductBrowser({
                 )}
             </div>
 
-            {/* Count summary */}
+            {/* Count summary & Page info */}
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
                 <span>
                     מציג{" "}
                     <strong className="text-foreground">
-                        {displayedProducts.length.toLocaleString()}
+                        {filteredProducts.length === 0
+                            ? 0
+                            : `${startIndex + 1}–${endIndex}`}
                     </strong>{" "}
                     מתוך{" "}
                     <strong className="text-foreground">
@@ -336,6 +378,11 @@ export function CategoryProductBrowser({
                         <span> (מתוך {products.length.toLocaleString()} במחלקה)</span>
                     )}
                 </span>
+                {totalPages > 1 && (
+                    <span className="font-semibold text-foreground/80">
+                        עמוד {currentPage} מתוך {totalPages} (עד {PRODUCTS_PER_PAGE} בעמוד)
+                    </span>
+                )}
             </div>
 
             {/* Product Grid */}
@@ -364,26 +411,80 @@ export function CategoryProductBrowser({
                         ))}
                     </div>
 
-                    {/* Infinite load trigger & Load more button */}
-                    <div ref={loadMoreRef} className="py-6 flex justify-center">
-                        {hasMore ? (
-                            <Button
-                                variant="outline"
-                                onClick={() =>
-                                    setVisibleCount((prev) =>
-                                        Math.min(prev + BATCH_SIZE, filteredProducts.length)
-                                    )
-                                }
-                                className="rounded-xl px-6 font-bold"
-                            >
-                                טען עוד מוצרים ({Math.min(BATCH_SIZE, filteredProducts.length - visibleCount).toLocaleString()} מתוך {(filteredProducts.length - visibleCount).toLocaleString()} שנותרו)
-                            </Button>
-                        ) : (
-                            <p className="text-xs text-muted-foreground">
-                                ✓ הצגת את כל {filteredProducts.length.toLocaleString()} המוצרים
-                            </p>
-                        )}
-                    </div>
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <nav
+                            aria-label="ניווט בין עמודי מוצרים"
+                            className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 pb-4 border-t border-border/70"
+                        >
+                            <div className="text-xs text-muted-foreground font-medium">
+                                עמוד <strong className="text-foreground">{currentPage}</strong> מתוך{" "}
+                                <strong className="text-foreground">{totalPages}</strong>{" "}
+                                ({filteredProducts.length.toLocaleString()} מוצרים בסה״כ)
+                            </div>
+
+                            <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                                {/* Previous Page Button */}
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage <= 1}
+                                    className="h-9 rounded-xl px-3 text-xs font-bold gap-1"
+                                    aria-label="עבור לעמוד הקודם"
+                                >
+                                    <ChevronRight className="size-4 rtl:rotate-0 rotate-180" />
+                                    <span>הקודם</span>
+                                </Button>
+
+                                {/* Page Number Buttons */}
+                                {getPageNumbers(currentPage, totalPages).map((p, idx) => {
+                                    if (p === "...") {
+                                        return (
+                                            <span
+                                                key={`ellipsis-${idx}`}
+                                                className="px-2 text-xs text-muted-foreground font-bold"
+                                            >
+                                                …
+                                            </span>
+                                        );
+                                    }
+                                    const pageNum = Number(p);
+                                    const isActive = pageNum === currentPage;
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            type="button"
+                                            onClick={() => handlePageChange(pageNum)}
+                                            aria-current={isActive ? "page" : undefined}
+                                            className={`size-9 rounded-xl text-xs font-bold transition-all ${
+                                                isActive
+                                                    ? "bg-primary text-primary-foreground shadow-soft scale-105"
+                                                    : "border border-border/70 bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                                            }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+
+                                {/* Next Page Button */}
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage >= totalPages}
+                                    className="h-9 rounded-xl px-3 text-xs font-bold gap-1"
+                                    aria-label="עבור לעמוד הבא"
+                                >
+                                    <span>הבא</span>
+                                    <ChevronLeft className="size-4 rtl:rotate-0 rotate-180" />
+                                </Button>
+                            </div>
+                        </nav>
+                    )}
                 </>
             )}
         </div>

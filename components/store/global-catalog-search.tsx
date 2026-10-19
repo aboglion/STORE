@@ -78,7 +78,7 @@ export function GlobalCatalogSearch({
 
         setIsLoading(true);
         try {
-            const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=60`);
+            const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=40`);
             if (res.ok) {
                 const data = await res.json();
                 startTransition(() => {
