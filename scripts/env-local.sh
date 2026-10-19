@@ -61,6 +61,13 @@ if [ -z "${DOMAIN}" ] || [ "${DOMAIN}" = "localhost" ]; then
     DOMAIN="$DB_DOMAIN"
     SITE_URL="https://${DOMAIN}"
     echo "🌐 שוחזר דומיין קבוע מבסיס הנתונים: ${DOMAIN}"
+  else
+    SERVER_IP=$(curl -s -m 2 https://api.ipify.org 2>/dev/null || ip route get 1.1.1.1 2>/dev/null | awk '{print $7}' | tr -d '\n' || true)
+    if [ "$SERVER_IP" = "139.162.159.19" ]; then
+      DOMAIN="139.162.159.19.sslip.io"
+      SITE_URL="https://139.162.159.19.sslip.io"
+      echo "🌐 הוגדר דומיין מאובטח אוטומטי לשרת: ${DOMAIN}"
+    fi
   fi
 fi
 

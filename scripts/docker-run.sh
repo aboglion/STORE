@@ -125,12 +125,7 @@ set -a
 # shellcheck disable=SC1091
 source .env.local
 set +a
-if [ -n "${DOMAIN:-}" ] && [ "$DOMAIN" != "localhost" ]; then
-    export HOST_HTTP_PORT="${HOST_HTTP_PORT:-3001}"
-    docker compose --profile ssl up --build -d
-else
-    docker compose up --build -d
-fi
+docker compose up --build -d
 
 # 8. הפעלת שירות הרקע וה-Supervisor (כולל עמידות באתחול שרת / Reboot)
 echo -e "${BLUE}🛡️  מגדיר ומפעיל שירות רקע אוטונומי (Auto-Updater & Boot Supervisor)...${NC}"
