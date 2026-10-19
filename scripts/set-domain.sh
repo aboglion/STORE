@@ -88,11 +88,12 @@ echo -e "${GREEN}✅ קובצי הסביבה (.env.local ו-.env) ובסיס ה�
 
 # 3. הפעלה מחדש של קונטיינרי ה-Docker כך ש-Caddy יקבל את הדומיין החדש
 echo -e "${BLUE}🔄 מעדכן שירותי Docker (Caddy + Web)...${NC}"
+set_env_key "HOST_HTTP_PORT" "3001" "$ENV_FILE"
 set -a
 # shellcheck disable=SC1091
 source "$ENV_FILE"
 set +a
-docker compose up -d
+docker compose --profile ssl up -d
 
 echo ""
 echo -e "${GREEN}${BOLD}============================================================${NC}"

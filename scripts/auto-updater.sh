@@ -89,15 +89,26 @@ ensure_services_running() {
         fi
     fi
 
-    # 2. אימות קונטיינר החנות (store_commerce_prod) וקונטיינר ה-HTTPS (store_commerce_caddy)
-    local is_running caddy_running
+    # 2. אימות קונטיינר החנות (store_commerce_prod) ו-HTTPS אם מוגדר דומיין
+    local is_running caddy_running domain
+    domain="$(grep -E '^DOMAIN=' .env.local 2>/dev/null | cut -d= -f2- || true)"
     is_running=$(docker ps --filter "name=store_commerce_prod" --filter "status=running" -q 2>/dev/null || true)
-    caddy_running=$(docker ps --filter "name=store_commerce_caddy" --filter "status=running" -q 2>/dev/null || true)
-    if [ -z "$is_running" ] || [ -z "$caddy_running" ]; then
-        log "INFO" "שירותי האפליקציה או ה-HTTPS אינם רצים במלואם. מפעיל אותם עכשיו..."
-        docker compose up -d >> "$LOG_FILE" 2>&1 || {
-            log "ERROR" "נכשלה הפעלת docker compose up -d"
-        }
+
+    if [ -n "$domain" ] && [ "$domain" != "localhost" ]; then
+        caddy_running=$(docker ps --filter "name=store_commerce_caddy" --filter "status=running" -q 2>/dev/null || true)
+        if [ -z "$is_running" ] || [ -z "$caddy_running" ]; then
+            log "INFO" "שירותי האפליקציה או ה-HTTPS אינם רצים במלואם. מפעיל אותם עכשיו..."
+            docker compose --profile ssl up -d >> "$LOG_FILE" 2>&1 || {
+                log "ERROR" "נכשלה הפעלת docker compose --profile ssl up -d"
+            }
+        fi
+    else
+        if [ -z "$is_running" ]; then
+            log "INFO" "קונטיינר החנות (store_commerce_prod) אינו רץ. מפעיל אותו עכשיו..."
+            docker compose up -d >> "$LOG_FILE" 2>&1 || {
+                log "ERROR" "נכשלה הפעלת docker compose up -d"
+            }
+        fi
     fi
 }
 
