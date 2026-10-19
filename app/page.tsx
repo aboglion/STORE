@@ -27,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const chipBase =
-    "snap-start shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-150 active:scale-95";
+    "snap-start shrink-0 rounded-full border px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium transition-all duration-150 active:scale-95";
 const chipIdle =
     "border-border/70 bg-card text-muted-foreground shadow-soft hover:text-foreground";
 const chipActive =
@@ -67,7 +67,7 @@ export default async function HomePage({
                         aria-label={t("categoriesAria")}
                         className="-mx-4 snap-x overflow-x-auto px-4 no-scrollbar"
                     >
-                        <div className="flex w-max gap-2">
+                        <div className="flex w-max gap-1.5 sm:gap-2 py-0.5">
                             <Link
                                 href="/"
                                 className={cn(chipBase, chipIdle)}

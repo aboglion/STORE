@@ -103,7 +103,7 @@ export default async function ProductPage({
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
 
-            <div className="mb-4 flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="mb-3 flex items-center gap-1 text-xs text-muted-foreground">
                 <Link href="/" className="transition-colors hover:text-foreground">
                     {t("catalog")}
                 </Link>
@@ -111,7 +111,7 @@ export default async function ProductPage({
                 <span className="truncate font-medium text-foreground">{name}</span>
             </div>
 
-            <div className="grid gap-8 pb-28 md:grid-cols-2 md:pb-0">
+            <div className="grid gap-5 pb-20 md:grid-cols-2 md:gap-8 md:pb-0">
                 <ProductGallery
                     images={product.images.map((img) => ({
                         id: img.id,
@@ -122,24 +122,24 @@ export default async function ProductPage({
                     productSlug={product.slug}
                 />
 
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3 sm:gap-4">
                     {/* Title + category chip */}
                     <div>
                         {category && (
                             <Link
                                 href={`/?category=${category.slug}`}
-                                className="mb-2 inline-flex items-center rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                                className="mb-1.5 inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-[11px] sm:text-xs font-medium text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                             >
                                 {localizedText(locale, category.name_he, category.name_ar)}
                             </Link>
                         )}
-                        <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
+                        <h1 className="font-display text-xl font-extrabold tracking-tight sm:text-2xl md:text-3xl">
                             {name}
                         </h1>
                     </div>
 
                     {/* Buy panel: price, stock, quantity stepper, add-to-cart & delivery */}
-                    <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 shadow-soft md:sticky md:top-24">
+                    <div className="rounded-2xl border border-border/70 bg-card p-3.5 sm:p-5 shadow-soft md:sticky md:top-24">
                         <ProductBuyPanel
                             productId={product.id}
                             productName={name}

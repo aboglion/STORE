@@ -1,9 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ProgressiveImage } from "@/components/ui/progressive-image";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -865,7 +865,7 @@ export function CheckoutView() {
                                     <div key={item.product_id} className="flex items-center gap-3">
                                         <div className="relative aspect-square size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
                                             {detail?.image_url ? (
-                                                <Image
+                                                <ProgressiveImage
                                                     src={detail.image_url}
                                                     alt={name}
                                                     fill

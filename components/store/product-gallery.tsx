@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { useRef, useState } from "react";
 
 import { demoImageUrl } from "@/lib/utils/images";
 import { cn } from "@/lib/utils";
+import { ProgressiveImage } from "@/components/ui/progressive-image";
 
 /**
  * A gallery image with its URL already resolved server-side, so the
@@ -31,13 +31,13 @@ export function ProductGallery({
 
     if (images.length === 0) {
         return (
-            <div className="relative aspect-square overflow-hidden rounded-3xl border border-border/70 bg-muted shadow-soft">
-                <Image
+            <div className="relative h-[250px] sm:h-[300px] md:h-auto md:aspect-square w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-border/70 bg-muted/30 shadow-soft flex items-center justify-center">
+                <ProgressiveImage
                     src={demoImageUrl(productSlug)}
                     alt={productName}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
-                    className="object-cover"
+                    className="object-contain p-3 sm:p-4"
                     priority
                 />
             </div>
@@ -53,9 +53,9 @@ export function ProductGallery({
     };
 
     return (
-        <div className="grid gap-3">
+        <div className="grid gap-2.5 sm:gap-3 w-full max-w-md sm:max-w-lg md:max-w-none mx-auto">
             {/* Main image — swipeable carousel */}
-            <div className="relative aspect-square overflow-hidden rounded-3xl border border-border/70 bg-muted shadow-soft">
+            <div className="relative h-[250px] sm:h-[300px] md:h-auto md:aspect-square w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-border/70 bg-muted/30 shadow-soft">
                 <div
                     ref={scrollerRef}
                     className="flex h-full snap-x snap-mandatory overflow-x-auto no-scrollbar"
@@ -70,20 +70,14 @@ export function ProductGallery({
                             key={image.id}
                             className="relative h-full w-full shrink-0 snap-center"
                         >
-                            <Image
+                            <ProgressiveImage
                                 src={image.url}
                                 alt={image.alt ?? `${productName} ${index + 1}`}
                                 fill
                                 sizes="(max-width: 768px) 100vw, 50vw"
-                                className="object-cover"
+                                className="object-contain p-3 sm:p-4"
                                 priority={index === 0}
-                                onError={(e) => {
-                                    const target = e.currentTarget;
-                                    const fallback = demoImageUrl(productSlug);
-                                    if (!target.src.endsWith(fallback)) {
-                                        target.src = fallback;
-                                    }
-                                }}
+                                fallbackSrc={demoImageUrl(productSlug)}
                             />
                         </div>
                     ))}
@@ -112,32 +106,26 @@ export function ProductGallery({
 
             {/* Thumbnails */}
             {images.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar py-0.5">
                     {images.map((image, index) => (
                         <button
                             key={image.id}
                             type="button"
                             onClick={() => scrollToIndex(index)}
                             className={cn(
-                                "relative aspect-square size-20 shrink-0 overflow-hidden rounded-xl border transition-all duration-150 active:scale-95",
+                                "relative aspect-square size-14 sm:size-20 shrink-0 overflow-hidden rounded-xl border transition-all duration-150 active:scale-95",
                                 index === selected
                                     ? "border-primary ring-2 ring-primary/30 shadow-soft"
                                     : "border-border/70 hover:border-primary/50"
                             )}
                         >
-                            <Image
+                            <ProgressiveImage
                                 src={image.url}
                                 alt={image.alt ?? `${productName} ${index + 1}`}
                                 fill
                                 sizes="80px"
-                                className="object-cover"
-                                onError={(e) => {
-                                    const target = e.currentTarget;
-                                    const fallback = demoImageUrl(productSlug);
-                                    if (!target.src.endsWith(fallback)) {
-                                        target.src = fallback;
-                                    }
-                                }}
+                                className="object-contain p-1"
+                                fallbackSrc={demoImageUrl(productSlug)}
                             />
                         </button>
                     ))}

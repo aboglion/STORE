@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { storageImageUrl } from "@/lib/utils/images";
+import { ProgressiveImage } from "@/components/ui/progressive-image";
 
 /**
  * Storefront category card — a tappable tile with the category's
@@ -27,7 +27,7 @@ export function CategoryCard({
             className="group relative block aspect-[4/3] overflow-hidden rounded-2xl border border-border/70 bg-muted shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift active:scale-[0.98]"
         >
             {src ? (
-                <Image
+                <ProgressiveImage
                     src={src}
                     alt={name}
                     fill

@@ -4,7 +4,11 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { AccessibilityHeaderButton } from "@/components/accessibility/accessibility-widget";
 import { CookieConsentBanner } from "@/components/legal/cookie-consent-banner";
 import { LocaleSwitcher } from "@/components/locale-switcher";
-import { InstallPrompt } from "@/components/pwa/install-prompt";
+import {
+    InstallPrompt,
+    PwaInstallBanner,
+    PwaInstallHeaderButton,
+} from "@/components/pwa/install-prompt";
 import { CartProvider } from "@/contexts/cart-context";
 import { getSettings, getStoreName } from "@/lib/data/storefront";
 import type { Locale } from "@/lib/i18n/config";
@@ -44,7 +48,7 @@ export async function StoreChrome({
                             </span>
                         </Link>
 
-                        <nav className="flex items-center gap-2">
+                        <nav className="flex items-center gap-1.5 sm:gap-2">
                             <Link
                                 href="/"
                                 className="hidden rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:inline-flex"
@@ -63,6 +67,7 @@ export async function StoreChrome({
                             >
                                 {t("cancellation")}
                             </Link>
+                            <PwaInstallHeaderButton />
                             <AccessibilityHeaderButton />
                             <LocaleSwitcher />
                             <CartButton />
@@ -70,7 +75,9 @@ export async function StoreChrome({
                     </div>
                 </header>
 
-                <main id="main-content" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-12 pt-5 sm:pt-8 md:pb-10">
+                <PwaInstallBanner />
+
+                <main id="main-content" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-12 pt-4 sm:pt-6 md:pb-10">
                     {children}
                 </main>
 

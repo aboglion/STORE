@@ -31,6 +31,8 @@ export function AddToCartButton({
     const t = useTranslations("product");
     const [added, setAdded] = useState(false);
 
+    const isSmall = size === "sm";
+
     return (
         <Button
             type="button"
@@ -39,11 +41,12 @@ export function AddToCartButton({
                 fullWidth && "flex-1 w-full min-w-0 shrink",
                 "rounded-full transition-all duration-150",
                 size === "xl" && "font-bold shadow-soft",
+                isSmall && "h-8 px-2 sm:px-3 text-xs",
                 className
             )}
             disabled={disabled}
             aria-label={
-                productName ? t("addToCartAria", { name: productName }) : undefined
+                productName ? t("addToCartAria", { name: productName }) : t("addToCart")
             }
             onClick={() => {
                 addItem(productId, quantity);
@@ -55,16 +58,20 @@ export function AddToCartButton({
             }}
         >
             {disabled ? (
-                t("outOfStock")
+                <span className="truncate">{t("outOfStock")}</span>
             ) : added ? (
                 <>
-                    <Check className="size-5 shrink-0" />
-                    <span className="truncate">{t("addedToCart")}</span>
+                    <Check className={cn(isSmall ? "size-4" : "size-5", "shrink-0 text-emerald-600 dark:text-emerald-400")} />
+                    <span className={cn(isSmall ? "hidden sm:inline ms-1" : "", "truncate")}>
+                        {t("addedToCart")}
+                    </span>
                 </>
             ) : (
                 <>
-                    <ShoppingCart className="size-5 shrink-0" />
-                    <span className="truncate">{t("addToCart")}</span>
+                    <ShoppingCart className={cn(isSmall ? "size-4" : "size-5", "shrink-0")} />
+                    <span className={cn(isSmall ? "hidden sm:inline ms-1" : "", "truncate")}>
+                        {t("addToCart")}
+                    </span>
                 </>
             )}
         </Button>

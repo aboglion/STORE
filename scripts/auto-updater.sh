@@ -259,8 +259,9 @@ run_supervisor() {
             log "INFO" "בודק תקינות תגובת השרת לאחר העדכון..."
             if check_health 45; then
                 log "SUCCESS" "🎉 העדכון הושלם בהצלחה מלאה! האפליקציה רצה ותקינה בקומיט $REMOTE_COMMIT."
-                # ניקוי תמונות ישנות שתופסות מקום בדיסק
+                # ניקוי תמונות ישנות ומטמון בנייה מוגזם למניעת עומס בדיסק
                 docker image prune -f --filter "until=24h" >/dev/null 2>&1 || true
+                docker builder prune -f --filter "until=48h" --reserved-space 5GB >/dev/null 2>&1 || true
                 if [ "$STASHED" -eq 1 ]; then
                     git stash pop >/dev/null 2>&1 || true
                 fi

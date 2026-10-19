@@ -1,9 +1,9 @@
-import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ShoppingBag, Store } from "lucide-react";
 
 import { localizedText, type Locale } from "@/lib/i18n/config";
 import { storageImageUrl } from "@/lib/utils/images";
+import { ProgressiveImage } from "@/components/ui/progressive-image";
 
 export interface StoreHeroProps {
     category?: {
@@ -33,23 +33,23 @@ export async function StoreHero({ category, totalProductsCount }: StoreHeroProps
     const productCount = category?.product_count;
 
     return (
-        <section className="relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-br from-accent via-secondary/70 to-background px-5 py-7 shadow-soft sm:px-8 sm:py-9">
-            <div className="pointer-events-none absolute -top-12 -left-12 size-44 rounded-full bg-primary/10 blur-2xl" />
-            <div className="pointer-events-none absolute -right-8 -bottom-20 size-56 rounded-full bg-primary-deep/10 blur-2xl" />
+        <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-primary/10 bg-gradient-to-br from-accent via-secondary/70 to-background px-4 py-4 sm:px-8 sm:py-9 shadow-soft">
+            <div className="pointer-events-none absolute -top-12 -left-12 size-36 sm:size-44 rounded-full bg-primary/10 blur-2xl max-w-full overflow-hidden" />
+            <div className="pointer-events-none absolute -right-6 -bottom-16 size-40 sm:size-56 rounded-full bg-primary-deep/10 blur-2xl max-w-full overflow-hidden" />
 
-            <div className="relative flex items-center justify-between gap-6">
-                <div className="flex-1">
-                    <div className="mb-2 flex items-center gap-2">
+            <div className="relative flex items-center justify-between gap-4 sm:gap-6">
+                <div className="flex-1 min-w-0">
+                    <div className="mb-1.5 sm:mb-2 flex items-center gap-2">
                         {isCategory ? (
                             typeof productCount === "number" && (
-                                <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary border border-primary/20">
+                                <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[11px] sm:text-xs font-bold text-primary border border-primary/20">
                                     {locale === "ar"
                                         ? `${productCount.toLocaleString()} منتج في هذا القسم`
                                         : `${productCount.toLocaleString()} מוצרים במחלקה זו`}
                                 </span>
                             )
                         ) : typeof totalProductsCount === "number" ? (
-                            <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary border border-primary/20">
+                            <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[11px] sm:text-xs font-bold text-primary border border-primary/20">
                                 {locale === "ar"
                                     ? `✨ أكثر من ${totalProductsCount.toLocaleString()} منتج في 19 قسم`
                                     : `✨ למעלה מ-${totalProductsCount.toLocaleString()} מוצרים ב-19 מחלקות`}
@@ -57,17 +57,17 @@ export async function StoreHero({ category, totalProductsCount }: StoreHeroProps
                         ) : null}
                     </div>
 
-                    <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-4xl text-foreground">
+                    <h1 className="font-display text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground truncate">
                         {title}
                     </h1>
-                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                    <p className="mt-1 sm:mt-2 max-w-xl text-xs sm:text-base leading-relaxed text-muted-foreground line-clamp-2 sm:line-clamp-none">
                         {subtitle}
                     </p>
                 </div>
 
                 <div className="hidden size-24 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary to-primary-deep shadow-lift sm:flex sm:items-center sm:justify-center relative">
                     {imageUrl ? (
-                        <Image
+                        <ProgressiveImage
                             src={imageUrl}
                             alt={title}
                             fill

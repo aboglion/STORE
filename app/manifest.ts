@@ -30,19 +30,22 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     }
 
     return {
+        id: "/",
         name: storeName,
         short_name: isAr ? "جولدن ماركت" : "גולדן מארקט",
         description: isAr
             ? "سوبر ماركت جولدن ماركت رهط — طلب سهل وتوصيل حتى البيت"
             : "סופרמרקט גולדן מארקט רהט — הזמנה קלה ומשלוח עד הבית",
-        start_url: "/",
+        start_url: "/?source=pwa",
         scope: "/",
         display: "standalone",
+        display_override: ["window-controls-overlay", "standalone", "minimal-ui"],
         orientation: "portrait-primary",
         background_color: "#FAF6EE",
         theme_color: "#95582b",
         dir: "rtl",
         lang: locale,
+        categories: ["shopping", "food", "lifestyle"],
         prefer_related_applications: false,
         icons: [
             {

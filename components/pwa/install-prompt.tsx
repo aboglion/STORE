@@ -30,11 +30,26 @@ interface BeforeInstallPromptEvent extends Event {
     prompt(): Promise<void>;
 }
 
+let globalDeferredPrompt: BeforeInstallPromptEvent | null = null;
+
 /**
  * Triggers the install prompt modal manually from any button in the app.
  */
 export function triggerPwaInstall() {
     if (typeof window !== "undefined") {
+        if (globalDeferredPrompt) {
+            globalDeferredPrompt
+                .prompt()
+                .then(() => globalDeferredPrompt?.userChoice)
+                .then((choice) => {
+                    if (choice?.outcome === "accepted") {
+                        globalDeferredPrompt = null;
+                    }
+                })
+                .catch(() => {
+                    window.dispatchEvent(new CustomEvent("open-pwa-install"));
+                });
+        }
         window.dispatchEvent(new CustomEvent("open-pwa-install"));
     }
 }
@@ -65,6 +80,11 @@ export function InstallPrompt() {
 
         if (typeof window === "undefined") return;
 
+        // Register Service Worker in production/supporting environments
+        if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
+            navigator.serviceWorker.register("/sw.js").catch(() => {});
+        }
+
         // 1. Detect standalone mode
         const standaloneCheck =
             window.matchMedia("(display-mode: standalone)").matches ||
@@ -91,6 +111,7 @@ export function InstallPrompt() {
         const handleBeforeInstallPrompt = (e: Event) => {
             e.preventDefault();
             const promptEvent = e as BeforeInstallPromptEvent;
+            globalDeferredPrompt = promptEvent;
             setDeferredPrompt(promptEvent);
 
             // Auto-open on mobile if not dismissed recently
@@ -413,5 +434,133 @@ export function PwaInstallTriggerButton({
             <Smartphone className="size-3.5 text-primary" />
             <span>{t("installOnPhone")}</span>
         </button>
+    );
+}
+
+/**
+ * A prominent, modern, dismissible banner that invites mobile users to install the Web App.
+ */
+export function PwaInstallBanner() {
+    const t = useTranslations("pwa");
+    const [isStandalone, setIsStandalone] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [isDismissed, setIsDismissed] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        if (typeof window === "undefined") return;
+
+        const standaloneCheck =
+            window.matchMedia("(display-mode: standalone)").matches ||
+            (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
+            document.referrer.includes("android-app://");
+        setIsStandalone(standaloneCheck);
+
+        const ua = navigator.userAgent || "";
+        const mobileCheck =
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua) ||
+            window.innerWidth <= 840;
+        setIsMobile(mobileCheck);
+
+        const dismissedSession = sessionStorage.getItem("pwa_banner_dismissed");
+        if (dismissedSession) {
+            setIsDismissed(true);
+        }
+    }, []);
+
+    if (!mounted || isStandalone || isDismissed || !isMobile) return null;
+
+    const handleDismiss = () => {
+        setIsDismissed(true);
+        try {
+            sessionStorage.setItem("pwa_banner_dismissed", "1");
+        } catch {
+            // Ignore storage restrictions
+        }
+    };
+
+    return (
+        <div className="relative mx-auto w-full max-w-5xl px-4 pt-2.5 pb-1">
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-gradient-to-r from-primary/10 via-card to-card p-2.5 sm:p-3 shadow-soft backdrop-blur-md">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="relative size-10 shrink-0 overflow-hidden rounded-xl border border-primary/25 bg-background shadow-xs">
+                        <Image
+                            src="/icon-192.png"
+                            alt="App Icon"
+                            width={40}
+                            height={40}
+                            className="size-full object-cover"
+                        />
+                    </div>
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                            <h3 className="text-xs font-bold text-foreground truncate">{t("bannerTitle")}</h3>
+                            <span className="inline-flex rounded-full bg-primary/15 px-1.5 py-0.2 text-[9px] font-extrabold text-primary">PWA</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground truncate">{t("bannerSubtitle")}</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                    <Button
+                        type="button"
+                        size="sm"
+                        onClick={triggerPwaInstall}
+                        className="h-8 rounded-xl px-3 text-xs font-bold gap-1.5 shadow-sm"
+                    >
+                        <Download className="size-3.5" />
+                        <span>{t("install")}</span>
+                    </Button>
+                    <button
+                        type="button"
+                        onClick={handleDismiss}
+                        className="flex size-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                        aria-label={t("laterButton")}
+                    >
+                        <X className="size-3.5" />
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * A header button that appears on mobile and desktop allowing direct web app installation.
+ */
+export function PwaInstallHeaderButton({ className }: { className?: string }) {
+    const t = useTranslations("pwa");
+    const [isStandalone, setIsStandalone] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        if (typeof window === "undefined") return;
+        const standaloneCheck =
+            window.matchMedia("(display-mode: standalone)").matches ||
+            (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
+            document.referrer.includes("android-app://");
+        setIsStandalone(standaloneCheck);
+    }, []);
+
+    if (!mounted || isStandalone) return null;
+
+    return (
+        <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={triggerPwaInstall}
+            className={cn(
+                "h-8 sm:h-9 rounded-full border-primary/30 bg-primary/5 text-xs font-bold text-primary hover:bg-primary/10 gap-1.5 px-2.5 sm:px-3 shadow-xs",
+                className
+            )}
+            aria-label={t("installApp")}
+        >
+            <Download className="size-3.5 shrink-0 text-primary animate-pulse" />
+            <span className="hidden sm:inline">{t("installApp")}</span>
+            <span className="sm:hidden">{t("install")}</span>
+        </Button>
     );
 }

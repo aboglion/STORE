@@ -1,21 +1,74 @@
+# Dependency & build outputs
 node_modules
 .next
-.git
-.supabase-initialized
-tests
-plans
 coverage
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Git & VCS
+.git
+.gitignore
+
+# Environment files (runtime injected / build args used)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Logs & temporary files
+logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+*.swp
+*~
+.~lock*
+.backups-dev
+
+# Archives & database dumps
+*.tar.gz
+*.zip
+*.dump
+*.sql.gz
+
+# Local documentation & planning
+plans
+tests
+README.md
+*.md
+
+# Catalog & media source data (stored in Supabase Storage, not in web container)
 catalog
 images_CAT
 store-backups
 backups
-logs
-*.tar.gz
-*.zip
-*.dump
+
+# Supabase local development state
 supabase/.temp
 supabase/.branches
+.supabase-initialized
+
+# Development & utility scripts not needed in web container
+scripts/*.py
 scripts/*.json
-scripts/duplicate_images_replacement_report.json
-scripts/import-report.json
+scripts/*.mjs
+scripts/docker-run.sh
+scripts/run.sh
+scripts/setup.sh
+scripts/service.sh
+scripts/auto-updater.sh
+scripts/install-*.sh
+scripts/backup-host.sh
+scripts/create-admin.sh
+scripts/env-local.sh
+
+# Config files not needed at container build time
+components.json
+vitest.config.ts
+eslint.config.mjs
+Makefile
+Dockerfile*
+docker-compose*.yml

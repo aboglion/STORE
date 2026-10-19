@@ -61,10 +61,13 @@ const nextConfig = {
         dangerouslyAllowSVG: true,
         // Sandboxed SVG optimization endpoint (no scripts allowed).
         contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-        // Serve modern formats to mobile browsers.
-        formats: ["image/avif", "image/webp"],
-        // Cache optimized images for at least an hour.
-        minimumCacheTTL: 3600,
+        // Serve modern WebP first for fast CPU transcoding, followed by AVIF.
+        formats: ["image/webp", "image/avif"],
+        // Cache optimized images for 30 days (avoids repeated CPU transcoding).
+        minimumCacheTTL: 2592000,
+        // Tailored device & image sizes to avoid oversized mobile payloads
+        deviceSizes: [360, 480, 640, 750, 828, 1080, 1200],
+        imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
         remotePatterns: [
             {
                 protocol: "https",

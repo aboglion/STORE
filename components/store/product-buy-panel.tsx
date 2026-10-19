@@ -74,60 +74,60 @@ export function ProductBuyPanel({
 
     return (
         <>
-            <div ref={inlineRef} className="flex flex-col gap-4">
+            <div ref={inlineRef} className="flex flex-col gap-3 sm:gap-4">
                 <div className="flex items-end justify-between gap-3">
                     <div>
                         <div className="flex items-baseline gap-2">
-                            <span className="font-display text-3xl font-extrabold text-primary">
+                            <span className="font-display text-2xl sm:text-3xl font-extrabold text-primary">
                                 {formatILS(totalPriceAgorot, locale)}
                             </span>
-                            <span className="text-xs font-semibold text-muted-foreground">
+                            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground">
                                 ({t("includingVat")})
                             </span>
                             {onSale && totalCompareAtPriceAgorot != null && (
-                                <span className="text-lg text-muted-foreground line-through">
+                                <span className="text-sm sm:text-lg text-muted-foreground line-through">
                                     {formatILS(totalCompareAtPriceAgorot, locale)}
                                 </span>
                             )}
                         </div>
                         {quantity > 1 && (
-                            <p className="mt-0.5 text-xs font-medium text-muted-foreground">
+                            <p className="mt-0.5 text-[11px] sm:text-xs font-medium text-muted-foreground">
                                 {formatILS(priceAgorot, locale)} {t("perUnit")}
                             </p>
                         )}
                         {discountPercent != null && (
-                            <span className="mt-1.5 inline-block rounded-full bg-[oklch(0.6_0.17_40)]/15 px-2.5 py-0.5 text-xs font-bold text-[oklch(0.45_0.13_35)]">
+                            <span className="mt-1 sm:mt-1.5 inline-block rounded-full bg-[oklch(0.6_0.17_40)]/15 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-bold text-[oklch(0.45_0.13_35)]">
                                 {t("discountPercent", { percent: discountPercent })}
                             </span>
                         )}
                     </div>
 
                     {outOfStock ? (
-                        <Badge variant="destructive">{t("outOfStock")}</Badge>
+                        <Badge variant="destructive" className="text-xs">{t("outOfStock")}</Badge>
                     ) : lowStock ? (
-                        <Badge className="border-transparent bg-[oklch(0.6_0.17_40)]/15 text-[oklch(0.45_0.13_35)]">
+                        <Badge className="border-transparent bg-[oklch(0.6_0.17_40)]/15 text-[oklch(0.45_0.13_35)] text-xs">
                             {t("lowStock", { count: stockQuantity })}
                         </Badge>
                     ) : (
-                        <Badge className="border-transparent bg-[oklch(0.6_0.1_130)]/15 text-[oklch(0.45_0.09_130)]">
+                        <Badge className="border-transparent bg-[oklch(0.6_0.1_130)]/15 text-[oklch(0.45_0.09_130)] text-xs">
                             {t("inStock")}
                         </Badge>
                     )}
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2 sm:gap-2.5">
                     {!outOfStock && (
                         <QuantityStepper
                             value={quantity}
                             onChange={setQuantity}
                             max={stockQuantity}
-                            size="lg"
+                            size="md"
                         />
                     )}
                     <AddToCartButton
                         productId={productId}
                         productName={productName}
-                        size="xl"
+                        size="lg"
                         fullWidth
                         disabled={outOfStock}
                         quantity={quantity}
@@ -153,19 +153,19 @@ export function ProductBuyPanel({
                 style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0.75rem))" }}
                 aria-hidden={isInlineInView}
             >
-                <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 pt-2.5 pb-1">
+                <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 pt-2 pb-1">
                     <div className="flex min-w-0 flex-col">
                         <div className="flex items-baseline gap-1.5">
-                            <span className="font-display text-lg font-extrabold text-primary">
+                            <span className="font-display text-base sm:text-lg font-extrabold text-primary">
                                 {formatILS(totalPriceAgorot, locale)}
                             </span>
                             {onSale && totalCompareAtPriceAgorot != null && (
-                                <span className="text-xs text-muted-foreground line-through">
+                                <span className="text-[11px] sm:text-xs text-muted-foreground line-through">
                                     {formatILS(totalCompareAtPriceAgorot, locale)}
                                 </span>
                             )}
                         </div>
-                        <span className="truncate text-[11px] font-medium text-muted-foreground">
+                        <span className="truncate text-[10px] sm:text-[11px] font-medium text-muted-foreground">
                             {quantity > 1
                                 ? `${formatILS(priceAgorot, locale)} ${t("perUnit")}`
                                 : `(${t("includingVat")})`}
@@ -184,10 +184,10 @@ export function ProductBuyPanel({
                         <AddToCartButton
                             productId={productId}
                             productName={productName}
-                            size="lg"
+                            size="default"
                             disabled={outOfStock}
                             quantity={quantity}
-                            className="px-5 shadow-sm"
+                            className="px-4 shadow-sm"
                         />
                     </div>
                 </div>

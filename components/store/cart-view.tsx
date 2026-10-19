@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { ProgressiveImage } from "@/components/ui/progressive-image";
 
 import { Loader2, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 
@@ -113,7 +113,7 @@ export function CartView() {
                                 >
                                     <div className="relative aspect-square size-20 shrink-0 overflow-hidden rounded-xl bg-muted">
                                         {detail?.image_url ? (
-                                            <Image
+                                            <ProgressiveImage
                                                 src={detail.image_url}
                                                 alt={name}
                                                 fill

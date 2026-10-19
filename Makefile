@@ -9,7 +9,7 @@
 
 SUPABASE := npx supabase
 
-.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install install_d INSTALL_D install-d INSTALL-D db-start db-stop db-reset db-status env admin build test lint typecheck init init-db INIT_DB status service-logs updater-logs backup restore backups backup-host
+.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install install_d INSTALL_D install-d INSTALL-D db-start db-stop db-reset db-status env admin build test lint typecheck init init-db INIT_DB status service-logs updater-logs backup restore backups backup-host clean CLEAN
 
 help: ## הצגת רשימת הפקודות הזמינות
 	@echo "\033[1;33mמערכת מסחר — פקודות Make זמינות:\033[0m"
@@ -163,3 +163,15 @@ backups: ## הצגת רשימת הגיבויים השמורים (החדשים ב
 
 backup-host: ## הפעלה ידנית של תזמון הגיבויים ועיבוד תור ה-Storage (מארח)
 	bash scripts/backup-host.sh
+
+# ------------------------------------------------------------
+# ניקוי קבצי זבל ומטמון בנייה (Clean Junk & Build Cache)
+# ------------------------------------------------------------
+clean: ## ניקוי קבצי זבל, מטמון מקומי ומטמון בנייה של Docker (פינוי מקום והאצת בנייה)
+	@echo "🧹 מנקה קבצי זבל, מטמון מקומי ומטמון Docker..."
+	@rm -rf .next/cache tsconfig.tsbuildinfo images_CAT .backups-dev
+	@docker builder prune -f --filter "until=48h" --reserved-space 3GB 2>/dev/null || true
+	@docker image prune -f 2>/dev/null || true
+	@echo "✅ הניקוי הושלם בהצלחה!"
+
+CLEAN: clean ## כינוי עבור make clean

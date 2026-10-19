@@ -209,7 +209,7 @@ export function CategoryProductBrowser({
     return (
         <div ref={browserTopRef} className="space-y-5 scroll-mt-20">
             {/* Control Bar: In-Category Search + Sort */}
-            <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card/60 p-3.5 shadow-soft backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl border border-border/70 bg-card/60 p-2.5 sm:p-3.5 shadow-soft backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
                 {/* Search in category */}
                 <div className="relative flex-1">
                     <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -222,7 +222,7 @@ export function CategoryProductBrowser({
                                 ? `بحث داخل ${categoryTitle} (${products.length.toLocaleString()} منتج)...`
                                 : `חיפוש בתוך ${categoryTitle} (${products.length.toLocaleString()} מוצרים)...`
                         }
-                        className="h-10 w-full rounded-xl border-border/80 bg-background/80 pe-9 ps-9 text-sm focus-visible:ring-primary/20"
+                        className="h-9 sm:h-10 w-full rounded-xl border-border/80 bg-background/80 pe-9 ps-9 text-base sm:text-sm focus-visible:ring-primary/20"
                     />
                     {searchQuery && (
                         <button
@@ -236,11 +236,11 @@ export function CategoryProductBrowser({
                 </div>
 
                 {/* Quick Controls: Sale toggle + Sort */}
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                     <button
                         type="button"
                         onClick={() => setOnlyOnSale(!onlyOnSale)}
-                        className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
+                        className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold transition-colors ${
                             onlyOnSale
                                 ? "border-primary bg-primary text-primary-foreground shadow-sm"
                                 : "border-border/80 bg-background text-muted-foreground hover:bg-muted"
@@ -250,15 +250,15 @@ export function CategoryProductBrowser({
                         <span>{locale === "ar" ? "عروض فقط" : "מבצעים בלבד"}</span>
                     </button>
 
-                    <div className="flex items-center gap-1.5 rounded-xl border border-border/80 bg-background px-2.5 py-1.5">
+                    <div className="flex items-center gap-1.5 rounded-xl border border-border/80 bg-background px-2.5 py-1 sm:py-1.5">
                         <ArrowUpDown className="size-3.5 text-muted-foreground" />
                         <select
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                            className="bg-transparent text-xs font-semibold focus:outline-none"
+                            className="bg-transparent text-sm sm:text-xs font-semibold focus:outline-none"
                             aria-label={locale === "ar" ? "ترتيب المنتجات" : "מיון מוצרים"}
                         >
-                            <option value="recommended">{locale === "ar" ? "موصى به" : "מומלץ"}</option>
+                            <option value="recommended">{locale === "ar" ? "מوصى به" : "מומלץ"}</option>
                             <option value="price_asc">{locale === "ar" ? "السعر: من الأقل للأعلى" : "מחיר: נמוך לגבוה"}</option>
                             <option value="price_desc">{locale === "ar" ? "السعر: من الأعلى للأقل" : "מחיר: גבוה לנמוך"}</option>
                             <option value="name_asc">{locale === "ar" ? "الاسم: أ إلى ي" : "שם: א׳ עד ת׳"}</option>
@@ -270,11 +270,11 @@ export function CategoryProductBrowser({
             {/* Subcategory Chips Row */}
             {subcategoriesWithCounts.length > 0 && (
                 <div className="space-y-1.5">
-                    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 no-scrollbar">
+                    <div className="-mx-4 flex gap-1.5 sm:gap-2 overflow-x-auto px-4 no-scrollbar">
                         <button
                             type="button"
                             onClick={() => setSelectedSubcategory("all")}
-                            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                            className={`shrink-0 rounded-full border px-3 py-1 sm:px-3.5 sm:py-1.5 text-xs font-semibold transition-all ${
                                 selectedSubcategory === "all"
                                     ? "border-transparent bg-primary text-primary-foreground shadow-soft"
                                     : "border-border/70 bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -417,7 +417,7 @@ export function CategoryProductBrowser({
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
                         {displayedProducts.map((product, index) => (
                             <ProductCard
                                 key={product.id}
@@ -432,9 +432,9 @@ export function CategoryProductBrowser({
                     {totalPages > 1 && (
                         <nav
                             aria-label={locale === "ar" ? "التنقل بين صفحات المنتجات" : "ניווט בין עמודי מוצרים"}
-                            className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 pb-4 border-t border-border/70"
+                            className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-5 pb-3 border-t border-border/70"
                         >
-                            <div className="text-xs text-muted-foreground font-medium">
+                            <div className="text-[11px] sm:text-xs text-muted-foreground font-medium text-center sm:text-start">
                                 {locale === "ar" ? (
                                     <>
                                         صفحة <strong className="text-foreground">{currentPage}</strong> من{" "}
@@ -450,7 +450,7 @@ export function CategoryProductBrowser({
                                 )}
                             </div>
 
-                            <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center">
                                 {/* Previous Page Button */}
                                 <Button
                                     type="button"
@@ -458,10 +458,10 @@ export function CategoryProductBrowser({
                                     size="sm"
                                     onClick={() => handlePageChange(currentPage - 1)}
                                     disabled={currentPage <= 1}
-                                    className="h-9 rounded-xl px-3 text-xs font-bold gap-1"
+                                    className="h-8 sm:h-9 rounded-lg sm:rounded-xl px-2.5 sm:px-3 text-xs font-bold gap-1"
                                     aria-label={locale === "ar" ? "الانتقال للصفحة السابقة" : "עבור לעמוד הקודם"}
                                 >
-                                    <ChevronRight className="size-4 rtl:rotate-0 rotate-180" />
+                                    <ChevronRight className="size-3.5 sm:size-4 rtl:rotate-0 rotate-180" />
                                     <span>{locale === "ar" ? "السابق" : "הקודם"}</span>
                                 </Button>
 
@@ -471,7 +471,7 @@ export function CategoryProductBrowser({
                                         return (
                                             <span
                                                 key={`ellipsis-${idx}`}
-                                                className="px-2 text-xs text-muted-foreground font-bold"
+                                                className="px-1.5 text-xs text-muted-foreground font-bold"
                                             >
                                                 …
                                             </span>
@@ -485,7 +485,7 @@ export function CategoryProductBrowser({
                                             type="button"
                                             onClick={() => handlePageChange(pageNum)}
                                             aria-current={isActive ? "page" : undefined}
-                                            className={`size-9 rounded-xl text-xs font-bold transition-all ${
+                                            className={`size-8 sm:size-9 rounded-lg sm:rounded-xl text-xs font-bold transition-all ${
                                                 isActive
                                                     ? "bg-primary text-primary-foreground shadow-soft scale-105"
                                                     : "border border-border/70 bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -503,11 +503,11 @@ export function CategoryProductBrowser({
                                     size="sm"
                                     onClick={() => handlePageChange(currentPage + 1)}
                                     disabled={currentPage >= totalPages}
-                                    className="h-9 rounded-xl px-3 text-xs font-bold gap-1"
+                                    className="h-8 sm:h-9 rounded-lg sm:rounded-xl px-2.5 sm:px-3 text-xs font-bold gap-1"
                                     aria-label={locale === "ar" ? "الانتقال للصفحة التالية" : "עבור לעמוד הבא"}
                                 >
                                     <span>{locale === "ar" ? "التالي" : "הבא"}</span>
-                                    <ChevronLeft className="size-4 rtl:rotate-0 rotate-180" />
+                                    <ChevronLeft className="size-3.5 sm:size-4 rtl:rotate-0 rotate-180" />
                                 </Button>
                             </div>
                         </nav>

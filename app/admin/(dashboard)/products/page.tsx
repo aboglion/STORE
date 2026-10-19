@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import { ProgressiveImage } from "@/components/ui/progressive-image";
 
 import { Pencil, Plus } from "lucide-react";
 
@@ -127,7 +127,7 @@ export default async function AdminProductsPage({ searchParams }: Props) {
                                 <TableRow key={product.id}>
                                     <TableCell>
                                         <div className="relative aspect-square size-10 overflow-hidden rounded-md border bg-muted">
-                                            <Image
+                                            <ProgressiveImage
                                                 src={productImageUrl(image?.storage_path, product.slug)}
                                                 alt={image?.alt_text ?? name}
                                                 fill
