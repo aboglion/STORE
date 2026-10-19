@@ -106,6 +106,12 @@ const nextConfig = {
             "@radix-ui/react-tooltip",
         ],
     },
+    webpack(config) {
+        config.infrastructureLogging = {
+            level: "error",
+        };
+        return config;
+    },
 };
 
 export default withNextIntl(nextConfig);
