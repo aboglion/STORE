@@ -2,23 +2,19 @@
 # Production Dockerfile for Next.js Storefront & Admin
 # ============================================================
 
-FROM node:22-alpine AS deps
+FROM node:22-alpine AS builder
 RUN apk add --no-cache libc6-compat tzdata
 ENV TZ=Asia/Jerusalem
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm install --prefer-offline --no-audit
 
-FROM node:22-alpine AS builder
-RUN apk add --no-cache tzdata
-ENV TZ=Asia/Jerusalem
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY

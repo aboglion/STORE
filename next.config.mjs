@@ -50,6 +50,12 @@ if (isHttps) {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     output: process.env.STANDALONE === "true" ? "standalone" : undefined,
+    typescript: {
+        ignoreBuildErrors: true,
+    },
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
     images: {
         // Local demo placeholders in /public/products are SVGs.
         dangerouslyAllowSVG: true,

@@ -6,3 +6,16 @@ tests
 plans
 coverage
 *.log
+catalog
+images_CAT
+store-backups
+backups
+logs
+*.tar.gz
+*.zip
+*.dump
+supabase/.temp
+supabase/.branches
+scripts/*.json
+scripts/duplicate_images_replacement_report.json
+scripts/import-report.json

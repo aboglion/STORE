@@ -17,6 +17,19 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# טעינת משתני סביבה מ-.env.local או .env במידה וקיימים
+if [ -f "$ROOT_DIR/.env.local" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT_DIR/.env.local" 2>/dev/null || true
+  set +a
+elif [ -f "$ROOT_DIR/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT_DIR/.env" 2>/dev/null || true
+  set +a
+fi
+
 HAS_CUSTOM_EMAIL=0
 if [ -n "${ADMIN_EMAIL+x}" ]; then
   HAS_CUSTOM_EMAIL=1
@@ -29,6 +42,7 @@ fi
 
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@example.com}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin1234}"
+SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}"
 
 STATUS_ENV="$(npx supabase status -o env 2>/dev/null || true)"
 API_URL="$(printf '%s\n' "${STATUS_ENV}" | sed -n 's/^API_URL="\(.*\)"/\1/p')"
@@ -119,4 +133,14 @@ curl -sS -X POST "${REST_URL}/admin_profiles" \
   -d "{\"id\":\"${USER_ID}\",\"email\":\"${ADMIN_EMAIL}\",\"role\":\"admin\"}" >/dev/null
 
 echo "✅ Admin ready in database: ${ADMIN_EMAIL}"
-echo "   Login at http://localhost:3000/admin/login"
+echo "   Login at ${SITE_URL}/admin/login"
+
+if [ "${ADMIN_EMAIL}" = "admin@example.com" ] && [ "${ADMIN_PASSWORD}" = "admin1234" ]; then
+  echo ""
+  echo "⚠️  שים לב (סביבת ייצור / Production):"
+  echo "   המערכת אותחלה עם פרטי ברירת מחדל זמניים (admin@example.com / admin1234)."
+  echo "   חובה לשנות את הסיסמה והאימייל בהקדם דרך מסך ההגדרות בדשבורד:"
+  echo "     ${SITE_URL}/admin/settings"
+  echo "   או באמצעות פקודת Make:"
+  echo "     ADMIN_EMAIL=myemail@domain.com ADMIN_PASSWORD=StrongPassword123! make admin"
+fi

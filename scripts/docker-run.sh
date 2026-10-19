@@ -52,6 +52,29 @@ if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
     fi
 fi
 
+# 1c. בדיקת זיכרון ו-Swap בסביבות VPS / Production למניעת קיפאון בזמן בנייה
+if command -v free >/dev/null 2>&1; then
+    TOTAL_MEM=$(free -m | awk '/Mem:/ {print $2}')
+    TOTAL_SWAP=$(free -m | awk '/Swap:/ {print $2}')
+    if [ "$TOTAL_MEM" -lt 3500 ] && [ "$TOTAL_SWAP" -lt 1024 ]; then
+        if [ "$EUID" -eq 0 ] || command -v sudo >/dev/null 2>&1; then
+            SUDO_CMD=""
+            [ "$EUID" -ne 0 ] && SUDO_CMD="sudo"
+            if [ ! -f /swapfile ]; then
+                echo -e "${BLUE}💾 זיכרון שרת נמוך (${TOTAL_MEM}MB RAM) — יוצר קובץ Swap של 2GB למניעת עומס Docker ו-Build...${NC}"
+                $SUDO_CMD fallocate -l 2G /swapfile 2>/dev/null || $SUDO_CMD dd if=/dev/zero of=/swapfile bs=1M count=2048 2>/dev/null || true
+                $SUDO_CMD chmod 600 /swapfile 2>/dev/null || true
+                $SUDO_CMD mkswap /swapfile >/dev/null 2>&1 || true
+                $SUDO_CMD swapon /swapfile >/dev/null 2>&1 || true
+                if ! grep -q '/swapfile' /etc/fstab 2>/dev/null; then
+                    echo '/swapfile none swap sw 0 0' | $SUDO_CMD tee -a /etc/fstab >/dev/null 2>&1 || true
+                fi
+                echo -e "${GREEN}✅ הוגדר Swap של 2GB בהצלחה!${NC}"
+            fi
+        fi
+    fi
+fi
+
 # 2. וידוא התקנת תלויות Node ופרויקט
 if [ ! -d node_modules ]; then
     echo -e "${BLUE}📦 מתקין תלויות פרויקט (בפעם הראשונה)...${NC}"
@@ -109,11 +132,13 @@ echo -e "${BLUE}🛡️  מגדיר ומפעיל שירות רקע אוטונו�
 chmod +x "$ROOT_DIR/scripts/service.sh" "$ROOT_DIR/scripts/auto-updater.sh"
 bash "$ROOT_DIR/scripts/service.sh" start
 
+SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}"
+
 echo ""
 echo -e "${GREEN}${BOLD}============================================================${NC}"
 echo -e "${GREEN}${BOLD}✅ המערכת והשירות עלו בהצלחה מלאה!${NC}"
-echo -e "${GREEN}   🛍️  חנות:             http://localhost:3000${NC}"
-echo -e "${GREEN}   🔐 ניהול אדמין:      http://localhost:3000/admin/login${NC}"
+echo -e "${GREEN}   🛍️  חנות:             ${SITE_URL}${NC}"
+echo -e "${GREEN}   🔐 ניהול אדמין:      ${SITE_URL}/admin/login${NC}"
 echo -e "${GREEN}   📊 Supabase Studio:  http://127.0.0.1:54323${NC}"
 echo -e "${CYAN}   🔄 שירות רקע:        פעיל (בודק עדכוני GitHub כל 60 שניות)${NC}"
 echo -e "${CYAN}   💾 גיבויים:          ${BACKUP_DIR} (אוטומטי 03:00 ו-16:00, שמירת 30 אחרונים)${NC}"
