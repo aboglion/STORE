@@ -4,14 +4,21 @@ import localFont from "next/font/local";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
+import { headers } from "next/headers";
+
 import { AccessibilityWidget } from "@/components/accessibility/accessibility-widget";
+import { MaintenanceGuard } from "@/components/maintenance-guard";
+import { MaintenanceScreen } from "@/components/maintenance-screen";
 import { PwaRegister } from "@/components/pwa/pwa-register";
 import { NavigationProgress } from "@/components/ui/navigation-progress";
 import { Toaster } from "@/components/ui/sonner";
 import { getPublicSettings } from "@/lib/data/storefront";
+import { isMaintenanceActive } from "@/lib/server/backups";
 import { DEFAULT_STORE_THEME } from "@/lib/theme";
 
 import "./globals.css";
+
+export const dynamic = "force-dynamic";
 
 const notoSansHebrew = localFont({
     src: "../public/fonts/noto-sans-hebrew.woff2",
@@ -101,6 +108,30 @@ export default async function RootLayout({
         theme = DEFAULT_STORE_THEME;
     }
 
+    const headersList = await headers();
+    const pathname = headersList.get("x-pathname") || "";
+    const isAdmin = pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
+
+    if (isMaintenanceActive() && !isAdmin) {
+        return (
+            <html
+                lang={locale}
+                dir="rtl"
+                data-theme={theme}
+                className={`${notoSansHebrew.variable} ${frankRuhlLibre.variable} ${notoSansArabic.variable} ${cairo.variable}`}
+            >
+                <head>
+                    <meta httpEquiv="refresh" content="5" />
+                </head>
+                <body className="min-h-screen font-sans antialiased bg-[#090d16]">
+                    <NextIntlClientProvider locale={locale} messages={messages} timeZone="Asia/Jerusalem">
+                        <MaintenanceScreen />
+                    </NextIntlClientProvider>
+                </body>
+            </html>
+        );
+    }
+
     return (
         <html
             lang={locale}
@@ -110,6 +141,7 @@ export default async function RootLayout({
         >
             <body className="min-h-screen font-sans antialiased">
                 <NextIntlClientProvider locale={locale} messages={messages} timeZone="Asia/Jerusalem">
+                    {!isAdmin && <MaintenanceGuard />}
                     <PwaRegister />
                     <Suspense fallback={null}>
                         <NavigationProgress />

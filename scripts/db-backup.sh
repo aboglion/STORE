@@ -27,7 +27,7 @@ BACKUP_TZ="${BACKUP_TZ:-Asia/Jerusalem}"
 export TZ="${TZ:-$BACKUP_TZ}"
 
 TYPE="${1:-manual}"
-case "$TYPE" in manual|scheduled|pre-restore) ;; *) TYPE="manual" ;; esac
+case "$TYPE" in manual|scheduled|pre-restore|uploaded) ;; *) TYPE="manual" ;; esac
 
 LOG_FILE="$BACKUP_DIR/backups.log"
 LOCK_FILE="$BACKUP_DIR/.backup.lock"
@@ -106,13 +106,60 @@ DB_SIZE="$(du -h "$BACKUP_PATH/db.dump" | awk '{print $1}')"
 
 # 2) Storage files (product images, logos) — read-only mount of the volume.
 STORAGE_SIZE=""
+STORAGE_UNCHANGED=false
+STORAGE_HASH=""
+
 if [ -d "$STORAGE_DIR" ] && [ -n "$(ls -A "$STORAGE_DIR" 2>/dev/null)" ]; then
-    if tar czf "$BACKUP_PATH/storage.tar.gz" -C "$STORAGE_DIR" . 2>>"$LOG_FILE"; then
-        STORAGE_SIZE="$(du -h "$BACKUP_PATH/storage.tar.gz" | awk '{print $1}')"
-        log "OK: storage archive created (${STORAGE_SIZE})"
-    else
-        log "WARN: storage tar failed — continuing with DB-only backup"
-        rm -f "$BACKUP_PATH/storage.tar.gz"
+    # Calculate fast fingerprint: path, size, and mtime of all files
+    STORAGE_HASH="$(find "$STORAGE_DIR" -type f -exec stat -c "%n %s %Y" {} + 2>/dev/null | sort | sha256sum | awk '{print $1}')"
+
+    # Find the most recent backup folder with a valid storage.tar.gz
+    PREV_STORAGE_DIR=""
+    for d in $(ls -1 "$BACKUP_DIR" 2>/dev/null | grep -E '^[0-9]{8}T[0-9]{6}Z_(manual|scheduled|pre-restore|uploaded)$' | sort -r || true); do
+        if [ "$d" != "${TS}_${TYPE}" ] && [ -f "$BACKUP_DIR/$d/storage.tar.gz" ]; then
+            PREV_STORAGE_DIR="$BACKUP_DIR/$d"
+            break
+        fi
+    done
+
+    # Check if images have not changed since that backup
+    REUSE_STORAGE=0
+    if [ -n "$PREV_STORAGE_DIR" ] && [ -n "$STORAGE_HASH" ]; then
+        if [ -f "$PREV_STORAGE_DIR/storage.sha256" ]; then
+            PREV_HASH="$(cat "$PREV_STORAGE_DIR/storage.sha256" 2>/dev/null || true)"
+            if [ "$PREV_HASH" = "$STORAGE_HASH" ]; then
+                REUSE_STORAGE=1
+            fi
+        else
+            # Fallback for previous backups created before sha256 tracking:
+            # check if any files in storage are newer than the previous archive
+            NEWER_COUNT="$(find "$STORAGE_DIR" -type f -newer "$PREV_STORAGE_DIR/storage.tar.gz" 2>/dev/null | head -n 1 | wc -l)"
+            if [ "$NEWER_COUNT" -eq 0 ]; then
+                REUSE_STORAGE=1
+            fi
+        fi
+    fi
+
+    if [ "$REUSE_STORAGE" -eq 1 ]; then
+        # Images did NOT change! Hard-link the archive (0 bytes duplicated, 0s compression time)
+        if ln "$PREV_STORAGE_DIR/storage.tar.gz" "$BACKUP_PATH/storage.tar.gz" 2>/dev/null; then
+            STORAGE_SIZE="$(du -h "$BACKUP_PATH/storage.tar.gz" | awk '{print $1}')"
+            STORAGE_UNCHANGED=true
+            echo "$STORAGE_HASH" > "$BACKUP_PATH/storage.sha256" 2>/dev/null || true
+            log "OK: storage unchanged (${STORAGE_HASH:0:8}...) — reused archive from $(basename "$PREV_STORAGE_DIR") without re-compressing"
+        fi
+    fi
+
+    # If not reused (new images / changed images / first run)
+    if [ "$STORAGE_UNCHANGED" != "true" ]; then
+        if tar czf "$BACKUP_PATH/storage.tar.gz" -C "$STORAGE_DIR" . 2>>"$LOG_FILE"; then
+            STORAGE_SIZE="$(du -h "$BACKUP_PATH/storage.tar.gz" | awk '{print $1}')"
+            [ -n "$STORAGE_HASH" ] && echo "$STORAGE_HASH" > "$BACKUP_PATH/storage.sha256" 2>/dev/null || true
+            log "OK: storage archive created (${STORAGE_SIZE})"
+        else
+            log "WARN: storage tar failed — continuing with DB-only backup"
+            rm -f "$BACKUP_PATH/storage.tar.gz"
+        fi
     fi
 else
     log "WARN: storage mount empty/absent — skipping storage archive"
@@ -131,6 +178,8 @@ cat > "$BACKUP_PATH/meta.json" <<EOF
   "label_time": "$LABEL_TIME",
   "db_size": "$DB_SIZE",
   "storage_size": "${STORAGE_SIZE:-}",
+  "storage_unchanged": $STORAGE_UNCHANGED,
+  "storage_hash": "$STORAGE_HASH",
   "total_size": "$TOTAL_SIZE",
   "pg_version": "$PG_VERSION"
 }
@@ -148,7 +197,7 @@ esac
 [ "$RETENTION" -gt 90 ] 2>/dev/null && RETENTION=90 || true
 
 COUNTER=0
-for d in $(ls -1 "$BACKUP_DIR" 2>/dev/null | grep -E '^[0-9]{8}T[0-9]{6}Z_(manual|scheduled|pre-restore)$' | sort -r || true); do
+for d in $(ls -1 "$BACKUP_DIR" 2>/dev/null | grep -E '^[0-9]{8}T[0-9]{6}Z_(manual|scheduled|pre-restore|uploaded)$' | sort -r || true); do
     COUNTER=$((COUNTER + 1))
     if [ "$COUNTER" -gt "$RETENTION" ]; then
         rm -rf "$BACKUP_DIR/$d"

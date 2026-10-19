@@ -165,7 +165,11 @@ export function GlobalCatalogSearch({
                         onFocus={() => {
                             if (query.trim()) setIsDropdownOpen(true);
                         }}
-                        placeholder={`חיפוש מקיף ב-${totalProductsCount.toLocaleString()} מוצרים ו-19 מחלקות...`}
+                        placeholder={
+                            locale === "ar"
+                                ? `بحث شامل في ${totalProductsCount.toLocaleString()} منتج و-19 قسم...`
+                                : `חיפוש מקיף ב-${totalProductsCount.toLocaleString()} מוצרים ו-19 מחלקות...`
+                        }
                         className="h-13 w-full rounded-2xl border-primary/20 bg-card/90 pe-12 ps-12 text-base shadow-soft transition-all focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 sm:text-base"
                     />
                     {isLoading ? (
@@ -175,7 +179,7 @@ export function GlobalCatalogSearch({
                             type="button"
                             onClick={handleClear}
                             className="absolute end-3.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                            aria-label="נקה חיפוש"
+                            aria-label={locale === "ar" ? "مسح البحث" : "נקה חיפוש"}
                         >
                             <X className="size-4" />
                         </button>
@@ -191,7 +195,7 @@ export function GlobalCatalogSearch({
                         {searchResults.categories.length > 0 && (
                             <div className="space-y-2">
                                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                    מחלקות תואמות
+                                    {locale === "ar" ? "الأقسام المطابقة" : "מחלקות תואמות"}
                                 </span>
                                 <div className="flex flex-wrap gap-2">
                                     {searchResults.categories.map((cat) => (
@@ -218,14 +222,16 @@ export function GlobalCatalogSearch({
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                        מוצרים ({searchResults.total.toLocaleString()} תוצאות)
+                                        {locale === "ar"
+                                            ? `المنتجات (${searchResults.total.toLocaleString()} نتيجة)`
+                                            : `מוצרים (${searchResults.total.toLocaleString()} תוצאות)`}
                                     </span>
                                     <button
                                         type="button"
                                         onClick={handleShowAllResults}
                                         className="text-xs font-bold text-primary hover:underline"
                                     >
-                                        הצג את כל התוצאות ←
+                                        {locale === "ar" ? "عرض جميع النتائج ←" : "הצג את כל התוצאות ←"}
                                     </button>
                                 </div>
 
@@ -236,6 +242,8 @@ export function GlobalCatalogSearch({
                                         const hasDiscount =
                                             typeof product.compare_at_price_agorot === "number" &&
                                             product.compare_at_price_agorot > product.price_agorot;
+                                        const prodTitle = locale === "ar" && product.name_ar ? product.name_ar : product.name_he;
+                                        const prodSubtitle = locale === "ar" && product.name_ar ? product.name_he : product.name_ar;
 
                                         return (
                                             <Link
@@ -249,7 +257,7 @@ export function GlobalCatalogSearch({
                                                         {imgSrc ? (
                                                             <Image
                                                                 src={imgSrc}
-                                                                alt={product.name_he}
+                                                                alt={prodTitle}
                                                                 fill
                                                                 sizes="48px"
                                                                 className="object-contain p-1"
@@ -262,11 +270,11 @@ export function GlobalCatalogSearch({
                                                     </div>
                                                     <div className="min-w-0 flex-1">
                                                         <h4 className="text-sm font-semibold text-foreground truncate">
-                                                            {product.name_he}
+                                                            {prodTitle}
                                                         </h4>
-                                                        {product.name_ar && (
+                                                        {prodSubtitle && (
                                                             <p className="text-xs text-muted-foreground truncate">
-                                                                {product.name_ar}
+                                                                {prodSubtitle}
                                                             </p>
                                                         )}
                                                     </div>
@@ -293,13 +301,23 @@ export function GlobalCatalogSearch({
                                     className="w-full rounded-xl font-bold"
                                     variant="outline"
                                 >
-                                    צפה בכל {searchResults.total.toLocaleString()} התוצאות עבור "{query}"
+                                    {locale === "ar"
+                                        ? `شاهد كل ${searchResults.total.toLocaleString()} نتيجة لـ "${query}"`
+                                        : `צפה בכל ${searchResults.total.toLocaleString()} התוצאות עבור "${query}"`}
                                 </Button>
                             </div>
                         ) : !isLoading && searchResults.categories.length === 0 ? (
                             <div className="py-6 text-center text-muted-foreground">
-                                <p className="text-sm">לא נמצאו מוצרים התואמים את החיפוש "{query}"</p>
-                                <p className="text-xs mt-1">נסה מילת חיפוש אחרת או חפש לפי קטגוריה</p>
+                                <p className="text-sm">
+                                    {locale === "ar"
+                                        ? `لم يتم العثور على منتجات مطابقة للبحث "${query}"`
+                                        : `לא נמצאו מוצרים התואמים את החיפוש "${query}"`}
+                                </p>
+                                <p className="text-xs mt-1">
+                                    {locale === "ar"
+                                        ? "جرب كلمة بحث أخرى أو تصفح حسب الأقسام"
+                                        : "נסה מילת חיפוש אחרת או חפש לפי קטגוריה"}
+                                </p>
                             </div>
                         ) : null}
                     </div>
@@ -319,14 +337,18 @@ export function GlobalCatalogSearch({
                                 className="rounded-full gap-1.5"
                             >
                                 <ArrowRight className="size-4 rtl:rotate-180" />
-                                <span>חזרה לקטגוריות</span>
+                                <span>{locale === "ar" ? "العودة للأقسام" : "חזרה לקטגוריות"}</span>
                             </Button>
                             <div>
                                 <h2 className="text-lg font-extrabold text-foreground">
-                                    תוצאות חיפוש עבור "{query}"
+                                    {locale === "ar"
+                                        ? `نتائج البحث عن "${query}"`
+                                        : `תוצאות חיפוש עבור "${query}"`}
                                 </h2>
                                 <p className="text-xs text-muted-foreground">
-                                    נמצאו {searchResults.total.toLocaleString()} מוצרים מתאימים
+                                    {locale === "ar"
+                                        ? `تم العثور على ${searchResults.total.toLocaleString()} منتج مطابق`
+                                        : `נמצאו ${searchResults.total.toLocaleString()} מוצרים מתאימים`}
                                 </p>
                             </div>
                         </div>
@@ -334,17 +356,17 @@ export function GlobalCatalogSearch({
                         {/* Sort selector */}
                         <div className="flex items-center gap-2">
                             <label className="text-xs font-medium text-muted-foreground">
-                                מיון:
+                                {locale === "ar" ? "ترتيب:" : "מיון:"}
                             </label>
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                                 className="h-9 rounded-xl border border-border/80 bg-background px-3 text-xs font-semibold shadow-sm focus:border-primary focus:outline-none"
                             >
-                                <option value="recommended">מומלץ</option>
-                                <option value="price_asc">מחיר: מהנמוך לגבוה</option>
-                                <option value="price_desc">מחיר: מהגבוה לנמוך</option>
-                                <option value="name_asc">שם: א׳ עד ת׳</option>
+                                <option value="recommended">{locale === "ar" ? "موصى به" : "מומלץ"}</option>
+                                <option value="price_asc">{locale === "ar" ? "السعر: من الأقل للأعلى" : "מחיר: מהנמוך לגבוה"}</option>
+                                <option value="price_desc">{locale === "ar" ? "السعر: من الأعلى للأقل" : "מחיר: מהגבוה לנמוך"}</option>
+                                <option value="name_asc">{locale === "ar" ? "الاسم: أ إلى ي" : "שם: א׳ עד ת׳"}</option>
                             </select>
                         </div>
                     </div>
@@ -361,7 +383,9 @@ export function GlobalCatalogSearch({
                                         : "border border-border/70 bg-card text-muted-foreground hover:bg-muted"
                                 }`}
                             >
-                                הכל ({searchResults.products.length})
+                                {locale === "ar"
+                                    ? `الكل (${searchResults.products.length})`
+                                    : `הכל (${searchResults.products.length})`}
                             </button>
                             {categories
                                 .filter((cat) =>
@@ -394,14 +418,20 @@ export function GlobalCatalogSearch({
                     {/* Products Grid */}
                     {filteredProducts.length === 0 ? (
                         <div className="py-12 text-center text-muted-foreground">
-                            <p className="text-sm font-semibold">לא נמצאו מוצרים בסינון שנבחר</p>
+                            <p className="text-sm font-semibold">
+                                {locale === "ar"
+                                    ? "لم يتم العثور على منتجات في التصفية المختارة"
+                                    : "לא נמצאו מוצרים בסינון שנבחר"}
+                            </p>
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setSelectedCategoryFilter("all")}
                                 className="mt-3 rounded-xl"
                             >
-                                הצג את כל {searchResults.products.length} התוצאות
+                                {locale === "ar"
+                                    ? `عرض جميع النتائج (${searchResults.products.length})`
+                                    : `הצג את כל ${searchResults.products.length} התוצאות`}
                             </Button>
                         </div>
                     ) : (

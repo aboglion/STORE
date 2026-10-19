@@ -774,12 +774,40 @@
                 "total": "סה\"כ",
                 "actions": "פעולות",
                 "downloadDb": "הורדת גיבוי מסד הנתונים",
-                "downloadStorage": "הורדת ארכיון התמונות"
+                "downloadStorage": "הורדת ארכיון התמונות",
+                "downloadBundle": "הורדת גיבוי מלא (ארכיון)",
+                "unchanged": "ללא שינוי",
+                "unchangedTooltip": "התמונות זהות לגיבוי הקודם — לא שוכפלו קבצים"
             },
             "types": {
                 "manual": "ידני",
                 "scheduled": "אוטומטי",
-                "preRestore": "לפני שחזור"
+                "preRestore": "לפני שחזור",
+                "uploaded": "הועלה"
+            },
+            "upload": {
+                "trigger": "שחזור מקובץ",
+                "title": "שחזור מקובץ גיבוי",
+                "desc": "העלאת קובץ גיבוי מהמחשב שלך לשחזור מסד הנתונים והתמונות בחנות.",
+                "selectFile": "בחר קובץ גיבוי ראשי",
+                "dropzoneHint": "גרור ושחרר קובץ לכאן, או לחץ לבחירה",
+                "supportedFormats": "פורמטים נתמכים: ארכיון מלא (.tar.gz, .zip) או קובץ מסד נתונים (db.dump, .sql)",
+                "fileDetectedBundle": "זוהה: ארכיון גיבוי מלא (מסד נתונים + תמונות)",
+                "fileDetectedDb": "זוהה: קובץ מסד נתונים (db.dump)",
+                "fileDetectedStorage": "זוהה: ארכיון תמונות (storage.tar.gz)",
+                "selectStorageOptional": "צירוף קובץ תמונות (storage.tar.gz) — אופציונלי",
+                "storageOptionalDesc": "אם הורדת את קובץ התמונות בנפרד, תוכל לצרף אותו כאן.",
+                "restoreNow": "בצע שחזור מיד לאחר סיום ההעלאה",
+                "restoreNowWarning": "פעולה זו תחליף את הנתונים הנוכחיים בתוכן הגיבוי. לפני תחילת השחזור תיווצר אוטומטית שמירת ביטחון של המצב הקיים.",
+                "uploadAndRestore": "העלאה ושחזור עכשיו",
+                "uploadOnly": "העלאה לרשימת הגיבויים בלבד",
+                "uploading": "מעלה קובץ... {percent}%",
+                "validating": "מאמת תקינות קובץ גיבוי...",
+                "restoring": "מבצע שחזור נתונים...",
+                "successToast": "הקובץ הועלה והשחזור הושלם בהצלחה",
+                "uploadSuccessToast": "הקובץ נוסף לרשימת הגיבויים בהצלחה",
+                "cancel": "ביטול",
+                "changeFile": "החלף קובץ"
             },
             "restore": {
                 "trigger": "שחזור",

@@ -152,7 +152,7 @@ restore: ## שחזור גיבוי קיים: make restore BACKUP=<id>
 	docker exec store_commerce_prod sh /app/scripts/db-restore.sh $(BACKUP)
 
 backups: ## הצגת רשימת הגיבויים השמורים (החדשים ביותר ראשונים)
-	@BD="$${BACKUP_DIR:-/home/uns/store-backups}"; ls -1t "$$BD" 2>/dev/null | grep -E '^[0-9]{8}T[0-9]{6}Z_(manual|scheduled|pre-restore)$$' || echo "אין גיבויים עדיין"
+	@BD="$${BACKUP_DIR:-/home/uns/store-backups}"; ls -1t "$$BD" 2>/dev/null | grep -E '^[0-9]{8}T[0-9]{6}Z_(manual|scheduled|pre-restore|uploaded)$$' || echo "אין גיבויים עדיין"
 
 backup-host: ## הפעלה ידנית של תזמון הגיבויים ועיבוד תור ה-Storage (מארח)
 	bash scripts/backup-host.sh

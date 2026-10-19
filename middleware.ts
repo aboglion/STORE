@@ -34,7 +34,14 @@ export async function middleware(request: NextRequest) {
     const isAdminArea =
         pathname.startsWith("/admin") && !isLoginPage;
 
-    let response = NextResponse.next({ request });
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-pathname", pathname);
+
+    let response = NextResponse.next({
+        request: {
+            headers: requestHeaders,
+        },
+    });
 
     if (!isAdminArea) {
         ensureLocaleCookie(request, response);

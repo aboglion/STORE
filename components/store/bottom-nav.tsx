@@ -8,7 +8,9 @@ import { useTranslations } from "next-intl";
 import { House, PackageCheck, ShoppingBag } from "lucide-react";
 
 import { useCart } from "@/contexts/cart-context";
+import { BanknoteImage, ColorfulCartBag } from "@/components/store/cart-badge-icon";
 import { cn } from "@/lib/utils";
+
 
 export function BottomNav() {
     const pathname = usePathname();
@@ -66,15 +68,26 @@ export function BottomNav() {
                         {item.active && (
                             <span className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />
                         )}
-                        <span className="relative">
-                            <item.icon className="size-5" />
-                            {item.href === "/cart" && mounted && count > 0 && (
-                                <span className="absolute -top-1.5 -left-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground animate-pop-in">
+                        {item.href === "/cart" && mounted && count > 0 ? (
+                            <span className="relative flex items-center justify-center">
+                                <div className="animate-cart-blink">
+                                    <ColorfulCartBag className="size-5" />
+                                </div>
+                                {/* Banknote laid over the bottom of the icon */}
+                                <div className="pointer-events-none absolute -bottom-0.5 left-1/2 -translate-x-1/2 z-10">
+                                    <BanknoteImage className="h-2.5 w-auto max-w-[24px] rounded-[1.5px] shadow-xs border border-emerald-500/40 object-contain animate-banknote-glow" />
+                                </div>
+                                <span className="absolute -top-1 -end-2 flex size-3.5 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold text-white shadow-xs animate-pop-in">
                                     {count}
                                 </span>
-                            )}
-                        </span>
+                            </span>
+                        ) : (
+                            <span className="relative">
+                                <item.icon className="size-5" />
+                            </span>
+                        )}
                         {item.label}
+
                     </Link>
                 ))}
             </div>

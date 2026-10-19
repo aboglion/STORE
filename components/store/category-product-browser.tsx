@@ -217,7 +217,11 @@ export function CategoryProductBrowser({
                         type="search"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder={`חיפוש בתוך ${categoryTitle} (${products.length.toLocaleString()} מוצרים)...`}
+                        placeholder={
+                            locale === "ar"
+                                ? `بحث داخل ${categoryTitle} (${products.length.toLocaleString()} منتج)...`
+                                : `חיפוש בתוך ${categoryTitle} (${products.length.toLocaleString()} מוצרים)...`
+                        }
                         className="h-10 w-full rounded-xl border-border/80 bg-background/80 pe-9 ps-9 text-sm focus-visible:ring-primary/20"
                     />
                     {searchQuery && (
@@ -243,7 +247,7 @@ export function CategoryProductBrowser({
                         }`}
                     >
                         <Tag className="size-3.5" />
-                        <span>מבצעים בלבד</span>
+                        <span>{locale === "ar" ? "عروض فقط" : "מבצעים בלבד"}</span>
                     </button>
 
                     <div className="flex items-center gap-1.5 rounded-xl border border-border/80 bg-background px-2.5 py-1.5">
@@ -252,12 +256,12 @@ export function CategoryProductBrowser({
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                             className="bg-transparent text-xs font-semibold focus:outline-none"
-                            aria-label="מיון מוצרים"
+                            aria-label={locale === "ar" ? "ترتيب المنتجات" : "מיון מוצרים"}
                         >
-                            <option value="recommended">מומלץ</option>
-                            <option value="price_asc">מחיר: נמוך לגבוה</option>
-                            <option value="price_desc">מחיר: גבוה לנמוך</option>
-                            <option value="name_asc">שם: א׳ עד ת׳</option>
+                            <option value="recommended">{locale === "ar" ? "موصى به" : "מומלץ"}</option>
+                            <option value="price_asc">{locale === "ar" ? "السعر: من الأقل للأعلى" : "מחיר: נמוך לגבוה"}</option>
+                            <option value="price_desc">{locale === "ar" ? "السعر: من الأعلى للأقل" : "מחיר: גבוה לנמוך"}</option>
+                            <option value="name_asc">{locale === "ar" ? "الاسم: أ إلى ي" : "שם: א׳ עד ת׳"}</option>
                         </select>
                     </div>
                 </div>
@@ -276,7 +280,9 @@ export function CategoryProductBrowser({
                                     : "border-border/70 bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
                             }`}
                         >
-                            הכל ({products.length.toLocaleString()})
+                            {locale === "ar"
+                                ? `الكل (${products.length.toLocaleString()})`
+                                : `הכל (${products.length.toLocaleString()})`}
                         </button>
 
                         {subcategoriesWithCounts.map((sub) => {
@@ -303,7 +309,9 @@ export function CategoryProductBrowser({
 
             {/* Price Filter Chips */}
             <div className="flex items-center gap-2 flex-wrap text-xs">
-                <span className="text-muted-foreground font-medium">טווח מחיר:</span>
+                <span className="text-muted-foreground font-medium">
+                    {locale === "ar" ? "نطاق السعر:" : "טווח מחיר:"}
+                </span>
                 <button
                     type="button"
                     onClick={() => setPriceRange("all")}
@@ -313,7 +321,7 @@ export function CategoryProductBrowser({
                             : "bg-muted/50 text-muted-foreground hover:bg-muted"
                     }`}
                 >
-                    הכל
+                    {locale === "ar" ? "الكل" : "הכל"}
                 </button>
                 <button
                     type="button"
@@ -324,7 +332,7 @@ export function CategoryProductBrowser({
                             : "bg-muted/50 text-muted-foreground hover:bg-muted"
                     }`}
                 >
-                    עד 15 ₪
+                    {locale === "ar" ? "حتى 15 ₪" : "עד 15 ₪"}
                 </button>
                 <button
                     type="button"
@@ -355,7 +363,7 @@ export function CategoryProductBrowser({
                         onClick={handleResetFilters}
                         className="ms-auto text-xs font-semibold text-primary hover:underline"
                     >
-                        איפוס סינונים
+                        {locale === "ar" ? "إعادة تعيين الفلاتر" : "איפוס סינונים"}
                     </button>
                 )}
             </div>
@@ -363,24 +371,31 @@ export function CategoryProductBrowser({
             {/* Count summary & Page info */}
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
                 <span>
-                    מציג{" "}
+                    {locale === "ar" ? "عرض " : "מציג "}
                     <strong className="text-foreground">
                         {filteredProducts.length === 0
                             ? 0
                             : `${startIndex + 1}–${endIndex}`}
                     </strong>{" "}
-                    מתוך{" "}
+                    {locale === "ar" ? "من " : "מתוך "}
                     <strong className="text-foreground">
                         {filteredProducts.length.toLocaleString()}
                     </strong>{" "}
-                    מוצרים
+                    {locale === "ar" ? "منتج" : "מוצרים"}
                     {filteredProducts.length !== products.length && (
-                        <span> (מתוך {products.length.toLocaleString()} במחלקה)</span>
+                        <span>
+                            {" "}
+                            {locale === "ar"
+                                ? `(من إجمالي ${products.length.toLocaleString()} في هذا القسم)`
+                                : `(מתוך ${products.length.toLocaleString()} במחלקה)`}
+                        </span>
                     )}
                 </span>
                 {totalPages > 1 && (
                     <span className="font-semibold text-foreground/80">
-                        עמוד {currentPage} מתוך {totalPages} (עד {PRODUCTS_PER_PAGE} בעמוד)
+                        {locale === "ar"
+                            ? `صفحة ${currentPage} من ${totalPages} (حتى ${PRODUCTS_PER_PAGE} في الصفحة)`
+                            : `עמוד ${currentPage} מתוך ${totalPages} (עד ${PRODUCTS_PER_PAGE} בעמוד)`}
                     </span>
                 )}
             </div>
@@ -392,10 +407,12 @@ export function CategoryProductBrowser({
                         <Wheat className="size-6" />
                     </div>
                     <p className="text-sm text-muted-foreground font-semibold">
-                        לא נמצאו מוצרים התואמים את הסינונים שנבחרו
+                        {locale === "ar"
+                            ? "لم يتم العثور على منتجات مطابقة للفلاتر المحددة"
+                            : "לא נמצאו מוצרים התואמים את הסינונים שנבחרו"}
                     </p>
                     <Button variant="outline" size="sm" onClick={handleResetFilters}>
-                        נקה סינונים
+                        {locale === "ar" ? "مسح الفلاتر" : "נקה סינונים"}
                     </Button>
                 </div>
             ) : (
@@ -414,13 +431,23 @@ export function CategoryProductBrowser({
                     {/* Pagination Controls */}
                     {totalPages > 1 && (
                         <nav
-                            aria-label="ניווט בין עמודי מוצרים"
+                            aria-label={locale === "ar" ? "التنقل بين صفحات المنتجات" : "ניווט בין עמודי מוצרים"}
                             className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 pb-4 border-t border-border/70"
                         >
                             <div className="text-xs text-muted-foreground font-medium">
-                                עמוד <strong className="text-foreground">{currentPage}</strong> מתוך{" "}
-                                <strong className="text-foreground">{totalPages}</strong>{" "}
-                                ({filteredProducts.length.toLocaleString()} מוצרים בסה״כ)
+                                {locale === "ar" ? (
+                                    <>
+                                        صفحة <strong className="text-foreground">{currentPage}</strong> من{" "}
+                                        <strong className="text-foreground">{totalPages}</strong>{" "}
+                                        ({filteredProducts.length.toLocaleString()} منتج إجمالاً)
+                                    </>
+                                ) : (
+                                    <>
+                                        עמוד <strong className="text-foreground">{currentPage}</strong> מתוך{" "}
+                                        <strong className="text-foreground">{totalPages}</strong>{" "}
+                                        ({filteredProducts.length.toLocaleString()} מוצרים בסה״כ)
+                                    </>
+                                )}
                             </div>
 
                             <div className="flex items-center gap-1.5 flex-wrap justify-center">
@@ -432,10 +459,10 @@ export function CategoryProductBrowser({
                                     onClick={() => handlePageChange(currentPage - 1)}
                                     disabled={currentPage <= 1}
                                     className="h-9 rounded-xl px-3 text-xs font-bold gap-1"
-                                    aria-label="עבור לעמוד הקודם"
+                                    aria-label={locale === "ar" ? "الانتقال للصفحة السابقة" : "עבור לעמוד הקודם"}
                                 >
                                     <ChevronRight className="size-4 rtl:rotate-0 rotate-180" />
-                                    <span>הקודם</span>
+                                    <span>{locale === "ar" ? "السابق" : "הקודם"}</span>
                                 </Button>
 
                                 {/* Page Number Buttons */}
@@ -477,9 +504,9 @@ export function CategoryProductBrowser({
                                     onClick={() => handlePageChange(currentPage + 1)}
                                     disabled={currentPage >= totalPages}
                                     className="h-9 rounded-xl px-3 text-xs font-bold gap-1"
-                                    aria-label="עבור לעמוד הבא"
+                                    aria-label={locale === "ar" ? "الانتقال للصفحة التالية" : "עבור לעמוד הבא"}
                                 >
-                                    <span>הבא</span>
+                                    <span>{locale === "ar" ? "التالي" : "הבא"}</span>
                                     <ChevronLeft className="size-4 rtl:rotate-0 rotate-180" />
                                 </Button>
                             </div>

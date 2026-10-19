@@ -144,10 +144,14 @@ export default async function HomePage({
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <h2 className="text-lg font-extrabold text-foreground tracking-tight sm:text-xl">
-                            מחלקות הסופרמרקט ({categories.length})
+                            {locale === "ar"
+                                ? `أقسام السوبرماركت (${categories.length})`
+                                : `מחלקות הסופרמרקט (${categories.length})`}
                         </h2>
                         <span className="text-xs text-muted-foreground font-medium">
-                            {totalProductsCount.toLocaleString()} מוצרים במלאי
+                            {locale === "ar"
+                                ? `${totalProductsCount.toLocaleString()} منتج متوفر`
+                                : `${totalProductsCount.toLocaleString()} מוצרים במלאי`}
                         </span>
                     </div>
 

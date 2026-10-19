@@ -6,7 +6,7 @@
  * imports so client bundles can type-check against them.
  */
 
-export type BackupType = "manual" | "scheduled" | "pre-restore";
+export type BackupType = "manual" | "scheduled" | "pre-restore" | "uploaded";
 
 /** Contents of the meta.json written inside each backup folder. */
 export interface BackupMeta {
@@ -17,6 +17,8 @@ export interface BackupMeta {
     label_time?: string;
     db_size?: string;
     storage_size?: string;
+    storage_unchanged?: boolean;
+    storage_hash?: string;
     total_size?: string;
     pg_version?: string;
 }
@@ -31,6 +33,7 @@ export interface BackupInfo {
     labelTime?: string;
     dbSize?: string;
     storageSize?: string;
+    storageUnchanged?: boolean;
     totalSize?: string;
     hasDb: boolean;
     hasStorage: boolean;

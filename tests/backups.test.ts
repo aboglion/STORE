@@ -15,6 +15,7 @@ describe("backup id validation", () => {
             "20261017T203000Z_manual",
             "20260101T030000Z_scheduled",
             "20261231T235959Z_pre-restore",
+            "20261019T101500Z_uploaded",
         ]) {
             expect(isValidBackupId(id)).toBe(true);
             expect(BACKUP_ID_PATTERN.test(id)).toBe(true);
@@ -111,3 +112,23 @@ describe("formatting", () => {
         expect(out).toMatch(/\d{1,2}:\d{2}/);
     });
 });
+
+describe("maintenance mode", () => {
+    it("can activate and deactivate maintenance mode", async () => {
+        const { isMaintenanceActive, setMaintenanceMode, getMaintenanceStatus } = await import("@/lib/server/backups");
+        expect(isMaintenanceActive()).toBe(false);
+
+        const ok = setMaintenanceMode(true, "test-maintenance");
+        expect(ok).toBe(true);
+        expect(isMaintenanceActive()).toBe(true);
+
+        const status = getMaintenanceStatus();
+        expect(status.active).toBe(true);
+        expect(status.reason).toBe("test-maintenance");
+        expect(status.startedAt).toBeDefined();
+
+        setMaintenanceMode(false);
+        expect(isMaintenanceActive()).toBe(false);
+    });
+});
+

@@ -1,8 +1,19 @@
 import "server-only";
 
 import { execFile } from "child_process";
-import { createReadStream, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "fs";
-import { chmodSync, mkdirSync, rmSync } from "fs";
+import {
+    chmodSync,
+    copyFileSync,
+    createReadStream,
+    existsSync,
+    mkdirSync,
+    readFileSync,
+    readdirSync,
+    renameSync,
+    rmSync,
+    statSync,
+    writeFileSync,
+} from "fs";
 import path from "path";
 
 import type {
@@ -17,9 +28,9 @@ import type {
 // Paths & environment
 // ----------------------------------------------------------------------------
 
-export const BACKUP_ID_PATTERN = /^[0-9]{8}T[0-9]{6}Z_(manual|scheduled|pre-restore)$/;
+export const BACKUP_ID_PATTERN = /^[0-9]{8}T[0-9]{6}Z_(manual|scheduled|pre-restore|uploaded)$/;
 export const DEFAULT_BACKUP_TZ = "Asia/Jerusalem";
-export const DOWNLOADABLE_FILES = ["db.dump", "storage.tar.gz", "meta.json"] as const;
+export const DOWNLOADABLE_FILES = ["db.dump", "storage.tar.gz", "meta.json", "bundle.tar.gz"] as const;
 
 const BACKUP_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes max per operation
 
@@ -50,6 +61,68 @@ export const RESTORE_SCRIPT = resolveScript("db-restore.sh");
 export const CONFIG_FILE = path.join(BACKUP_ROOT, "config.json");
 export const LOG_FILE = path.join(BACKUP_ROOT, "backups.log");
 export const QUEUE_DIR = path.join(BACKUP_ROOT, ".queue");
+export const MAINTENANCE_FILE = path.join(BACKUP_ROOT, ".maintenance");
+
+export interface MaintenanceStatus {
+    active: boolean;
+    backupId?: string;
+    startedAt?: string;
+    reason?: string;
+}
+
+export function getMaintenanceStatus(): MaintenanceStatus {
+    try {
+        if (!existsSync(MAINTENANCE_FILE)) return { active: false };
+        const st = statSync(MAINTENANCE_FILE);
+        // Safety timeout: if maintenance flag is older than 20 minutes (e.g. crashed process), treat as inactive
+        if (Date.now() - st.mtimeMs > 20 * 60 * 1000) {
+            try {
+                rmSync(MAINTENANCE_FILE, { force: true });
+            } catch {
+                /* non-fatal */
+            }
+            return { active: false };
+        }
+        const raw = readFileSync(MAINTENANCE_FILE, "utf8");
+        const parsed = JSON.parse(raw);
+        return {
+            active: true,
+            backupId: typeof parsed.backup_id === "string" ? parsed.backup_id : undefined,
+            startedAt: typeof parsed.started_at === "string" ? parsed.started_at : undefined,
+            reason: typeof parsed.reason === "string" ? parsed.reason : "restore",
+        };
+    } catch {
+        return { active: existsSync(MAINTENANCE_FILE) };
+    }
+}
+
+export function isMaintenanceActive(): boolean {
+    return getMaintenanceStatus().active;
+}
+
+export function setMaintenanceMode(active: boolean, reason = "manual"): boolean {
+    try {
+        mkdirSync(BACKUP_ROOT, { recursive: true });
+        if (active) {
+            const payload = {
+                active: true,
+                reason,
+                started_at: new Date().toISOString(),
+            };
+            writeFileSync(MAINTENANCE_FILE, `${JSON.stringify(payload, null, 2)}\n`);
+            try {
+                chmodSync(MAINTENANCE_FILE, 0o666);
+            } catch {
+                /* non-fatal */
+            }
+        } else {
+            rmSync(MAINTENANCE_FILE, { force: true });
+        }
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 export const DEFAULT_BACKUP_CONFIG: BackupScheduleConfig = {
     enabled: true,
@@ -152,6 +225,7 @@ function parseIdDate(id: string): Date {
 function guessType(id: string): BackupType {
     if (id.endsWith("_pre-restore")) return "pre-restore";
     if (id.endsWith("_scheduled")) return "scheduled";
+    if (id.endsWith("_uploaded")) return "uploaded";
     return "manual";
 }
 
@@ -167,6 +241,8 @@ function readMeta(dir: string): BackupMeta | null {
             label_time: parsed.label_time,
             db_size: parsed.db_size,
             storage_size: parsed.storage_size,
+            storage_unchanged: Boolean(parsed.storage_unchanged),
+            storage_hash: parsed.storage_hash,
             total_size: parsed.total_size,
             pg_version: parsed.pg_version,
         };
@@ -187,13 +263,21 @@ function formatBytes(bytes: number): string {
     return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
 }
 
-function dirSizeBytes(dir: string): number {
+function dirSizeBytes(dir: string, seenInodes?: Set<number>): number {
     let total = 0;
     try {
         for (const entry of readdirSync(dir)) {
             const p = path.join(dir, entry);
             const st = statSync(p);
-            total += st.isDirectory() ? dirSizeBytes(p) : st.size;
+            if (st.isDirectory()) {
+                total += dirSizeBytes(p, seenInodes);
+            } else {
+                if (seenInodes) {
+                    if (seenInodes.has(st.ino)) continue;
+                    seenInodes.add(st.ino);
+                }
+                total += st.size;
+            }
         }
     } catch {
         /* ignore */
@@ -235,6 +319,7 @@ export function listBackups(): BackupInfo[] {
             storageSize:
                 meta?.storage_size ??
                 (hasStorage ? formatBytes(statSync(storagePath).size) : undefined),
+            storageUnchanged: meta?.storage_unchanged ?? false,
             totalSize: meta?.total_size ?? formatBytes(dirSizeBytes(dir)),
             hasDb,
             hasStorage,
@@ -247,9 +332,10 @@ export function listBackups(): BackupInfo[] {
 }
 
 export function getBackupsTotalSize(): string {
+    const seenInodes = new Set<number>();
     let total = 0;
     for (const b of listBackups()) {
-        total += dirSizeBytes(path.join(BACKUP_ROOT, b.id));
+        total += dirSizeBytes(path.join(BACKUP_ROOT, b.id), seenInodes);
     }
     return formatBytes(total);
 }
@@ -474,6 +560,204 @@ export function readBackupLogs(lines = 80): string[] {
     } catch {
         return [];
     }
+}
+
+// ----------------------------------------------------------------------------
+// Process uploaded backup files
+// ----------------------------------------------------------------------------
+
+export interface ProcessUploadOptions {
+    tempFilePath: string;
+    originalFileName: string;
+    targetBackupId?: string;
+}
+
+export interface ProcessUploadResult {
+    ok: boolean;
+    backupId?: string;
+    error?: "INVALID_ARCHIVE" | "INVALID_DUMP" | "EMPTY_BACKUP" | "NOT_FOUND" | "RUN_FAILED";
+    message?: string;
+    hasDb?: boolean;
+    hasStorage?: boolean;
+}
+
+function findFilesRecursive(dir: string): string[] {
+    const results: string[] = [];
+    try {
+        for (const entry of readdirSync(dir)) {
+            const p = path.join(dir, entry);
+            const st = statSync(p);
+            if (st.isDirectory()) {
+                results.push(...findFilesRecursive(p));
+            } else if (st.isFile()) {
+                results.push(p);
+            }
+        }
+    } catch {
+        /* ignore */
+    }
+    return results;
+}
+
+function safeMoveFile(src: string, dest: string): void {
+    try {
+        renameSync(src, dest);
+    } catch {
+        copyFileSync(src, dest);
+        rmSync(src, { force: true });
+    }
+}
+
+export async function processUploadedBackup(
+    opts: ProcessUploadOptions
+): Promise<ProcessUploadResult> {
+    const { tempFilePath, originalFileName, targetBackupId } = opts;
+
+    if (!isBackupSystemAvailable()) {
+        return { ok: false, error: "RUN_FAILED", message: "Backup system directory is not available" };
+    }
+
+    // A. Appending storage file to an existing uploaded backup
+    if (targetBackupId) {
+        if (!isValidBackupId(targetBackupId)) {
+            return { ok: false, error: "NOT_FOUND", message: "Invalid target backup ID" };
+        }
+        const targetDir = path.join(BACKUP_ROOT, targetBackupId);
+        if (!existsSync(targetDir)) {
+            return { ok: false, error: "NOT_FOUND", message: "Target backup directory does not exist" };
+        }
+
+        const destStorage = path.join(targetDir, "storage.tar.gz");
+        safeMoveFile(tempFilePath, destStorage);
+
+        // Update meta.json
+        const meta = readMeta(targetDir) || {
+            id: targetBackupId,
+            type: "uploaded",
+            started_at: new Date().toISOString(),
+            finished_at: new Date().toISOString(),
+        };
+        meta.storage_size = formatBytes(statSync(destStorage).size);
+        meta.total_size = formatBytes(dirSizeBytes(targetDir));
+        writeFileSync(path.join(targetDir, "meta.json"), `${JSON.stringify(meta, null, 2)}\n`);
+
+        return {
+            ok: true,
+            backupId: targetBackupId,
+            hasDb: existsSync(path.join(targetDir, "db.dump")),
+            hasStorage: true,
+        };
+    }
+
+    // B. Creating a new backup from uploaded file
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const ts = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
+    const backupId = `${ts}_uploaded`;
+    const backupDir = path.join(BACKUP_ROOT, backupId);
+
+    mkdirSync(backupDir, { recursive: true });
+
+    const lowerName = originalFileName.toLowerCase();
+    const stagingDir = path.join(BACKUP_ROOT, ".staging", `extract_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+
+    try {
+        if (lowerName.endsWith(".zip")) {
+            mkdirSync(stagingDir, { recursive: true });
+            const unzipRes = await execFileAsync("unzip", ["-q", tempFilePath, "-d", stagingDir], buildPgEnv());
+            if (unzipRes.code !== 0) {
+                rmSync(backupDir, { recursive: true, force: true });
+                return { ok: false, error: "INVALID_ARCHIVE", message: unzipRes.stderr || "Failed to extract ZIP archive" };
+            }
+
+            const allFiles = findFilesRecursive(stagingDir);
+            const dbFile = allFiles.find((f) => path.basename(f) === "db.dump" || f.endsWith(".dump"));
+            const storageFile = allFiles.find((f) => path.basename(f) === "storage.tar.gz");
+
+            if (dbFile) safeMoveFile(dbFile, path.join(backupDir, "db.dump"));
+            if (storageFile) safeMoveFile(storageFile, path.join(backupDir, "storage.tar.gz"));
+        } else if (lowerName.endsWith(".tar.gz") || lowerName.endsWith(".tgz") || lowerName.endsWith(".tar")) {
+            if (lowerName === "storage.tar.gz") {
+                // Uploaded direct storage archive
+                safeMoveFile(tempFilePath, path.join(backupDir, "storage.tar.gz"));
+            } else {
+                mkdirSync(stagingDir, { recursive: true });
+                const tarRes = await execFileAsync("tar", ["-xf", tempFilePath, "-C", stagingDir], buildPgEnv());
+                if (tarRes.code !== 0) {
+                    rmSync(backupDir, { recursive: true, force: true });
+                    return { ok: false, error: "INVALID_ARCHIVE", message: tarRes.stderr || "Failed to extract TAR archive" };
+                }
+
+                const allFiles = findFilesRecursive(stagingDir);
+                const dbFile = allFiles.find((f) => path.basename(f) === "db.dump" || f.endsWith(".dump"));
+                const storageFile = allFiles.find((f) => path.basename(f) === "storage.tar.gz");
+
+                if (dbFile) safeMoveFile(dbFile, path.join(backupDir, "db.dump"));
+                if (storageFile) safeMoveFile(storageFile, path.join(backupDir, "storage.tar.gz"));
+
+                // If no db.dump found, check if the archive itself is a storage tree
+                if (!dbFile && !storageFile && (allFiles.some((f) => f.includes("product-images") || f.includes("stub")))) {
+                    safeMoveFile(tempFilePath, path.join(backupDir, "storage.tar.gz"));
+                }
+            }
+        } else {
+            // Assume direct database dump (.dump, .sql, db.dump)
+            safeMoveFile(tempFilePath, path.join(backupDir, "db.dump"));
+        }
+    } finally {
+        if (existsSync(stagingDir)) {
+            rmSync(stagingDir, { recursive: true, force: true });
+        }
+        if (existsSync(tempFilePath)) {
+            rmSync(tempFilePath, { force: true });
+        }
+    }
+
+    const hasDb = existsSync(path.join(backupDir, "db.dump"));
+    const hasStorage = existsSync(path.join(backupDir, "storage.tar.gz"));
+
+    if (!hasDb && !hasStorage) {
+        rmSync(backupDir, { recursive: true, force: true });
+        return { ok: false, error: "EMPTY_BACKUP", message: "No db.dump or storage.tar.gz found in the uploaded file" };
+    }
+
+    // Validate db.dump if present using pg_restore --list
+    if (hasDb) {
+        const valRes = await execFileAsync("pg_restore", ["--list", path.join(backupDir, "db.dump")], buildPgEnv());
+        if (valRes.code !== 0) {
+            rmSync(backupDir, { recursive: true, force: true });
+            return {
+                ok: false,
+                error: "INVALID_DUMP",
+                message: valRes.stderr || "The uploaded file is not a valid PostgreSQL custom dump archive",
+            };
+        }
+    }
+
+    const dbPath = path.join(backupDir, "db.dump");
+    const storagePath = path.join(backupDir, "storage.tar.gz");
+    const dbSize = hasDb ? formatBytes(statSync(dbPath).size) : undefined;
+    const storageSize = hasStorage ? formatBytes(statSync(storagePath).size) : undefined;
+    const totalSize = formatBytes(dirSizeBytes(backupDir));
+
+    const meta: BackupMeta = {
+        id: backupId,
+        type: "uploaded",
+        started_at: now.toISOString(),
+        finished_at: now.toISOString(),
+        label_time: `${formatInTz(now)} (הועלה / Uploaded)`,
+        db_size: dbSize,
+        storage_size: storageSize,
+        total_size: totalSize,
+    };
+    writeFileSync(path.join(backupDir, "meta.json"), `${JSON.stringify(meta, null, 2)}\n`);
+
+    return {
+        ok: true,
+        backupId,
+        hasDb,
+        hasStorage,
+    };
 }
 
 export { createReadStream };

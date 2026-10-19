@@ -8,6 +8,7 @@ import {
     CalendarClock,
     DatabaseBackup,
     Download,
+    FileArchive,
     HardDrive,
     History,
     Loader2,
@@ -17,6 +18,9 @@ import {
     UploadCloud,
 } from "lucide-react";
 import { toast } from "sonner";
+
+import { BackupOperationOverlay, type BackupOperationType } from "./backup-operation-overlay";
+import { BackupUploadDialog } from "./backup-upload-dialog";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,22 +75,71 @@ function formatJerusalem(iso: string): string {
 export function BackupsView({ runtime }: { runtime: BackupRuntimeData }) {
     const t = useTranslations("admin.backups");
     const router = useRouter();
-    const [pendingBackup, startBackup] = useTransition();
+    const [isPendingBackup, setIsPendingBackup] = useState(false);
 
-    function onManualBackup() {
-        startBackup(async () => {
-            const res = await createBackupNow();
-            if (res?.error) {
-                toast.error(res.error);
-                return;
-            }
-            toast.success(t("backupCreatedToast"));
+    const [operationState, setOperationState] = useState<{
+        open: boolean;
+        type: BackupOperationType;
+        backupId?: string;
+        isDone?: boolean;
+    }>({ open: false, type: "backup", isDone: false });
+
+    async function onManualBackup() {
+        if (isPendingBackup) return;
+        setIsPendingBackup(true);
+        setOperationState({ open: true, type: "backup", isDone: false });
+
+        const start = Date.now();
+        const res = await createBackupNow();
+        if (res?.error) {
+            setOperationState({ open: false, type: "backup", isDone: false });
+            setIsPendingBackup(false);
+            toast.error(res.error);
+            return;
+        }
+        const elapsed = Date.now() - start;
+        if (elapsed < 2400) {
+            await new Promise((r) => setTimeout(r, 2400 - elapsed));
+        }
+        setOperationState((prev) => ({ ...prev, isDone: true }));
+        toast.success(t("backupCreatedToast"));
+        setTimeout(() => {
+            setOperationState({ open: false, type: "backup", isDone: false });
+            setIsPendingBackup(false);
             router.refresh();
-        });
+        }, 1200);
+    }
+
+    async function handleRestore(id: string) {
+        setOperationState({ open: true, type: "restore", backupId: id, isDone: false });
+        const start = Date.now();
+        const res = await restoreBackup(id);
+        if (res?.error) {
+            setOperationState({ open: false, type: "restore", isDone: false });
+            toast.error(res.error);
+            return;
+        }
+        const elapsed = Date.now() - start;
+        if (elapsed < 3000) {
+            await new Promise((r) => setTimeout(r, 3000 - elapsed));
+        }
+        setOperationState((prev) => ({ ...prev, isDone: true }));
+        toast.success(t("restore.successToast"));
+        setTimeout(() => {
+            setOperationState({ open: false, type: "restore", isDone: false });
+            router.refresh();
+        }, 1500);
     }
 
     return (
         <div className="grid max-w-6xl gap-6">
+            <BackupOperationOverlay
+                open={operationState.open}
+                type={operationState.type}
+                backupId={operationState.backupId}
+                isDone={operationState.isDone}
+            />
+
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h1 className="font-display text-2xl font-extrabold tracking-tight">
@@ -94,18 +147,52 @@ export function BackupsView({ runtime }: { runtime: BackupRuntimeData }) {
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">{t("desc")}</p>
                 </div>
-                <Button
-                    onClick={onManualBackup}
-                    disabled={pendingBackup || !runtime.available}
-                    className="gap-2"
-                >
-                    {pendingBackup ? (
-                        <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                        <DatabaseBackup className="size-4" />
-                    )}
-                    {t("createBackup")}
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                    <BackupUploadDialog
+                        available={runtime.available}
+                        onRestoreStart={(id) => {
+                            setOperationState({
+                                open: true,
+                                type: "upload-restore",
+                                backupId: id,
+                                isDone: false,
+                            });
+                        }}
+                        onRestoreDone={(success, err) => {
+                            if (!success) {
+                                setOperationState({
+                                    open: false,
+                                    type: "upload-restore",
+                                    isDone: false,
+                                });
+                                if (err) toast.error(err);
+                            } else {
+                                setOperationState((prev) => ({ ...prev, isDone: true }));
+                                toast.success(t("restore.successToast"));
+                                setTimeout(() => {
+                                    setOperationState({
+                                        open: false,
+                                        type: "upload-restore",
+                                        isDone: false,
+                                    });
+                                    router.refresh();
+                                }, 1500);
+                            }
+                        }}
+                    />
+                    <Button
+                        onClick={onManualBackup}
+                        disabled={isPendingBackup || !runtime.available}
+                        className="gap-2"
+                    >
+                        {isPendingBackup ? (
+                            <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                            <DatabaseBackup className="size-4" />
+                        )}
+                        {t("createBackup")}
+                    </Button>
+                </div>
             </div>
 
             {!runtime.available && (
@@ -141,7 +228,11 @@ export function BackupsView({ runtime }: { runtime: BackupRuntimeData }) {
 
             <BackupScheduleForm config={runtime.config} />
 
-            <BackupsTable backups={runtime.backups} available={runtime.available} />
+            <BackupsTable
+                backups={runtime.backups}
+                available={runtime.available}
+                onRestore={handleRestore}
+            />
 
             {runtime.logs.length > 0 && <LogsCard logs={runtime.logs} />}
         </div>
@@ -225,15 +316,30 @@ function TypeBadge({ type }: { type: BackupType }) {
     }
     if (type === "pre-restore") {
         return (
-            <Badge variant="outline" className="border-amber-300 text-amber-600">
+            <Badge variant="outline" className="border-amber-300 text-amber-600 dark:border-amber-700 dark:text-amber-400">
                 {t("preRestore")}
+            </Badge>
+        );
+    }
+    if (type === "uploaded") {
+        return (
+            <Badge variant="outline" className="border-blue-300 text-blue-600 dark:border-blue-700 dark:text-blue-400">
+                {t("uploaded")}
             </Badge>
         );
     }
     return <Badge>{t("manual")}</Badge>;
 }
 
-function BackupsTable({ backups, available }: { backups: BackupInfo[]; available: boolean }) {
+function BackupsTable({
+    backups,
+    available,
+    onRestore,
+}: {
+    backups: BackupInfo[];
+    available: boolean;
+    onRestore: (id: string) => void;
+}) {
     const t = useTranslations("admin.backups.table");
 
     if (backups.length === 0) {
@@ -286,7 +392,21 @@ function BackupsTable({ backups, available }: { backups: BackupInfo[]; available
                                     {backup.hasDb ? backup.dbSize || "—" : "—"}
                                 </TableCell>
                                 <TableCell className="text-end font-mono text-xs">
-                                    {backup.hasStorage ? backup.storageSize || "—" : "—"}
+                                    {backup.hasStorage ? (
+                                        <div className="flex flex-col items-end">
+                                            <span>{backup.storageSize || "—"}</span>
+                                            {backup.storageUnchanged && (
+                                                <span
+                                                    className="text-[10px] text-emerald-600 dark:text-emerald-400 font-sans"
+                                                    title={t("unchangedTooltip")}
+                                                >
+                                                    {t("unchanged")}
+                                                </span>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        "—"
+                                    )}
                                 </TableCell>
                                 <TableCell className="text-end font-mono text-xs">
                                     {backup.totalSize || "—"}
@@ -294,16 +414,25 @@ function BackupsTable({ backups, available }: { backups: BackupInfo[]; available
                                 <TableCell className="text-end">
                                     <div className="flex items-center justify-end gap-1.5">
                                         <DownloadButton
+                                            href={`/api/admin/backups/${backup.id}/bundle.tar.gz`}
+                                            label={t("downloadBundle")}
+                                            icon={<FileArchive className="size-4" />}
+                                        />
+                                        <DownloadButton
                                             href={`/api/admin/backups/${backup.id}/db.dump`}
                                             label={t("downloadDb")}
                                         />
                                         {backup.hasStorage && (
-                                            <DownloadButton
+                                             <DownloadButton
                                                 href={`/api/admin/backups/${backup.id}/storage.tar.gz`}
                                                 label={t("downloadStorage")}
                                             />
                                         )}
-                                        <RestoreDialog backup={backup} available={available} />
+                                        <RestoreDialog
+                                            backup={backup}
+                                            available={available}
+                                            onRestore={onRestore}
+                                        />
                                         <DeleteDialog backup={backup} available={available} />
                                     </div>
                                 </TableCell>
@@ -316,7 +445,15 @@ function BackupsTable({ backups, available }: { backups: BackupInfo[]; available
     );
 }
 
-function DownloadButton({ href, label }: { href: string; label: string }) {
+function DownloadButton({
+    href,
+    label,
+    icon = <Download className="size-4" />,
+}: {
+    href: string;
+    label: string;
+    icon?: React.ReactNode;
+}) {
     return (
         <a
             href={href}
@@ -325,7 +462,7 @@ function DownloadButton({ href, label }: { href: string; label: string }) {
             aria-label={label}
             className="inline-flex size-8 items-center justify-center rounded-lg border border-input text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
-            <Download className="size-4" />
+            {icon}
         </a>
     );
 }
@@ -334,27 +471,25 @@ function DownloadButton({ href, label }: { href: string; label: string }) {
 // Restore dialog (typed confirmation)
 // ----------------------------------------------------------------------------
 
-function RestoreDialog({ backup, available }: { backup: BackupInfo; available: boolean }) {
+function RestoreDialog({
+    backup,
+    available,
+    onRestore,
+}: {
+    backup: BackupInfo;
+    available: boolean;
+    onRestore: (id: string) => void;
+}) {
     const t = useTranslations("admin.backups.restore");
-    const router = useRouter();
     const [open, setOpen] = useState(false);
     const [confirm, setConfirm] = useState("");
-    const [pending, startTransition] = useTransition();
 
     const ready = confirm === backup.id;
 
-    function onRestore() {
-        startTransition(async () => {
-            const res = await restoreBackup(backup.id);
-            if (res?.error) {
-                toast.error(res.error);
-                return;
-            }
-            toast.success(t("successToast"));
-            setOpen(false);
-            setConfirm("");
-            router.refresh();
-        });
+    function onConfirmRestore() {
+        setOpen(false);
+        setConfirm("");
+        onRestore(backup.id);
     }
 
     return (
@@ -391,20 +526,16 @@ function RestoreDialog({ backup, available }: { backup: BackupInfo; available: b
                     dir="ltr"
                 />
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={pending}>{t("cancel")}</AlertDialogCancel>
+                    <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                     <AlertDialogAction
                         onClick={(e) => {
                             e.preventDefault();
-                            onRestore();
+                            onConfirmRestore();
                         }}
-                        disabled={!ready || pending}
+                        disabled={!ready}
                         className="gap-2"
                     >
-                        {pending ? (
-                            <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                            <UploadCloud className="size-4" />
-                        )}
+                        <UploadCloud className="size-4" />
                         {t("confirm")}
                     </AlertDialogAction>
                 </AlertDialogFooter>

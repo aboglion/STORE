@@ -33,12 +33,17 @@ LOCK_DIR="$BACKUP_DIR/.backup.lock.d"
 # (Ungrouped alternatives: `(...)` in a case pattern is not portable across
 # POSIX shells and matches literally in bash without extglob.)
 case "$BACKUP_ID" in
-    [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_manual|[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_scheduled|[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_pre-restore) ;;
+    [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_manual|[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_scheduled|[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_pre-restore|[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_uploaded) ;;
     *) echo "INVALID_BACKUP_ID" >&2; exit 2 ;;
 esac
 
 RESTORE_PATH="$BACKUP_DIR/$BACKUP_ID"
-if [ ! -f "$RESTORE_PATH/db.dump" ]; then
+HAS_DB=0
+HAS_STORAGE=0
+[ -f "$RESTORE_PATH/db.dump" ] && HAS_DB=1
+[ -f "$RESTORE_PATH/storage.tar.gz" ] && HAS_STORAGE=1
+
+if [ "$HAS_DB" -eq 0 ] && [ "$HAS_STORAGE" -eq 0 ]; then
     echo "BACKUP_NOT_FOUND" >&2
     exit 2
 fi
@@ -76,65 +81,89 @@ release_lock() {
     [ -d "$LOCK_DIR" ] && rmdir "$LOCK_DIR" 2>/dev/null || true
 }
 
+cleanup() {
+    rm -f "$BACKUP_DIR/.maintenance" 2>/dev/null || true
+    log "MAINTENANCE: site unlocked"
+    release_lock
+}
+
 if ! acquire_lock; then
     log "ERROR: another backup/restore operation is already running"
     echo "LOCKED" >&2
     exit 3
 fi
-trap release_lock EXIT HUP INT TERM
+trap cleanup EXIT HUP INT TERM
 
-log "START restore id=$BACKUP_ID"
+# ----------------------------------------------------------------------------
+# Automatic Maintenance Mode: Locks public storefront while restore is active
+# ----------------------------------------------------------------------------
+cat > "$BACKUP_DIR/.maintenance" <<EOF
+{
+  "active": true,
+  "backup_id": "$BACKUP_ID",
+  "reason": "restore",
+  "started_at": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+}
+EOF
+chmod 666 "$BACKUP_DIR/.maintenance" 2>/dev/null || true
+log "MAINTENANCE: site locked for restore ($BACKUP_ID)"
 
-# 1) Validate the archive before touching anything.
-if ! pg_restore --list "$RESTORE_PATH/db.dump" >/dev/null 2>&1; then
-    log "ERROR: invalid dump archive"
-    echo "INVALID_DUMP" >&2
-    exit 1
-fi
+log "START restore id=$BACKUP_ID (has_db=$HAS_DB has_storage=$HAS_STORAGE)"
 
-# 2) Safety: pre-restore backup of the current state (non-fatal on failure).
-SAFE_ID="$(date -u '+%Y%m%dT%H%M%SZ')_pre-restore"
-SAFE_PATH="$BACKUP_DIR/$SAFE_ID"
-if mkdir -p "$SAFE_PATH" && PGPASSWORD="$PGPASSWORD" pg_dump \
-    -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" \
-    -Fc --no-owner --no-privileges -f "$SAFE_PATH/db.dump" 2>>"$LOG_FILE"; then
-    log "OK: pre-restore safety backup created: $SAFE_ID"
+if [ "$HAS_DB" -eq 1 ]; then
+    # 1) Validate the archive before touching anything.
+    if ! pg_restore --list "$RESTORE_PATH/db.dump" >/dev/null 2>&1; then
+        log "ERROR: invalid dump archive"
+        echo "INVALID_DUMP" >&2
+        exit 1
+    fi
+
+    # 2) Safety: pre-restore backup of the current state (non-fatal on failure).
+    SAFE_ID="$(date -u '+%Y%m%dT%H%M%SZ')_pre-restore"
+    SAFE_PATH="$BACKUP_DIR/$SAFE_ID"
+    if mkdir -p "$SAFE_PATH" && PGPASSWORD="$PGPASSWORD" pg_dump \
+        -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" \
+        -Fc --no-owner --no-privileges -f "$SAFE_PATH/db.dump" 2>>"$LOG_FILE"; then
+        log "OK: pre-restore safety backup created: $SAFE_ID"
+    else
+        log "WARN: could not create pre-restore safety backup — continuing"
+        rm -rf "$SAFE_PATH"
+    fi
+
+    # 3) Terminate active connections so --clean can drop objects.
+    log "INFO: terminating active DB connections"
+    PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" \
+        -tAc "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid();" \
+        >/dev/null 2>&1 || log "WARN: connection termination returned warnings"
+    sleep 2
+
+    # 4) Restore. --clean drops existing objects; --if-exists tolerates gaps.
+    #    Exit code 1 = completed with warnings (common for extensions) — acceptable
+    #    when the post-restore sanity check passes.
+    set +e
+    PGPASSWORD="$PGPASSWORD" pg_restore -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" \
+        --clean --if-exists --no-owner --no-privileges \
+        "$RESTORE_PATH/db.dump" >/dev/null 2>>"$LOG_FILE"
+    PG_RESTORE_CODE=$?
+    set -e
+    if [ "$PG_RESTORE_CODE" -gt 1 ]; then
+        log "ERROR: pg_restore failed (code=$PG_RESTORE_CODE)"
+        echo "RESTORE_FAILED" >&2
+        exit 1
+    fi
+    log "OK: pg_restore finished (code=$PG_RESTORE_CODE)"
+
+    # 5) Reload the PostgREST schema cache so the API reflects restored objects.
+    PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" \
+        -c "NOTIFY pgrst, 'reload schema';" >/dev/null 2>&1 || true
+
+    # 6) Post-restore sanity check.
+    SANITY="$(PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" \
+        -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null || echo 0)"
+    log "OK: post-restore sanity — $SANITY public tables"
 else
-    log "WARN: could not create pre-restore safety backup — continuing"
-    rm -rf "$SAFE_PATH"
+    log "INFO: backup has no db.dump — skipping DB restore, database left unchanged"
 fi
-
-# 3) Terminate active connections so --clean can drop objects.
-log "INFO: terminating active DB connections"
-PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" \
-    -tAc "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid();" \
-    >/dev/null 2>&1 || log "WARN: connection termination returned warnings"
-sleep 2
-
-# 4) Restore. --clean drops existing objects; --if-exists tolerates gaps.
-#    Exit code 1 = completed with warnings (common for extensions) — acceptable
-#    when the post-restore sanity check passes.
-set +e
-PGPASSWORD="$PGPASSWORD" pg_restore -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" \
-    --clean --if-exists --no-owner --no-privileges \
-    "$RESTORE_PATH/db.dump" >/dev/null 2>>"$LOG_FILE"
-PG_RESTORE_CODE=$?
-set -e
-if [ "$PG_RESTORE_CODE" -gt 1 ]; then
-    log "ERROR: pg_restore failed (code=$PG_RESTORE_CODE)"
-    echo "RESTORE_FAILED" >&2
-    exit 1
-fi
-log "OK: pg_restore finished (code=$PG_RESTORE_CODE)"
-
-# 5) Reload the PostgREST schema cache so the API reflects restored objects.
-PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" \
-    -c "NOTIFY pgrst, 'reload schema';" >/dev/null 2>&1 || true
-
-# 6) Post-restore sanity check.
-SANITY="$(PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" \
-    -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null || echo 0)"
-log "OK: post-restore sanity — $SANITY public tables"
 
 # 7) Enqueue host-side storage restore (root-owned volume).
 if [ -f "$RESTORE_PATH/storage.tar.gz" ]; then

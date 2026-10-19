@@ -43,12 +43,16 @@ export async function StoreHero({ category, totalProductsCount }: StoreHeroProps
                         {isCategory ? (
                             typeof productCount === "number" && (
                                 <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary border border-primary/20">
-                                    {productCount.toLocaleString()} מוצרים במחלקה זו
+                                    {locale === "ar"
+                                        ? `${productCount.toLocaleString()} منتج في هذا القسم`
+                                        : `${productCount.toLocaleString()} מוצרים במחלקה זו`}
                                 </span>
                             )
                         ) : typeof totalProductsCount === "number" ? (
                             <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary border border-primary/20">
-                                ✨ למעלה מ-{totalProductsCount.toLocaleString()} מוצרים ב-19 מחלקות
+                                {locale === "ar"
+                                    ? `✨ أكثر من ${totalProductsCount.toLocaleString()} منتج في 19 قسم`
+                                    : `✨ למעלה מ-${totalProductsCount.toLocaleString()} מוצרים ב-19 מחלקות`}
                             </span>
                         ) : null}
                     </div>

@@ -107,7 +107,7 @@ process_storage_queue() {
         # (Ungrouped alternatives: `(...)` in a case pattern matches literally
         # in bash without extglob, so it would reject every real backup id.)
         case "$backup_id" in
-            [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_manual|[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_scheduled|[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_pre-restore) ;;
+            [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_manual|[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_scheduled|[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_pre-restore|[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z_uploaded) ;;
             *)
                 log "ERROR storage-restore request $rid has invalid backup_id"
                 mv "$req" "$BACKUP_DIR/.queue/storage-restore-$rid.failed"
