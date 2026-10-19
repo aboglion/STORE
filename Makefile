@@ -9,7 +9,7 @@
 
 SUPABASE := npx supabase
 
-.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install install_d INSTALL_D install-d INSTALL-D db-start db-stop db-reset db-status env admin build test lint typecheck init init-db INIT_DB status service-logs updater-logs backup restore backups backup-host clean CLEAN
+.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install install_d INSTALL_D install-d INSTALL-D db-start db-stop db-reset db-status env admin build test lint typecheck init init-db INIT_DB status service-logs updater-logs backup restore backups backup-host clean CLEAN domain DOMAIN
 
 help: ## הצגת רשימת הפקודות הזמינות
 	@echo "\033[1;33mמערכת מסחר — פקודות Make זמינות:\033[0m"
@@ -80,6 +80,11 @@ service-logs: ## צפייה בלוגים שוטפים של שירות הרקע �
 	@bash scripts/service.sh logs
 
 updater-logs: service-logs ## כינוי עבור service-logs
+
+domain: ## הגדרת דומיין ו-HTTPS אוטומטי (לדוגמה: make domain DOMAIN=yourdomain.com)
+	@bash scripts/set-domain.sh "$(DOMAIN)" "$(EMAIL)"
+
+DOMAIN: domain ## כינוי עבור make domain
 
 init: ## סקריפט אתחול, התקנת תלויות מערכת (Make, Docker) והרצה
 	@bash ./init.sh

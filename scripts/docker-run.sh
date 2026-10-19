@@ -143,6 +143,11 @@ echo -e "${GREEN}${BOLD}✅ המערכת והשירות עלו בהצלחה מל
 echo -e "${GREEN}   🛍️  חנות:             ${SITE_URL}${NC}"
 echo -e "${GREEN}   🔐 ניהול אדמין:      ${SITE_URL}/admin/login${NC}"
 echo -e "${GREEN}   📊 Supabase Studio:  http://127.0.0.1:54323${NC}"
+if [ -n "${DOMAIN:-}" ] && [ "$DOMAIN" != "localhost" ]; then
+    echo -e "${CYAN}   🔒 HTTPS (SSL):      מופעל אוטומטית ע\"י Caddy (Let's Encrypt)${NC}"
+else
+    echo -e "${YELLOW}   ℹ️  HTTPS (SSL):      מוכן לפעולה. להפעלת דומיין ו-SSL אוטומטי: make domain DOMAIN=yourdomain.com${NC}"
+fi
 echo -e "${CYAN}   🔄 שירות רקע:        פעיל (בודק עדכוני GitHub כל 60 שניות)${NC}"
 echo -e "${CYAN}   💾 גיבויים:          ${BACKUP_DIR} (אוטומטי 03:00 ו-16:00, שמירת 30 אחרונים)${NC}"
 echo -e "${CYAN}   ⚡ אתחול שרת (Boot): השירות יעלה מחדש באופן אוטומטי מלא${NC}"

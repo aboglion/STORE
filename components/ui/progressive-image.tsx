@@ -34,6 +34,7 @@ export function ProgressiveImage({
     sizes,
     onError,
     onLoad,
+    style,
     ...rest
 }: ProgressiveImageProps) {
     const [isLoaded, setIsLoaded] = useState(false);
@@ -67,7 +68,7 @@ export function ProgressiveImage({
             {!isLoaded && (
                 <div
                     aria-hidden="true"
-                    className="absolute inset-0 z-0 animate-pulse bg-gradient-to-tr from-muted/90 via-muted/40 to-muted/90"
+                    className="absolute inset-0 z-0 animate-pulse bg-gradient-to-tr from-muted/90 via-muted/40 to-muted/90 pointer-events-none"
                 />
             )}
 
@@ -80,6 +81,8 @@ export function ProgressiveImage({
                 height={height}
                 sizes={sizes}
                 priority={priority}
+                loading={priority ? "eager" : "lazy"}
+                decoding="async"
                 placeholder="blur"
                 blurDataURL={activeBlurUrl}
                 onLoad={(e) => {
@@ -89,13 +92,18 @@ export function ProgressiveImage({
                 onError={(e) => {
                     if (fallbackSrc && currentSrc !== fallbackSrc) {
                         setCurrentSrc(fallbackSrc);
+                        setIsLoaded(false);
                     }
                     onError?.(e);
                 }}
+                style={{
+                    transition: "filter 700ms cubic-bezier(0.16, 1, 0.3, 1), opacity 700ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)",
+                    ...style,
+                }}
                 className={cn(
-                    "object-cover transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1) will-change-[filter,transform,opacity]",
+                    "object-cover will-change-[filter,transform,opacity]",
                     !isLoaded
-                        ? "scale-[1.04] blur-md opacity-80"
+                        ? "scale-[1.03] blur-md opacity-80"
                         : "scale-100 blur-0 opacity-100",
                     className
                 )}

@@ -36,7 +36,7 @@ export function ProductCard({
         <div className="group flex flex-col overflow-hidden rounded-xl sm:rounded-2xl border border-border/70 bg-card shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift active:scale-[0.98] w-full min-w-0">
             <Link
                 href={`/products/${product.slug}`}
-                className="relative block aspect-square w-full overflow-hidden bg-muted/40"
+                className="relative block aspect-square w-full overflow-hidden bg-muted/30"
             >
                 <ProgressiveImage
                     src={imageSrc}
@@ -45,7 +45,7 @@ export function ProductCard({
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     priority={priority}
                     fallbackSrc={demoImageUrl(product.slug)}
-                    className="object-contain sm:object-cover p-1.5 sm:p-0 transition-transform duration-300 group-hover:scale-105"
+                    className="object-contain p-2 sm:p-2.5 transition-transform duration-500 ease-out group-hover:scale-105"
                 />
                 {onSale && (
                     <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 rounded-full bg-gradient-to-br from-[oklch(0.6_0.17_40)] to-[oklch(0.5_0.16_35)] px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs font-bold text-white shadow-soft">

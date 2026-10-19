@@ -8,7 +8,8 @@ import { Search, X, Loader2, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/store/product-card";
-import { storageImageUrl } from "@/lib/utils/images";
+import { ProgressiveImage } from "@/components/ui/progressive-image";
+import { demoImageUrl, storageImageUrl } from "@/lib/utils/images";
 import type { Category, ProductWithImages } from "@/types/database.types";
 import { formatILS } from "@/lib/utils/currency";
 import type { Locale } from "@/lib/i18n/config";
@@ -253,20 +254,15 @@ export function GlobalCatalogSearch({
                                                 className="flex items-center justify-between gap-3 py-2.5 px-2 rounded-xl hover:bg-muted/60 transition-colors"
                                             >
                                                 <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted">
-                                                        {imgSrc ? (
-                                                            <Image
-                                                                src={imgSrc}
-                                                                alt={prodTitle}
-                                                                fill
-                                                                sizes="48px"
-                                                                className="object-contain p-1"
-                                                            />
-                                                        ) : (
-                                                            <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
-                                                                📦
-                                                            </div>
-                                                        )}
+                                                    <div className="relative size-12 shrink-0 overflow-hidden rounded-xl border border-border/70 bg-muted/30 shadow-xs">
+                                                        <ProgressiveImage
+                                                            src={imgSrc || demoImageUrl(product.slug)}
+                                                            alt={prodTitle}
+                                                            fill
+                                                            sizes="48px"
+                                                            fallbackSrc={demoImageUrl(product.slug)}
+                                                            className="object-contain p-1"
+                                                        />
                                                     </div>
                                                     <div className="min-w-0 flex-1">
                                                         <h4 className="text-sm font-semibold text-foreground truncate">

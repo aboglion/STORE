@@ -13,6 +13,7 @@ import { useCart } from "@/contexts/cart-context";
 import { getCartProductDetails, type CartProductDetail } from "@/lib/actions/storefront";
 import { localizedText, type Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
+import { demoImageUrl } from "@/lib/utils/images";
 
 import { MobileStickyBar } from "./mobile-sticky-bar";
 
@@ -111,20 +112,15 @@ export function CartView() {
                                     key={item.product_id}
                                     className="flex gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-soft"
                                 >
-                                    <div className="relative aspect-square size-20 shrink-0 overflow-hidden rounded-xl bg-muted">
-                                        {detail?.image_url ? (
-                                            <ProgressiveImage
-                                                src={detail.image_url}
-                                                alt={name}
-                                                fill
-                                                sizes="80px"
-                                                className="object-cover"
-                                            />
-                                        ) : (
-                                            <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
-                                                —
-                                            </div>
-                                        )}
+                                    <div className="relative aspect-square size-20 shrink-0 overflow-hidden rounded-2xl border border-border/70 bg-muted/30 shadow-soft">
+                                        <ProgressiveImage
+                                            src={detail?.image_url || demoImageUrl(detail?.slug ?? "")}
+                                            alt={name}
+                                            fill
+                                            sizes="80px"
+                                            fallbackSrc={demoImageUrl(detail?.slug ?? "")}
+                                            className="object-contain p-1.5"
+                                        />
                                     </div>
 
                                     <div className="flex min-w-0 flex-1 flex-col gap-1">

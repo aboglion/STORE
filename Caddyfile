@@ -1,0 +1,18 @@
+{
+    email {$ACME_EMAIL:admin@goldenmarket.com}
+}
+
+# 1. Automatic HTTPS for custom domain, with default to sslip.io for 139.162.159.19
+{$DOMAIN:139.162.159.19.sslip.io} {
+    reverse_proxy web:3000
+}
+
+# 2. Redirect HTTP IP access to HTTPS so mobile Chrome enables native PWA installation
+http://139.162.159.19 {
+    redir https://{$DOMAIN:139.162.159.19.sslip.io}{uri} permanent
+}
+
+# 3. Localhost HTTP access for dev / testing / internal health checks
+http://localhost, http://127.0.0.1 {
+    reverse_proxy web:3000
+}

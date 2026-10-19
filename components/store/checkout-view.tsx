@@ -61,6 +61,7 @@ import { createOrder } from "@/lib/actions/orders";
 import { getCartProductDetails } from "@/lib/actions/storefront";
 import { localizedText, type Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
+import { demoImageUrl } from "@/lib/utils/images";
 import { cn } from "@/lib/utils";
 import {
     checkoutSchema,
@@ -863,20 +864,15 @@ export function CheckoutView() {
                                     : "...";
                                 return (
                                     <div key={item.product_id} className="flex items-center gap-3">
-                                        <div className="relative aspect-square size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
-                                            {detail?.image_url ? (
-                                                <ProgressiveImage
-                                                    src={detail.image_url}
-                                                    alt={name}
-                                                    fill
-                                                    sizes="48px"
-                                                    className="object-cover"
-                                                />
-                                            ) : (
-                                                <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
-                                                    —
-                                                </div>
-                                            )}
+                                        <div className="relative aspect-square size-12 shrink-0 overflow-hidden rounded-xl border border-border/70 bg-muted/30 shadow-xs">
+                                            <ProgressiveImage
+                                                src={detail?.image_url || demoImageUrl(detail?.slug ?? "")}
+                                                alt={name}
+                                                fill
+                                                sizes="48px"
+                                                fallbackSrc={demoImageUrl(detail?.slug ?? "")}
+                                                className="object-contain p-1"
+                                            />
                                         </div>
                                         <div className="flex-1 text-sm">
                                             <div className="line-clamp-1 font-medium">

@@ -84,13 +84,15 @@ npm run setup:dev    # כמו למעלה + הרצת שרת הפיתוח
 make run          # הפעלה מלאה ב-Docker + הפעלת שירות רקע אוטונומי (Auto-Updater & Boot Recovery)
 make stop         # עצירת כל שירותי המערכת (כולל שירות הרקע וכל קונטיינרי ה-Docker)
 make status       # הצגת סטטוס מפורט של שירות הרקע, ה-Docker והלוגים האחרונים
+make domain DOMAIN=yourdomain.com # הגדרת דומיין ו-HTTPS אוטומטי מלא (Let's Encrypt + Caddy)
 make updater-logs # צפייה בלוגים שוטפים של שירות העדכון האוטומטי
 make gp           # העלאה וסנכרון ישיר ל-GitHub (add + commit + push ל-origin master)
 make local        # הפעלה מקומית בסביבת פיתוח (Dev) ללא דוקר
 ```
 
-כתובות גישה (ללא צורך בציון פורט :3000):
-- חנות: http://localhost (או כתובת ה-IP של השרת)
+כתובות גישה:
+- דומיין מאובטח (HTTPS): https://yourdomain.com (מוגדר ומחודש אוטומטית)
+- חנות מקומית (HTTP/HTTPS): http://localhost או https://localhost
 - דאשבורד מנהל: http://localhost/admin/login
 - Supabase Studio: http://127.0.0.1:54323
 *(פורט 3000 עדיין נתמך במקביל לתאימות לאחור: http://localhost:3000)*

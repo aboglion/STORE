@@ -58,6 +58,17 @@ export async function triggerPwaInstall() {
         return;
     }
 
+    // 0. If accessed via non-secure HTTP on domain, redirect to HTTPS where Chrome enables native PWA installation!
+    const isHttp =
+        window.location.protocol === "http:" &&
+        window.location.hostname !== "localhost" &&
+        window.location.hostname !== "127.0.0.1";
+
+    if (isHttp) {
+        window.location.href = `https://${window.location.host}${window.location.pathname}${window.location.search}${window.location.hash}`;
+        return;
+    }
+
     // 1. Check if native prompt is already captured
     const promptEvent =
         (window as unknown as { __pwaDeferredPrompt?: BeforeInstallPromptEvent | null }).__pwaDeferredPrompt ||
@@ -121,6 +132,7 @@ export function InstallPrompt() {
     const [isIos, setIsIos] = useState(false);
     const [isStandalone, setIsStandalone] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [isInsecureHttp, setIsInsecureHttp] = useState(false);
     const [mounted, setMounted] = useState(false);
 
     const handleDismiss = useCallback(() => {
@@ -164,6 +176,12 @@ export function InstallPrompt() {
             (window.innerWidth <= 840 &&
                 ("ontouchstart" in window || navigator.maxTouchPoints > 0));
         setIsMobile(isMobileDevice);
+
+        const isHttp =
+            window.location.protocol === "http:" &&
+            window.location.hostname !== "localhost" &&
+            window.location.hostname !== "127.0.0.1";
+        setIsInsecureHttp(isHttp);
 
         // 3. Listen for Android Chrome beforeinstallprompt event
         const handleBeforeInstallPrompt = (e: Event) => {
@@ -440,19 +458,38 @@ export function InstallPrompt() {
                                     <span>{t("installButton")}</span>
                                 </Button>
                             ) : (
-                                <div className="w-full text-center py-1">
-                                    <p className="text-[11px] text-muted-foreground mb-2">
-                                        {isMobile
-                                            ? t("androidMenuHint")
-                                            : t("subtitle")}
-                                    </p>
-                                    <Button
-                                        type="button"
-                                        onClick={handleDismiss}
-                                        className="w-full rounded-2xl py-2 text-xs font-bold"
-                                    >
-                                        {t("gotIt")}
-                                    </Button>
+                                <div className="w-full text-center py-1 space-y-2.5">
+                                    {isInsecureHttp ? (
+                                        <>
+                                            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                                🔒 כדי להתקין את האפליקציה בטלפון יש לעבור לכתובת מאובטחת (HTTPS)
+                                            </p>
+                                            <Button
+                                                type="button"
+                                                onClick={() => {
+                                                    window.location.href = `https://${window.location.host}${window.location.pathname}${window.location.search}${window.location.hash}`;
+                                                }}
+                                                className="w-full rounded-2xl py-2.5 text-xs sm:text-sm font-bold shadow-md shadow-primary/25"
+                                            >
+                                                מעבר לגרסה מאובטחת והתקנה 🚀
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p className="text-[11px] text-muted-foreground mb-2">
+                                                {isMobile
+                                                    ? t("androidMenuHint")
+                                                    : t("subtitle")}
+                                            </p>
+                                            <Button
+                                                type="button"
+                                                onClick={handleDismiss}
+                                                className="w-full rounded-2xl py-2 text-xs font-bold"
+                                            >
+                                                {t("gotIt")}
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
                             )}
 

@@ -21,7 +21,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getProducts } from "@/lib/data/products";
 import { localizedText, type Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
-import { productImageUrl } from "@/lib/utils/images";
+import { demoImageUrl, productImageUrl } from "@/lib/utils/images";
 
 export async function generateMetadata(): Promise<Metadata> {
     const t = await getTranslations("admin.products");
@@ -118,7 +118,7 @@ export default async function AdminProductsPage({ searchParams }: Props) {
                                 </TableCell>
                             </TableRow>
                         )}
-                        {result.products.map((product) => {
+                        {result.products.map((product, index) => {
                             const image = product.images[0];
                             const lowStock = product.stock_quantity <= product.low_stock_threshold;
                             const name = localizedText(locale, product.name_he, product.name_ar);
@@ -126,15 +126,24 @@ export default async function AdminProductsPage({ searchParams }: Props) {
                             return (
                                 <TableRow key={product.id}>
                                     <TableCell>
-                                        <div className="relative aspect-square size-10 overflow-hidden rounded-md border bg-muted">
-                                            <ProgressiveImage
-                                                src={productImageUrl(image?.storage_path, product.slug)}
-                                                alt={image?.alt_text ?? name}
-                                                fill
-                                                sizes="40px"
-                                                className="object-cover"
-                                            />
-                                        </div>
+                                        <Link
+                                            href={`/admin/products/${product.id}`}
+                                            className="group block"
+                                            tabIndex={-1}
+                                            aria-label={name}
+                                        >
+                                            <div className="relative aspect-square size-12 overflow-hidden rounded-xl border border-border/70 bg-muted/30 shadow-xs flex items-center justify-center transition-all duration-300 group-hover:scale-105 group-hover:border-primary/40 group-hover:shadow-soft">
+                                                <ProgressiveImage
+                                                    src={productImageUrl(image?.storage_path, product.slug)}
+                                                    alt={image?.alt_text ?? name}
+                                                    fill
+                                                    sizes="48px"
+                                                    priority={index < 4}
+                                                    fallbackSrc={demoImageUrl(product.slug)}
+                                                    className="object-contain p-1"
+                                                />
+                                            </div>
+                                        </Link>
                                     </TableCell>
                                     <TableCell>
                                         <Link
