@@ -127,12 +127,15 @@ export function CategoryProductBrowser({
         setVisibleCount(BATCH_SIZE);
     }, [searchQuery, selectedSubcategory, onlyOnSale, priceRange, sortBy]);
 
+    const displayedProducts = filteredProducts.slice(0, visibleCount);
+    const hasMore = visibleCount < filteredProducts.length;
+
     // IntersectionObserver to auto-load more on scroll
     useEffect(() => {
-        if (!loadMoreRef.current) return;
+        if (!hasMore || !loadMoreRef.current) return;
         const observer = new IntersectionObserver(
             (entries) => {
-                if (entries[0].isIntersecting) {
+                if (entries[0]?.isIntersecting) {
                     setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filteredProducts.length));
                 }
             },
@@ -140,7 +143,7 @@ export function CategoryProductBrowser({
         );
         observer.observe(loadMoreRef.current);
         return () => observer.disconnect();
-    }, [filteredProducts.length]);
+    }, [hasMore, filteredProducts.length]);
 
     const hasActiveFilters =
         searchQuery.trim() !== "" ||
@@ -162,9 +165,6 @@ export function CategoryProductBrowser({
         activeCategory.name_he,
         activeCategory.name_ar
     );
-
-    const displayedProducts = filteredProducts.slice(0, visibleCount);
-    const hasMore = visibleCount < filteredProducts.length;
 
     return (
         <div className="space-y-5">
@@ -359,6 +359,7 @@ export function CategoryProductBrowser({
                                 key={product.id}
                                 product={product}
                                 priority={index < 4}
+                                locale={locale}
                             />
                         ))}
                     </div>

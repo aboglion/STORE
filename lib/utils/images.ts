@@ -18,7 +18,6 @@ export function storageImageUrl(storagePath: string): string {
     if (!storagePath) return "";
 
     const base =
-        process.env.SUPABASE_INTERNAL_URL ||
         process.env.NEXT_PUBLIC_SUPABASE_URL ||
         "http://127.0.0.1:54321";
 

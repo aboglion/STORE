@@ -1,6 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
 
 import type { ProductWithImages } from "@/types/database.types";
 import { localizedText, type Locale } from "@/lib/i18n/config";
@@ -9,17 +11,20 @@ import { productImageUrl } from "@/lib/utils/images";
 
 import { AddToCartButton } from "./add-to-cart-button";
 
-export async function ProductCard({
+export function ProductCard({
     product,
     priority = false,
+    locale: propLocale,
 }: {
     product: ProductWithImages;
     priority?: boolean;
+    locale?: Locale;
 }) {
-    const locale = (await getLocale()) as Locale;
-    const t = await getTranslations("product");
+    const contextLocale = useLocale() as Locale;
+    const locale = propLocale ?? contextLocale;
+    const t = useTranslations("product");
 
-    const image = product.images[0];
+    const image = product.images?.[0];
     const name = localizedText(locale, product.name_he, product.name_ar);
     const outOfStock = product.stock_quantity <= 0;
     const onSale =

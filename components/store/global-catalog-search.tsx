@@ -411,6 +411,7 @@ export function GlobalCatalogSearch({
                                     key={product.id}
                                     product={product}
                                     priority={index < 4}
+                                    locale={locale}
                                 />
                             ))}
                         </div>
