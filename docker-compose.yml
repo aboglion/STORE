@@ -11,6 +11,7 @@ services:
     container_name: store_commerce_prod
     restart: unless-stopped
     ports:
+      - "${HOST_HTTP_PORT:-80}:3000"
       - "${HOST_PORT:-3000}:3000"
     env_file:
       - path: .env
@@ -51,6 +52,8 @@ services:
     image: caddy:2.8-alpine
     container_name: store_commerce_caddy
     restart: unless-stopped
+    profiles:
+      - ssl
     ports:
       - "80:80"
       - "443:443"

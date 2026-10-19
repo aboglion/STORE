@@ -96,17 +96,13 @@ export async function triggerPwaInstall() {
         }
     }
 
-    // 3. If accessed via non-secure HTTP, navigate to secure HTTPS where Chrome enables native PWA install
-    if (window.location.protocol === "http:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-        window.location.href = `https://139.162.159.19.sslip.io${window.location.pathname}${window.location.search}${window.location.hash}`;
-        return;
-    }
-
-    // 4. On iOS where Apple restricts programmatic installation API
+    // 3. Fallback when browser has not fired programmatic install prompt (e.g. iOS or plain HTTP)
     const ua = navigator.userAgent || "";
     const isIos = /iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream;
     if (isIos) {
-        toast.info("ב-iPhone: יש ללחוץ על ⎋ (שיתוף) בתחתית Safari ואז 'הוסף למסך הבית' 📲");
+        toast.info("להתקנה ב-iPhone: לחץ על כפתור השיתוף ⎋ ובחר 'הוסף למסך הבית' 📲");
+    } else {
+        toast.info("להתקנה ישירה: לחץ על 3 הנקודות (⋮) בדפדפן ובחר 'התקן אפליקציה' או 'הוסף למסך הבית' 📲");
     }
 }
 
