@@ -89,10 +89,11 @@ make gp           # העלאה וסנכרון ישיר ל-GitHub (add + commit +
 make local        # הפעלה מקומית בסביבת פיתוח (Dev) ללא דוקר
 ```
 
-כתובות גישה:
-- חנות: http://localhost:3000
-- דאשבורד מנהל: http://localhost:3000/admin/login
+כתובות גישה (ללא צורך בציון פורט :3000):
+- חנות: http://localhost (או כתובת ה-IP של השרת)
+- דאשבורד מנהל: http://localhost/admin/login
 - Supabase Studio: http://127.0.0.1:54323
+*(פורט 3000 עדיין נתמך במקביל לתאימות לאחור: http://localhost:3000)*
 
 **כיצד פועל שירות הרקע והעדכון האוטומטי (Auto-Updater & Supervisor):**
 1. **הפעלה ברקע:** בעת הרצת `make run` או `./init`, מותקן ומופעל שירות מערכת (`store-commerce.service`) תחת systemd.

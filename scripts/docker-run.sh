@@ -132,7 +132,10 @@ echo -e "${BLUE}🛡️  מגדיר ומפעיל שירות רקע אוטונו�
 chmod +x "$ROOT_DIR/scripts/service.sh" "$ROOT_DIR/scripts/auto-updater.sh"
 bash "$ROOT_DIR/scripts/service.sh" start
 
-SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}"
+SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost}"
+if [ "$SITE_URL" = "http://localhost:3000" ] || [ "$SITE_URL" = "http://127.0.0.1:3000" ]; then
+    SITE_URL="http://localhost"
+fi
 
 echo ""
 echo -e "${GREEN}${BOLD}============================================================${NC}"

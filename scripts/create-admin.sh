@@ -42,7 +42,10 @@ fi
 
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@example.com}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin1234}"
-SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}"
+SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost}"
+if [ "$SITE_URL" = "http://localhost:3000" ] || [ "$SITE_URL" = "http://127.0.0.1:3000" ]; then
+  SITE_URL="http://localhost"
+fi
 
 STATUS_ENV="$(npx supabase status -o env 2>/dev/null || true)"
 API_URL="$(printf '%s\n' "${STATUS_ENV}" | sed -n 's/^API_URL="\(.*\)"/\1/p')"
