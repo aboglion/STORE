@@ -21,7 +21,7 @@ import {
 import type { Category, ProductWithImages } from "@/types/database.types";
 import { localizedText, type Locale } from "@/lib/i18n/config";
 
-const PRODUCTS_PER_PAGE = 40;
+const PRODUCTS_PER_PAGE = 20;
 
 interface CategoryProductBrowserProps {
     products: ProductWithImages[];
@@ -171,7 +171,7 @@ export function CategoryProductBrowser({
         }
     }, [currentPage, totalPages]);
 
-    // Slice products for current page: strictly up to 40 items
+    // Slice products for current page: strictly up to 20 items
     const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
     const endIndex = Math.min(startIndex + PRODUCTS_PER_PAGE, filteredProducts.length);
     const displayedProducts = filteredProducts.slice(startIndex, endIndex);
