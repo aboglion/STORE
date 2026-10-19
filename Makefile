@@ -133,7 +133,7 @@ db-status: ## סטטוס שרתי Supabase מקומיים
 env: ## יצירת קובץ .env.local משרת ה-Supabase המקומי
 	bash scripts/env-local.sh
 
-admin: ## יצירת משתמש אדמין ראשוני (admin@example.com / admin1234)
+admin: ## יצירה או עדכון של משתמש אדמין במסד הנתונים (ADMIN_PASSWORD=... make admin)
 	bash scripts/create-admin.sh
 
 build: ## בניית גרסת פרודקשן מקומית ללא דוקר

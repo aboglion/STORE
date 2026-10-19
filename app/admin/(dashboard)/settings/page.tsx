@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
+import { AdminCredentialsCard } from "@/components/admin/admin-credentials-card";
 import { MaintenanceDashboardWidget } from "@/components/admin/maintenance-dashboard-widget";
 import { SettingsForm } from "@/components/admin/settings-form";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AdminSettingsPage() {
-    await requireAdmin();
+    const admin = await requireAdmin();
     const t = await getTranslations("admin.settings");
     const [settings, maintenanceStatus] = await Promise.all([
         getSettings(),
@@ -33,6 +34,8 @@ export default async function AdminSettingsPage() {
                     {t("desc")}
                 </p>
             </div>
+
+            <AdminCredentialsCard currentEmail={admin.email} />
 
             <MaintenanceDashboardWidget initialStatus={maintenanceStatus} />
 
