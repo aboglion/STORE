@@ -72,9 +72,19 @@ set_env_key "DOMAIN" "$CLEAN_DOMAIN" "$ENV_FILE"
 set_env_key "ACME_EMAIL" "$ACME_EMAIL" "$ENV_FILE"
 set_env_key "NEXT_PUBLIC_SITE_URL" "https://${CLEAN_DOMAIN}" "$ENV_FILE"
 
-cp -f "$ENV_FILE" .env
+if [ ! -L .env ]; then
+    cp -f "$ENV_FILE" .env 2>/dev/null || true
+fi
 
-echo -e "${GREEN}✅ קובצי הסביבה (.env.local ו-.env) עודכנו בהצלחה!${NC}"
+# 2b. שמירה קבועה בבסיס הנתונים (נשמרת בגיבוי ומשוחזרת אוטומטית בכל שרת חדש)
+docker exec -i supabase_db_omar psql -U postgres -d postgres -c "
+INSERT INTO settings (key, value, updated_at)
+VALUES ('custom_domain', jsonb_build_object('domain', '$CLEAN_DOMAIN', 'acme_email', '$ACME_EMAIL'), now())
+ON CONFLICT (key) DO UPDATE
+SET value = EXCLUDED.value, updated_at = now();
+" 2>/dev/null || true
+
+echo -e "${GREEN}✅ קובצי הסביבה (.env.local ו-.env) ובסיס הנתונים עודכנו בהצלחה!${NC}"
 
 # 3. הפעלה מחדש של קונטיינרי ה-Docker כך ש-Caddy יקבל את הדומיין החדש
 echo -e "${BLUE}🔄 מעדכן שירותי Docker (Caddy + Web)...${NC}"
