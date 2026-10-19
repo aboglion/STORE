@@ -207,11 +207,11 @@ export function CategoryProductBrowser({
     );
 
     return (
-        <div ref={browserTopRef} className="space-y-5 scroll-mt-20">
+        <div ref={browserTopRef} className="space-y-5 scroll-mt-20 w-full min-w-0">
             {/* Control Bar: In-Category Search + Sort */}
-            <div className="flex flex-col gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl border border-border/70 bg-card/60 p-2.5 sm:p-3.5 shadow-soft backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl border border-border/70 bg-card/60 p-2.5 sm:p-3.5 shadow-soft backdrop-blur-md sm:flex-row sm:items-center sm:justify-between w-full min-w-0">
                 {/* Search in category */}
-                <div className="relative flex-1">
+                <div className="relative flex-1 min-w-0 w-full">
                     <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                     <Input
                         type="search"
@@ -236,7 +236,7 @@ export function CategoryProductBrowser({
                 </div>
 
                 {/* Quick Controls: Sale toggle + Sort */}
-                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto justify-between sm:justify-start">
                     <button
                         type="button"
                         onClick={() => setOnlyOnSale(!onlyOnSale)}
@@ -250,12 +250,12 @@ export function CategoryProductBrowser({
                         <span>{locale === "ar" ? "عروض فقط" : "מבצעים בלבד"}</span>
                     </button>
 
-                    <div className="flex items-center gap-1.5 rounded-xl border border-border/80 bg-background px-2.5 py-1 sm:py-1.5">
+                    <div className="flex items-center gap-1.5 rounded-xl border border-border/80 bg-background px-2.5 py-1 sm:py-1.5 shrink-0 max-w-full">
                         <ArrowUpDown className="size-3.5 text-muted-foreground" />
                         <select
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                            className="bg-transparent text-sm sm:text-xs font-semibold focus:outline-none"
+                            className="bg-transparent text-xs font-semibold focus:outline-none max-w-[150px] sm:max-w-none truncate"
                             aria-label={locale === "ar" ? "ترتيب المنتجات" : "מיון מוצרים"}
                         >
                             <option value="recommended">{locale === "ar" ? "מوصى به" : "מומלץ"}</option>
@@ -269,8 +269,8 @@ export function CategoryProductBrowser({
 
             {/* Subcategory Chips Row */}
             {subcategoriesWithCounts.length > 0 && (
-                <div className="space-y-1.5">
-                    <div className="-mx-4 flex gap-1.5 sm:gap-2 overflow-x-auto px-4 no-scrollbar">
+                <div className="space-y-1.5 w-full min-w-0">
+                    <div className="-mx-4 flex gap-1.5 sm:gap-2 overflow-x-auto px-4 no-scrollbar overscroll-x-contain w-[calc(100%+2rem)] max-w-[calc(100vw)] sm:w-full sm:mx-0 sm:px-0">
                         <button
                             type="button"
                             onClick={() => setSelectedSubcategory("all")}
@@ -308,7 +308,7 @@ export function CategoryProductBrowser({
             )}
 
             {/* Price Filter Chips */}
-            <div className="flex items-center gap-2 flex-wrap text-xs">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs w-full min-w-0">
                 <span className="text-muted-foreground font-medium">
                     {locale === "ar" ? "نطاق السعر:" : "טווח מחיר:"}
                 </span>
@@ -369,8 +369,8 @@ export function CategoryProductBrowser({
             </div>
 
             {/* Count summary & Page info */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-                <span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs text-muted-foreground pt-1 w-full min-w-0">
+                <span className="truncate">
                     {locale === "ar" ? "عرض " : "מציג "}
                     <strong className="text-foreground">
                         {filteredProducts.length === 0
@@ -383,7 +383,7 @@ export function CategoryProductBrowser({
                     </strong>{" "}
                     {locale === "ar" ? "منتج" : "מוצרים"}
                     {filteredProducts.length !== products.length && (
-                        <span>
+                        <span className="opacity-80">
                             {" "}
                             {locale === "ar"
                                 ? `(من إجمالي ${products.length.toLocaleString()} في هذا القسم)`
@@ -392,10 +392,15 @@ export function CategoryProductBrowser({
                     )}
                 </span>
                 {totalPages > 1 && (
-                    <span className="font-semibold text-foreground/80">
+                    <span className="font-semibold text-foreground/80 shrink-0 text-start sm:text-end text-[11px] sm:text-xs">
                         {locale === "ar"
-                            ? `صفحة ${currentPage} من ${totalPages} (حتى ${PRODUCTS_PER_PAGE} في الصفحة)`
-                            : `עמוד ${currentPage} מתוך ${totalPages} (עד ${PRODUCTS_PER_PAGE} בעמוד)`}
+                            ? `صفحة ${currentPage} من ${totalPages}`
+                            : `עמוד ${currentPage} מתוך ${totalPages}`}
+                        <span className="hidden sm:inline">
+                            {locale === "ar"
+                                ? ` (حتى ${PRODUCTS_PER_PAGE} في الصفحة)`
+                                : ` (עד ${PRODUCTS_PER_PAGE} בעמוד)`}
+                        </span>
                     </span>
                 )}
             </div>
@@ -417,7 +422,7 @@ export function CategoryProductBrowser({
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 sm:grid-cols-3 lg:grid-cols-4 w-full min-w-0">
                         {displayedProducts.map((product, index) => (
                             <ProductCard
                                 key={product.id}
@@ -432,7 +437,7 @@ export function CategoryProductBrowser({
                     {totalPages > 1 && (
                         <nav
                             aria-label={locale === "ar" ? "التنقل بين صفحات المنتجات" : "ניווט בין עמודי מוצרים"}
-                            className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-5 pb-3 border-t border-border/70"
+                            className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-5 pb-3 border-t border-border/70 w-full min-w-0"
                         >
                             <div className="text-[11px] sm:text-xs text-muted-foreground font-medium text-center sm:text-start">
                                 {locale === "ar" ? (

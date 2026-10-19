@@ -33,10 +33,10 @@ export function ProductCard({
     const imageSrc = productImageUrl(image?.storage_path, product.slug);
 
     return (
-        <div className="group flex flex-col overflow-hidden rounded-xl sm:rounded-2xl border border-border/70 bg-card shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift active:scale-[0.98]">
+        <div className="group flex flex-col overflow-hidden rounded-xl sm:rounded-2xl border border-border/70 bg-card shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift active:scale-[0.98] w-full min-w-0">
             <Link
                 href={`/products/${product.slug}`}
-                className="relative block aspect-square overflow-hidden bg-muted/40"
+                className="relative block aspect-square w-full overflow-hidden bg-muted/40"
             >
                 <ProgressiveImage
                     src={imageSrc}
@@ -59,23 +59,23 @@ export function ProductCard({
                 )}
             </Link>
 
-            <div className="flex flex-1 flex-col gap-1 sm:gap-1.5 p-2 sm:p-3">
+            <div className="flex flex-1 flex-col gap-1 sm:gap-1.5 p-2 sm:p-3 min-w-0">
                 <Link
                     href={`/products/${product.slug}`}
-                    className="line-clamp-2 text-xs sm:text-sm font-medium hover:underline leading-snug"
+                    className="line-clamp-2 text-xs sm:text-sm font-medium hover:underline leading-snug break-words"
                     title={name}
                 >
                     {name}
                 </Link>
 
-                <div className="mt-auto flex items-center justify-between gap-1.5 pt-1">
+                <div className="mt-auto flex items-center justify-between gap-1 pt-1 min-w-0">
                     <div className="flex flex-col min-w-0">
                         {onSale && (
                             <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
                                 {formatILS(product.compare_at_price_agorot!, locale)}
                             </span>
                         )}
-                        <span className="font-display text-sm sm:text-base font-bold text-primary truncate">
+                        <span className="font-display text-xs sm:text-base font-bold text-primary truncate">
                             {formatILS(product.price_agorot, locale)}
                         </span>
                     </div>

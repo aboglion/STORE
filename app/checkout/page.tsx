@@ -16,7 +16,7 @@ export default async function CheckoutPage() {
 
     return (
         <StoreChrome>
-            <div className="grid gap-6">
+            <div className="flex flex-col gap-6 w-full min-w-0">
                 <h1 className="font-display text-2xl font-extrabold tracking-tight">
                     {t("title")}
                 </h1>

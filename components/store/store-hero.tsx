@@ -33,7 +33,7 @@ export async function StoreHero({ category, totalProductsCount }: StoreHeroProps
     const productCount = category?.product_count;
 
     return (
-        <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-primary/10 bg-gradient-to-br from-accent via-secondary/70 to-background px-4 py-4 sm:px-8 sm:py-9 shadow-soft">
+        <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-primary/10 bg-gradient-to-br from-accent via-secondary/70 to-background px-4 py-4 sm:px-8 sm:py-9 shadow-soft w-full min-w-0">
             <div className="pointer-events-none absolute -top-12 -left-12 size-36 sm:size-44 rounded-full bg-primary/10 blur-2xl max-w-full overflow-hidden" />
             <div className="pointer-events-none absolute -right-6 -bottom-16 size-40 sm:size-56 rounded-full bg-primary-deep/10 blur-2xl max-w-full overflow-hidden" />
 

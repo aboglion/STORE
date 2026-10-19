@@ -56,7 +56,7 @@ export default async function HomePage({
 
         return (
             <StoreChrome>
-                <div className="grid gap-6">
+                <div className="flex flex-col gap-6 w-full min-w-0">
                     <StoreHero
                         category={activeCategory}
                         totalProductsCount={totalProductsCount}
@@ -65,7 +65,7 @@ export default async function HomePage({
                     {/* Category Navigation Bar */}
                     <nav
                         aria-label={t("categoriesAria")}
-                        className="-mx-4 snap-x overflow-x-auto px-4 no-scrollbar"
+                        className="-mx-4 snap-x overflow-x-auto px-4 no-scrollbar w-[calc(100%+2rem)] max-w-[calc(100vw)] sm:w-full sm:mx-0 sm:px-0 overscroll-x-contain"
                     >
                         <div className="flex w-max gap-1.5 sm:gap-2 py-0.5">
                             <Link
@@ -130,7 +130,7 @@ export default async function HomePage({
     // Default view — global search and catalog organized by categories.
     return (
         <StoreChrome>
-            <div className="grid gap-6">
+            <div className="flex flex-col gap-6 w-full min-w-0">
                 <StoreHero totalProductsCount={totalProductsCount} />
 
                 {/* Professional Global Search across 9,907+ products & 19 categories */}

@@ -77,7 +77,7 @@ export async function StoreChrome({
 
                 <PwaInstallBanner />
 
-                <main id="main-content" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-12 pt-4 sm:pt-6 md:pb-10">
+                <main id="main-content" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-12 pt-4 sm:pt-6 md:pb-10 min-w-0">
                     {children}
                 </main>
 
