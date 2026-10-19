@@ -60,9 +60,13 @@ fi
 # 3. בדיקה והתקנת Node.js ו-npm
 if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
     echo -e "${YELLOW}⚙️  Node.js או npm חסרים. מתקין Node.js (גרסה 20+)...${NC}"
-    if [ -n "$SUDO" ] || [ "$EUID" -eq 0 ]; then
-        curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO -E bash -
-        $SUDO apt-get install -y nodejs
+    if [ "$EUID" -eq 0 ]; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        apt-get install -y nodejs
+        echo -e "${GREEN}✅ Node.js הותקן בהצלחה: $(node --version) | npm: $(npm --version)${NC}"
+    elif [ -n "$SUDO" ]; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
         echo -e "${GREEN}✅ Node.js הותקן בהצלחה: $(node --version) | npm: $(npm --version)${NC}"
     else
         echo -e "${RED}❌ Node.js ו-npm חסרים ונדרשות הרשאות מנהל (root/sudo) להתקנה.${NC}" >&2

@@ -38,9 +38,13 @@ if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
     if [ "$EUID" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
         SUDO="sudo"
     fi
-    if [ -n "$SUDO" ] || [ "$EUID" -eq 0 ]; then
-        curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO -E bash -
-        $SUDO apt-get install -y nodejs
+    if [ "$EUID" -eq 0 ]; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        apt-get install -y nodejs
+        echo -e "${GREEN}✅ Node.js הותקן בהצלחה: $(node --version) | npm: $(npm --version)${NC}"
+    elif [ -n "$SUDO" ]; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
         echo -e "${GREEN}✅ Node.js הותקן בהצלחה: $(node --version) | npm: $(npm --version)${NC}"
     else
         echo -e "${RED}❌ Node.js ו-npm חסרים ונדרשות הרשאות מנהל (root/sudo) להתקנה.${NC}" >&2

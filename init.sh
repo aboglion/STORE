@@ -75,9 +75,13 @@ fi
 # 5. בדיקת Node.js ו-npm
 if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
     echo -e "${YELLOW}⚙️  Node.js / npm חסר. מתקין Node.js (גרסה 20+)...${NC}"
-    if [ -n "$SUDO" ] || [ "$EUID" -eq 0 ]; then
-        curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO -E bash -
-        run_apt_install nodejs
+    if [ "$EUID" -eq 0 ]; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        apt-get install -y nodejs
+        echo -e "${GREEN}✅ Node.js הותקן בהצלחה: $(node --version)${NC}"
+    elif [ -n "$SUDO" ]; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
         echo -e "${GREEN}✅ Node.js הותקן בהצלחה: $(node --version)${NC}"
     else
         echo -e "${RED}❌ Node.js אינו מותקן ולא נמצאו הרשאות להתקנה אוטומטית.${NC}" >&2
