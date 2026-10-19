@@ -21,8 +21,10 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { MaintenanceDashboardWidget } from "@/components/admin/maintenance-dashboard-widget";
 import { requireAdmin } from "@/lib/auth";
 import { getDashboardMetrics, type DashboardMetrics } from "@/lib/data/stats";
+import { getMaintenanceStatus } from "@/lib/server/backups";
 import type { Locale } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils";
 import { formatILS } from "@/lib/utils/currency";
@@ -188,7 +190,10 @@ export default async function AdminDashboardPage() {
     const t = await getTranslations("admin.dashboard");
     const tnav = await getTranslations("admin.nav");
 
-    const metrics = await getDashboardMetrics();
+    const [metrics, maintenanceStatus] = await Promise.all([
+        getDashboardMetrics(),
+        Promise.resolve(getMaintenanceStatus()),
+    ]);
 
     return (
         <div className="grid gap-6">
@@ -246,6 +251,9 @@ export default async function AdminDashboardPage() {
                     )}
                 </div>
             </div>
+
+            {/* Store Maintenance Mode Control Banner & Widget */}
+            <MaintenanceDashboardWidget initialStatus={maintenanceStatus} />
 
             {/* Top KPI Metric Highlights Ribbon */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

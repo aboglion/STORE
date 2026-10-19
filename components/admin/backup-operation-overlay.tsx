@@ -3,16 +3,13 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-    AlertTriangle,
     CheckCircle2,
     Database,
     HardDrive,
     Loader2,
-    Lock,
     ShieldCheck,
     Sparkles,
     UploadCloud,
-    Wrench,
 } from "lucide-react";
 
 export type BackupOperationType = "backup" | "restore" | "upload-restore";
@@ -45,7 +42,7 @@ export function BackupOperationOverlay({
     type,
     backupId,
     isDone = false,
-    onCompleted,
+    onCompleted: _onCompleted,
 }: BackupOperationOverlayProps) {
     const isRestore = type === "restore" || type === "upload-restore";
     const steps = isRestore ? RESTORE_STEPS : BACKUP_STEPS;

@@ -9,7 +9,7 @@
 
 SUPABASE := npx supabase
 
-.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install db-start db-stop db-reset db-status env admin build test lint typecheck init init-db INIT_DB status service-logs updater-logs backup restore backups backup-host
+.PHONY: help gp GP pg PG local LOCAL dev run RUN prod production docker-build docker-stop docker-down docker-logs logs stop down install install_d INSTALL_D install-d INSTALL-D db-start db-stop db-reset db-status env admin build test lint typecheck init init-db INIT_DB status service-logs updater-logs backup restore backups backup-host
 
 help: ## הצגת רשימת הפקודות הזמינות
 	@echo "\033[1;33mמערכת מסחר — פקודות Make זמינות:\033[0m"
@@ -89,6 +89,13 @@ init: ## סקריפט אתחול, התקנת תלויות מערכת (Make, Dock
 # ------------------------------------------------------------
 install: ## התקנת תלויות פרויקט (npm install)
 	npm install
+
+install_d: ## התקנת כל תלויות המערכת (Docker, Compose, Node.js 20+, npm, ותלויות פרויקט)
+	@bash scripts/install-deps.sh
+
+INSTALL_D: install_d ## כינוי עבור make install_d
+install-d: install_d ## כינוי עבור make install_d
+INSTALL-D: install_d ## כינוי עבור make install_d
 
 db-start: ## הפעלת שרת Supabase מקומי (Docker)
 	$(SUPABASE) start

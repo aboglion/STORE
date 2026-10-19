@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSettings } from "@/lib/data/storefront";
+import { isMaintenanceActive } from "@/lib/server/backups";
 import { geocodeAddress } from "@/lib/server/geocoding";
 import { rateLimit } from "@/lib/server/rate-limit";
 import { formatIsraeliPhone, normalizeIsraeliPhone } from "@/lib/utils/phone";
@@ -37,6 +38,13 @@ export interface CreateOrderResponse {
 export async function createOrder(
     input: CheckoutPayload
 ): Promise<CreateOrderResponse> {
+    if (isMaintenanceActive()) {
+        return {
+            ok: false,
+            error: "החנות נמצאת כרגע במצב תחזוקה. לא ניתן לבצע הזמנות כרגע. אנא נסו שוב מאוחר יותר.",
+        };
+    }
+
     const t = await getTranslations("validation");
     const te = await getTranslations("errors");
 

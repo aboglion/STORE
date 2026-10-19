@@ -1,12 +1,14 @@
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 
+import { AdminMaintenanceBanner } from "@/components/admin/admin-maintenance-banner";
 import { AdminMobileHeader } from "@/components/admin/admin-mobile-header";
 import { AdminPageTransition } from "@/components/admin/admin-page-transition";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getAdmin } from "@/lib/auth";
 import { getSettings, getStoreName } from "@/lib/data/storefront";
+import { isMaintenanceActive } from "@/lib/server/backups";
 import type { Locale } from "@/lib/i18n/config";
 
 export default async function AdminDashboardLayout({
@@ -23,6 +25,7 @@ export default async function AdminDashboardLayout({
     const settings = await getSettings();
     const locale = (await getLocale()) as Locale;
     const storeName = getStoreName(settings, locale);
+    const maintenanceActive = isMaintenanceActive();
 
     return (
         <TooltipProvider>
@@ -33,6 +36,7 @@ export default async function AdminDashboardLayout({
                     logoUrl={settings.logo_url}
                 />
                 <div className="flex min-w-0 flex-1 flex-col">
+                    <AdminMaintenanceBanner active={maintenanceActive} />
                     <AdminMobileHeader
                         email={admin.email}
                         storeName={storeName}

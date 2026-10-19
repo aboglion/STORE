@@ -21,8 +21,11 @@ import type {
     BackupMeta,
     BackupScheduleConfig,
     BackupType,
+    MaintenanceStatus,
     StorageRestoreStatus,
 } from "@/types/backups";
+
+export type { MaintenanceStatus } from "@/types/backups";
 
 // ----------------------------------------------------------------------------
 // Paths & environment
@@ -63,19 +66,18 @@ export const LOG_FILE = path.join(BACKUP_ROOT, "backups.log");
 export const QUEUE_DIR = path.join(BACKUP_ROOT, ".queue");
 export const MAINTENANCE_FILE = path.join(BACKUP_ROOT, ".maintenance");
 
-export interface MaintenanceStatus {
-    active: boolean;
-    backupId?: string;
-    startedAt?: string;
-    reason?: string;
-}
 
 export function getMaintenanceStatus(): MaintenanceStatus {
     try {
         if (!existsSync(MAINTENANCE_FILE)) return { active: false };
         const st = statSync(MAINTENANCE_FILE);
-        // Safety timeout: if maintenance flag is older than 20 minutes (e.g. crashed process), treat as inactive
-        if (Date.now() - st.mtimeMs > 20 * 60 * 1000) {
+        const raw = readFileSync(MAINTENANCE_FILE, "utf8");
+        const parsed = JSON.parse(raw);
+
+        // Safety timeout ONLY for automated restore: if restore flag is older than 20 minutes (e.g. crashed process), treat as inactive.
+        // For manual maintenance (set from dashboard), do NOT auto-expire after 20 minutes!
+        const isRestore = parsed.reason === "restore" || Boolean(parsed.backup_id);
+        if (isRestore && (Date.now() - st.mtimeMs > 20 * 60 * 1000)) {
             try {
                 rmSync(MAINTENANCE_FILE, { force: true });
             } catch {
@@ -83,13 +85,14 @@ export function getMaintenanceStatus(): MaintenanceStatus {
             }
             return { active: false };
         }
-        const raw = readFileSync(MAINTENANCE_FILE, "utf8");
-        const parsed = JSON.parse(raw);
+
         return {
             active: true,
             backupId: typeof parsed.backup_id === "string" ? parsed.backup_id : undefined,
             startedAt: typeof parsed.started_at === "string" ? parsed.started_at : undefined,
-            reason: typeof parsed.reason === "string" ? parsed.reason : "restore",
+            reason: typeof parsed.reason === "string" ? parsed.reason : "manual",
+            message: typeof parsed.message === "string" ? parsed.message : undefined,
+            expectedDuration: typeof parsed.expected_duration === "string" ? parsed.expected_duration : undefined,
         };
     } catch {
         return { active: existsSync(MAINTENANCE_FILE) };
@@ -100,13 +103,20 @@ export function isMaintenanceActive(): boolean {
     return getMaintenanceStatus().active;
 }
 
-export function setMaintenanceMode(active: boolean, reason = "manual"): boolean {
+export function setMaintenanceMode(
+    active: boolean,
+    reason = "manual",
+    options?: { message?: string; expectedDuration?: string; backupId?: string }
+): boolean {
     try {
         mkdirSync(BACKUP_ROOT, { recursive: true });
         if (active) {
             const payload = {
                 active: true,
                 reason,
+                backup_id: options?.backupId,
+                message: options?.message,
+                expected_duration: options?.expectedDuration,
                 started_at: new Date().toISOString(),
             };
             writeFileSync(MAINTENANCE_FILE, `${JSON.stringify(payload, null, 2)}\n`);

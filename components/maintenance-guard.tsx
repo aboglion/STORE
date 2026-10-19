@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { MaintenanceStatus } from "@/types/backups";
 import { MaintenanceScreen } from "./maintenance-screen";
 
 /**
@@ -13,6 +14,7 @@ import { MaintenanceScreen } from "./maintenance-screen";
  */
 export function MaintenanceGuard() {
     const [inMaintenance, setInMaintenance] = useState(false);
+    const [status, setStatus] = useState<MaintenanceStatus | null>(null);
 
     useEffect(() => {
         let mounted = true;
@@ -23,7 +25,9 @@ export function MaintenanceGuard() {
                 if (res.ok) {
                     const data = await res.json();
                     if (mounted) {
-                        setInMaintenance(Boolean(data.active));
+                        const active = Boolean(data.active);
+                        setInMaintenance(active);
+                        if (active) setStatus(data);
                     }
                 }
             } catch {
@@ -43,8 +47,8 @@ export function MaintenanceGuard() {
     if (!inMaintenance) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#090d16]">
-            <MaintenanceScreen />
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#070a13]">
+            <MaintenanceScreen initialStatus={status} />
         </div>
     );
 }

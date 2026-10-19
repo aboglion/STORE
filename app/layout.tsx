@@ -13,7 +13,7 @@ import { PwaRegister } from "@/components/pwa/pwa-register";
 import { NavigationProgress } from "@/components/ui/navigation-progress";
 import { Toaster } from "@/components/ui/sonner";
 import { getPublicSettings } from "@/lib/data/storefront";
-import { isMaintenanceActive } from "@/lib/server/backups";
+import { getMaintenanceStatus, isMaintenanceActive } from "@/lib/server/backups";
 import { DEFAULT_STORE_THEME } from "@/lib/theme";
 
 import "./globals.css";
@@ -101,9 +101,13 @@ export default async function RootLayout({
     const messages = await getMessages();
 
     let theme = DEFAULT_STORE_THEME;
+    let storeName = locale === "ar" ? "جولدن ماركت" : "גולדן מארקט";
+    let contactPhone = "08-6000000";
     try {
         const settings = await getPublicSettings();
         theme = settings.theme;
+        storeName = locale === "ar" ? settings.store_name_ar || settings.store_name || storeName : settings.store_name || storeName;
+        contactPhone = settings.contact_phone || contactPhone;
     } catch {
         theme = DEFAULT_STORE_THEME;
     }
@@ -123,9 +127,13 @@ export default async function RootLayout({
                 <head>
                     <meta httpEquiv="refresh" content="5" />
                 </head>
-                <body className="min-h-screen font-sans antialiased bg-[#090d16]">
+                <body className="min-h-screen font-sans antialiased bg-[#070a13]">
                     <NextIntlClientProvider locale={locale} messages={messages} timeZone="Asia/Jerusalem">
-                        <MaintenanceScreen />
+                        <MaintenanceScreen
+                            initialStatus={getMaintenanceStatus()}
+                            storeName={storeName}
+                            contactPhone={contactPhone}
+                        />
                     </NextIntlClientProvider>
                 </body>
             </html>

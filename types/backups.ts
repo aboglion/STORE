@@ -69,3 +69,13 @@ export interface BackupRuntimeData {
     storageRestore: StorageRestoreStatus | null;
     logs: string[];
 }
+
+/** Status of store maintenance mode. */
+export interface MaintenanceStatus {
+    active: boolean;
+    backupId?: string;
+    startedAt?: string;
+    reason?: string;
+    message?: string;
+    expectedDuration?: string;
+}

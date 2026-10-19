@@ -31,6 +31,23 @@ if ! command -v docker >/dev/null 2>&1 || (! docker compose version >/dev/null 2
     "$ROOT_DIR/scripts/install-docker.sh"
 fi
 
+# 1b. בדיקת זמינות Node.js ו-npm (ואם חסר — התקנה אוטומטית על Ubuntu/Debian)
+if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠️  Node.js או npm אינם מותקנים במערכת. מתקין Node.js (גרסה 20+)...${NC}"
+    SUDO=""
+    if [ "$EUID" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
+        SUDO="sudo"
+    fi
+    if [ -n "$SUDO" ] || [ "$EUID" -eq 0 ]; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO -E bash -
+        $SUDO apt-get install -y nodejs
+        echo -e "${GREEN}✅ Node.js הותקן בהצלחה: $(node --version) | npm: $(npm --version)${NC}"
+    else
+        echo -e "${RED}❌ Node.js ו-npm חסרים ונדרשות הרשאות מנהל (root/sudo) להתקנה.${NC}" >&2
+        exit 1
+    fi
+fi
+
 # 2. וידוא התקנת תלויות Node ופרויקט
 if [ ! -d node_modules ]; then
     echo -e "${BLUE}📦 מתקין תלויות פרויקט (בפעם הראשונה)...${NC}"

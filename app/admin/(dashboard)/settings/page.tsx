@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
+import { MaintenanceDashboardWidget } from "@/components/admin/maintenance-dashboard-widget";
 import { SettingsForm } from "@/components/admin/settings-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth";
 import { getSettings } from "@/lib/data/storefront";
+import { getMaintenanceStatus } from "@/lib/server/backups";
 
 export async function generateMetadata(): Promise<Metadata> {
     const t = await getTranslations("admin.settings");
@@ -16,7 +18,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function AdminSettingsPage() {
     await requireAdmin();
     const t = await getTranslations("admin.settings");
-    const settings = await getSettings();
+    const [settings, maintenanceStatus] = await Promise.all([
+        getSettings(),
+        Promise.resolve(getMaintenanceStatus()),
+    ]);
 
     return (
         <div className="grid max-w-3xl gap-6">
@@ -28,6 +33,8 @@ export default async function AdminSettingsPage() {
                     {t("desc")}
                 </p>
             </div>
+
+            <MaintenanceDashboardWidget initialStatus={maintenanceStatus} />
 
             <Card>
                 <CardContent className="pt-6">
