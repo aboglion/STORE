@@ -1138,6 +1138,8 @@
             "discountPercentDesc": "100 = مجانًا",
             "dealPrice": "سعر العرض (₪)",
             "dealPriceDesc": "السعر الذي سيُحتسب بدل السعر العادي",
+            "originalPrice": "السعر الأصلي (₪)",
+            "originalPriceDesc": "اختياري — السعر قبل العرض. فارغ = السعر العادي للمنتج",
             "minQuantity": "الحد الأدنى للكمية (وحدات)",
             "minQuantityDesc": "عدد الوحدات في السلة لتفعيل العرض",
             "minSubtotal": "الحد الأدنى للمبلغ (₪)",

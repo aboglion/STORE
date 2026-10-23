@@ -44,17 +44,7 @@ export default async function PromotionsPage() {
     return (
         <StoreChrome>
             <div className="flex flex-col gap-6 w-full min-w-0">
-                {/* Page header */}
-                <div className="flex flex-col gap-1">
-                    <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
-                        {t("title")}
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        {t("subtitle", { count: active.length })}
-                    </p>
-                </div>
-
-                {/* Site banner (responsive — adapts automatically) */}
+                {/* Site banner — always at the top of the promotions page */}
                 {bannerSrc && (
                     <div className="relative w-full overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
                         <div className="aspect-[16/7] sm:aspect-[21/9]">
@@ -75,6 +65,16 @@ export default async function PromotionsPage() {
                         )}
                     </div>
                 )}
+
+                {/* Page header */}
+                <div className="flex flex-col gap-1">
+                    <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
+                        {t("title")}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        {t("subtitle", { count: active.length })}
+                    </p>
+                </div>
 
                 {/* Promotions grid */}
                 {active.length === 0 ? (

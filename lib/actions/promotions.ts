@@ -38,7 +38,16 @@ function buildConfig(
             };
         case "price_deal": {
             const dealPrice = shekelInputToAgorot(data.deal_price_shekels ?? "");
-            return { deal_price_agorot: dealPrice ?? 0 };
+            const config: Record<string, unknown> = {
+                deal_price_agorot: dealPrice ?? 0,
+            };
+            const originalPrice = shekelInputToAgorot(
+                data.original_price_shekels ?? ""
+            );
+            if (originalPrice != null) {
+                config.original_price_agorot = originalPrice;
+            }
+            return config;
         }
         case "free_shipping": {
             const minSubtotal = shekelInputToAgorot(

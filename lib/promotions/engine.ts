@@ -124,9 +124,12 @@ function buildDescription(
         }
         case "price_deal": {
             const deal = config.deal_price_agorot ?? 0;
+            // Show the configured original price when set, otherwise fall back
+            // to the live product price.
+            const original = config.original_price_agorot ?? unitPriceAgorot;
             return {
-                description_he: `במקום ${formatMoney(unitPriceAgorot)} — ${formatMoney(deal)}`,
-                description_ar: `بدلًا من ${formatMoney(unitPriceAgorot)} — ${formatMoney(deal)}`,
+                description_he: `במקום ${formatMoney(original)} — ${formatMoney(deal)}`,
+                description_ar: `بدلًا من ${formatMoney(original)} — ${formatMoney(deal)}`,
             };
         }
         case "free_shipping":

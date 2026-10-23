@@ -256,7 +256,7 @@ export type PromotionScopeType = "all" | "category" | "products";
  * Type-specific promotion parameters.
  *   * multi_buy:     { buy_quantity, get_quantity, discount_percent }
  *                    (discount_percent = 100 means the Y units are free)
- *   * price_deal:    { deal_price_agorot }
+ *   * price_deal:    { deal_price_agorot, original_price_agorot? }
  *   * free_shipping: { min_quantity, min_subtotal_agorot }
  */
 export interface PromotionConfig {
@@ -268,6 +268,10 @@ export interface PromotionConfig {
     discount_percent?: number;
     /** price_deal: the promotional unit price in agorot. */
     deal_price_agorot?: number;
+    /** price_deal: optional "original/starting" price (before the deal) in
+     *  agorot. When set it is shown as the before-price instead of the live
+     *  product price. */
+    original_price_agorot?: number;
     /** free_shipping: minimum total units in the cart. */
     min_quantity?: number;
     /** free_shipping: minimum subtotal in agorot. */

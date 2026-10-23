@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
     computeCartPricing,
+    describePromotion,
     isPromotionActive,
     toPromotionSnapshot,
     type CartPricingLine,
@@ -139,6 +140,19 @@ describe("promotion engine — price deal", () => {
             SETTINGS
         );
         expect(result.discount_agorot).toBe(0);
+    });
+
+    it("uses the configured original price instead of the live product price", () => {
+        const description = describePromotion(
+            promo({
+                type: "price_deal",
+                config: { deal_price_agorot: 700, original_price_agorot: 1250 },
+            }),
+            2000
+        );
+        expect(description.description_he).toContain("12.50 ₪");
+        expect(description.description_he).toContain("7 ₪");
+        expect(description.description_he).not.toContain("20 ₪");
     });
 });
 

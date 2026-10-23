@@ -99,7 +99,13 @@ export function PromotionCard({
                                 {formatMoney(promotion.config.deal_price_agorot)}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                                {locale === "ar" ? "بدلًا من السعر العادي" : "במקום המחיר הרגיל"}
+                                {promotion.config.original_price_agorot != null
+                                    ? (locale === "ar"
+                                        ? `بدلًا من ${formatMoney(promotion.config.original_price_agorot)}`
+                                        : `במקום ${formatMoney(promotion.config.original_price_agorot)}`)
+                                    : (locale === "ar"
+                                        ? "بدلًا من السعر العادي"
+                                        : "במקום המחיר הרגיל")}
                             </span>
                         </div>
                     )}

@@ -227,6 +227,9 @@ export function PromotionDialog({
                 deal_price_shekels: promotion.config.deal_price_agorot != null
                     ? agorotToShekelInput(promotion.config.deal_price_agorot)
                     : "",
+                original_price_shekels: promotion.config.original_price_agorot != null
+                    ? agorotToShekelInput(promotion.config.original_price_agorot)
+                    : "",
                 min_quantity: promotion.config.min_quantity ?? 0,
                 min_subtotal_shekels: promotion.config.min_subtotal_agorot != null
                     ? agorotToShekelInput(promotion.config.min_subtotal_agorot)
@@ -247,6 +250,7 @@ export function PromotionDialog({
                 get_quantity: 0,
                 discount_percent: 100,
                 deal_price_shekels: "",
+                original_price_shekels: "",
                 min_quantity: 0,
                 min_subtotal_shekels: "",
             },
@@ -545,22 +549,40 @@ export function PromotionDialog({
                         )}
 
                         {selectedType === "price_deal" && (
-                            <FormField
-                                control={form.control}
-                                name="deal_price_shekels"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{t("dealPrice")}</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="7.90" dir="ltr" {...field} />
-                                        </FormControl>
-                                        <FormDescription>
-                                            {t("dealPriceDesc")}
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <FormField
+                                    control={form.control}
+                                    name="original_price_shekels"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t("originalPrice")}</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="12.90" dir="ltr" {...field} />
+                                            </FormControl>
+                                            <FormDescription>
+                                                {t("originalPriceDesc")}
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="deal_price_shekels"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t("dealPrice")}</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="7.90" dir="ltr" {...field} />
+                                            </FormControl>
+                                            <FormDescription>
+                                                {t("dealPriceDesc")}
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
                         )}
 
                         {selectedType === "free_shipping" && (

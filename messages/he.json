@@ -1138,6 +1138,8 @@
             "discountPercentDesc": "100 = חינם",
             "dealPrice": "מחיר המבצע (₪)",
             "dealPriceDesc": "המחיר שיחויב במקום המחיר הרגיל",
+            "originalPrice": "מחיר התחלתי (₪)",
+            "originalPriceDesc": "אופציונלי — המחיר שלפני המבצע. ריק = מחיר המוצר הרגיל",
             "minQuantity": "כמות מינימלית (יחידות)",
             "minQuantityDesc": "כמות פריטים בסל להפעלת המבצע",
             "minSubtotal": "סכום מינימלי (₪)",

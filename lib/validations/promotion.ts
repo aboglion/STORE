@@ -41,6 +41,16 @@ export function promotionFormSchema(t: ValidationMessages) {
                     (v) => !v || /^\d+(\.\d{1,2})?$/.test(v.replace(",", ".")),
                     t("priceInvalid")
                 ),
+            // price_deal — optional original/starting price ("before" price)
+            original_price_shekels: z
+                .string()
+                .trim()
+                .optional()
+                .or(z.literal(""))
+                .refine(
+                    (v) => !v || /^\d+(\.\d{1,2})?$/.test(v.replace(",", ".")),
+                    t("priceInvalid")
+                ),
             // free_shipping
             min_quantity: z.coerce.number().int().min(0).default(0),
             min_subtotal_shekels: z
