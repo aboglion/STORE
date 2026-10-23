@@ -102,20 +102,36 @@ function mapSettingsRows(rows: Array<{ key: string; value: unknown }>): AppSetti
             (read("logo_url") as string) ?? DEFAULT_SETTINGS.logo_url,
         theme:
             (read("theme") as StoreThemeKey) ?? DEFAULT_SETTINGS.theme,
-        promotions_banner: {
-            image_path:
-                (read("promotions_banner") as { image_path?: string } | null)
-                    ?.image_path ?? DEFAULT_SETTINGS.promotions_banner.image_path,
-            title_he:
-                (read("promotions_banner") as { title_he?: string } | null)
-                    ?.title_he ?? DEFAULT_SETTINGS.promotions_banner.title_he,
-            title_ar:
-                (read("promotions_banner") as { title_ar?: string } | null)
-                    ?.title_ar ?? DEFAULT_SETTINGS.promotions_banner.title_ar,
-            enabled:
-                (read("promotions_banner") as { enabled?: boolean } | null)
-                    ?.enabled ?? DEFAULT_SETTINGS.promotions_banner.enabled,
-        },
+        promotions_banner: (() => {
+            // Settings rows store the actual value under the `value` key.
+            // The banner (saved by updatePromotionsBanner) stores a nested
+            // object under that same key, so unwrap it here. Both shapes are
+            // supported so already-saved banners display correctly.
+            const bannerValue = read("promotions_banner") as
+                | { value?: unknown }
+                | null
+                | undefined;
+            const banner = (bannerValue?.value ?? bannerValue) as {
+                image_path?: string;
+                title_he?: string;
+                title_ar?: string;
+                enabled?: boolean;
+            } | null | undefined;
+            return {
+                image_path:
+                    banner?.image_path ??
+                    DEFAULT_SETTINGS.promotions_banner.image_path,
+                title_he:
+                    banner?.title_he ??
+                    DEFAULT_SETTINGS.promotions_banner.title_he,
+                title_ar:
+                    banner?.title_ar ??
+                    DEFAULT_SETTINGS.promotions_banner.title_ar,
+                enabled:
+                    banner?.enabled ??
+                    DEFAULT_SETTINGS.promotions_banner.enabled,
+            };
+        })(),
     };
 }
 
