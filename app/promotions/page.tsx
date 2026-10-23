@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ProgressiveImage } from "@/components/ui/progressive-image";
 import { PromotionCard } from "@/components/store/promotion-card";
 import { StoreChrome } from "@/components/store/store-chrome";
-import { getActivePromotions } from "@/lib/data/promotions";
-import { getSettings } from "@/lib/data/storefront";
+import { getActivePromotions, getPromotionProducts } from "@/lib/data/promotions";
+import { getSettings, getStorefrontCategories } from "@/lib/data/storefront";
 import { isPromotionActive } from "@/lib/promotions/engine";
 import { localizedText, type Locale } from "@/lib/i18n/config";
 import { storageImageUrl } from "@/lib/utils/images";
@@ -25,15 +25,22 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function PromotionsPage() {
     const locale = (await getLocale()) as Locale;
     const t = await getTranslations("promotions");
-    const [promotions, settings] = await Promise.all([
+    const [promotions, settings, categories] = await Promise.all([
         getActivePromotions(),
         getSettings(),
+        getStorefrontCategories(locale),
     ]);
 
     // Only show promotions that are currently within their date range.
     const active = promotions
         .filter((p) => isPromotionActive(p))
         .sort((a, b) => a.sort_order - b.sort_order);
+
+    const allProductIds = Array.from(
+        new Set(active.flatMap((p) => p.product_ids || []))
+    );
+    const productsMap = await getPromotionProducts(allProductIds);
+    const categoryMap = new Map(categories.map((c) => [c.id, c.slug]));
 
     const banner = settings.promotions_banner;
     const bannerSrc = banner.image_path
@@ -98,6 +105,16 @@ export default async function PromotionsPage() {
                                 promotion={promotion}
                                 locale={locale}
                                 typeLabel={t(`types.${promotion.type}`)}
+                                categorySlug={
+                                    promotion.category_id
+                                        ? categoryMap.get(promotion.category_id)
+                                        : undefined
+                                }
+                                primaryProduct={
+                                    promotion.product_ids?.[0]
+                                        ? productsMap[promotion.product_ids[0]]
+                                        : undefined
+                                }
                             />
                         ))}
                     </div>

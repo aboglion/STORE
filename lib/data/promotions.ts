@@ -52,3 +52,32 @@ const getActivePromotionsCached = unstable_cache(
 export const getActivePromotions = cache(async (): Promise<Promotion[]> => {
     return getActivePromotionsCached();
 });
+
+export interface PromotionProductInfo {
+    id: string;
+    slug: string;
+    name_he: string;
+    name_ar: string | null;
+    stock_quantity: number;
+}
+
+/**
+ * Loads minimal product info (slug, stock, names) for products in promotions.
+ */
+export async function getPromotionProducts(
+    productIds: string[]
+): Promise<Record<string, PromotionProductInfo>> {
+    if (!productIds || productIds.length === 0) return {};
+    const supabase = createPublicClient();
+    const { data } = await supabase
+        .from("products")
+        .select("id, slug, name_he, name_ar, stock_quantity")
+        .in("id", productIds)
+        .eq("is_active", true);
+
+    const map: Record<string, PromotionProductInfo> = {};
+    for (const p of (data ?? []) as PromotionProductInfo[]) {
+        map[p.id] = p;
+    }
+    return map;
+}

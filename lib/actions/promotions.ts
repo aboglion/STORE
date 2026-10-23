@@ -42,11 +42,18 @@ function buildConfig(
             const config: Record<string, unknown> = {
                 deal_price_agorot: dealPrice ?? 0,
             };
-            const originalPrice =
-                originalPriceOverride ??
-                shekelInputToAgorot(data.original_price_shekels ?? "");
-            if (originalPrice != null) {
-                config.original_price_agorot = originalPrice;
+            // Only store a single original_price_agorot if scope is a single product or global 'all'.
+            // For multiple products or categories, each product retains its own individual original price.
+            const isSingleProduct = data.scope_type === "products" && data.product_ids.length === 1;
+            const isGlobalScope = data.scope_type === "all";
+
+            if (isSingleProduct || isGlobalScope) {
+                const originalPrice =
+                    originalPriceOverride ??
+                    shekelInputToAgorot(data.original_price_shekels ?? "");
+                if (originalPrice != null) {
+                    config.original_price_agorot = originalPrice;
+                }
             }
             return config;
         }
@@ -64,6 +71,81 @@ function buildConfig(
     }
 }
 
+async function getCategoryProductIds(
+    admin: ReturnType<typeof createAdminClient>,
+    categoryId: string
+): Promise<string[]> {
+    const { data } = await admin
+        .from("products")
+        .select("id")
+        .eq("category_id", categoryId);
+    return (data ?? []).map((p) => p.id);
+}
+
+/**
+ * Applies a price deal to a set of products.
+ * Each product's individual original price is preserved in compare_at_price_agorot,
+ * and price_agorot is updated to the deal price.
+ */
+async function applyPriceDealToProducts(
+    admin: ReturnType<typeof createAdminClient>,
+    productIds: string[],
+    dealPriceAgorot: number
+) {
+    if (productIds.length === 0) return;
+
+    const { data: dbProducts } = await admin
+        .from("products")
+        .select("id, price_agorot, compare_at_price_agorot")
+        .in("id", productIds);
+
+    if (!dbProducts || dbProducts.length === 0) return;
+
+    for (const prod of dbProducts) {
+        // If already in a sale/compare price, keep it. Otherwise its current price_agorot is original!
+        const originalPrice = prod.compare_at_price_agorot ?? prod.price_agorot;
+        await admin
+            .from("products")
+            .update({
+                price_agorot: dealPriceAgorot,
+                compare_at_price_agorot: originalPrice,
+            })
+            .eq("id", prod.id);
+    }
+}
+
+/**
+ * Restores products from a price deal.
+ * Each product's original price (stored in compare_at_price_agorot) is restored to price_agorot,
+ * and compare_at_price_agorot is reset to null.
+ */
+async function restoreProductsFromDeal(
+    admin: ReturnType<typeof createAdminClient>,
+    productIds: string[]
+) {
+    if (productIds.length === 0) return;
+
+    const { data: dbProducts } = await admin
+        .from("products")
+        .select("id, price_agorot, compare_at_price_agorot")
+        .in("id", productIds)
+        .not("compare_at_price_agorot", "is", null);
+
+    if (!dbProducts || dbProducts.length === 0) return;
+
+    for (const prod of dbProducts) {
+        if (prod.compare_at_price_agorot != null) {
+            await admin
+                .from("products")
+                .update({
+                    price_agorot: prod.compare_at_price_agorot,
+                    compare_at_price_agorot: null,
+                })
+                .eq("id", prod.id);
+        }
+    }
+}
+
 export async function createPromotion(
     values: z.infer<ReturnType<typeof promotionFormSchema>>
 ): Promise<PromotionActionResult> {
@@ -77,21 +159,23 @@ export async function createPromotion(
 
     const admin = createAdminClient();
 
-    let resolvedOriginalPrice = shekelInputToAgorot(parsed.data.original_price_shekels ?? "");
+    let resolvedSingleOriginalPrice: number | null = null;
     if (
         parsed.data.type === "price_deal" &&
         parsed.data.scope_type === "products" &&
-        parsed.data.product_ids.length > 0 &&
-        resolvedOriginalPrice == null
+        parsed.data.product_ids.length === 1
     ) {
-        const { data: dbProducts } = await admin
-            .from("products")
-            .select("price_agorot, compare_at_price_agorot")
-            .in("id", parsed.data.product_ids)
-            .limit(1);
-        if (dbProducts && dbProducts.length > 0) {
-            resolvedOriginalPrice =
-                dbProducts[0].compare_at_price_agorot || dbProducts[0].price_agorot;
+        resolvedSingleOriginalPrice = shekelInputToAgorot(parsed.data.original_price_shekels ?? "");
+        if (resolvedSingleOriginalPrice == null) {
+            const { data: dbProducts } = await admin
+                .from("products")
+                .select("price_agorot, compare_at_price_agorot")
+                .eq("id", parsed.data.product_ids[0])
+                .maybeSingle();
+            if (dbProducts) {
+                resolvedSingleOriginalPrice =
+                    dbProducts.compare_at_price_agorot || dbProducts.price_agorot;
+            }
         }
     }
 
@@ -109,7 +193,7 @@ export async function createPromotion(
                 parsed.data.scope_type === "category" ? parsed.data.category_id : null,
             product_ids:
                 parsed.data.scope_type === "products" ? parsed.data.product_ids : [],
-            config: buildConfig(parsed.data.type, parsed.data, resolvedOriginalPrice),
+            config: buildConfig(parsed.data.type, parsed.data, resolvedSingleOriginalPrice),
             image_path: parsed.data.image_path?.trim() || null,
             sort_order: parsed.data.sort_order,
         })
@@ -118,24 +202,18 @@ export async function createPromotion(
 
     if (error) return { error: te("savePromotionFailed") };
 
-    // When a price_deal on specific products is active, update their store price
-    if (
-        parsed.data.type === "price_deal" &&
-        parsed.data.scope_type === "products" &&
-        parsed.data.product_ids.length > 0
-    ) {
+    // When a price_deal is active, apply deal price to all affected products
+    if (parsed.data.type === "price_deal" && parsed.data.is_active) {
         const dealPrice = shekelInputToAgorot(parsed.data.deal_price_shekels ?? "");
-        if (dealPrice != null && parsed.data.is_active) {
-            await admin
-                .from("products")
-                .update({
-                    price_agorot: dealPrice,
-                    ...(resolvedOriginalPrice != null
-                        ? { compare_at_price_agorot: resolvedOriginalPrice }
-                        : {}),
-                })
-                .in("id", parsed.data.product_ids);
-            revalidateTag(STORE_CACHE_TAGS.products);
+        if (dealPrice != null) {
+            if (parsed.data.scope_type === "products" && parsed.data.product_ids.length > 0) {
+                await applyPriceDealToProducts(admin, parsed.data.product_ids, dealPrice);
+                revalidateTag(STORE_CACHE_TAGS.products);
+            } else if (parsed.data.scope_type === "category" && parsed.data.category_id) {
+                const catProductIds = await getCategoryProductIds(admin, parsed.data.category_id);
+                await applyPriceDealToProducts(admin, catProductIds, dealPrice);
+                revalidateTag(STORE_CACHE_TAGS.products);
+            }
         }
     }
 
@@ -165,29 +243,40 @@ export async function updatePromotion(
     // Fetch existing promotion to handle product price transitions
     const { data: existingPromotion } = await admin
         .from("promotions")
-        .select("type, scope_type, product_ids, config, is_active")
+        .select("type, scope_type, product_ids, category_id, config, is_active")
         .eq("id", id)
         .maybeSingle();
 
-    const existingConfig = existingPromotion?.config as Record<string, unknown> | null;
-    let resolvedOriginalPrice = shekelInputToAgorot(parsed.data.original_price_shekels ?? "");
-    if (resolvedOriginalPrice == null) {
-        resolvedOriginalPrice = (existingConfig?.original_price_agorot as number) ?? null;
+    let oldAffectedProductIds: string[] = [];
+    if (existingPromotion?.type === "price_deal" && existingPromotion.is_active) {
+        if (existingPromotion.scope_type === "products" && existingPromotion.product_ids?.length) {
+            oldAffectedProductIds = existingPromotion.product_ids;
+        } else if (existingPromotion.scope_type === "category" && existingPromotion.category_id) {
+            oldAffectedProductIds = await getCategoryProductIds(admin, existingPromotion.category_id);
+        }
     }
+
+    let resolvedSingleOriginalPrice: number | null = null;
     if (
         parsed.data.type === "price_deal" &&
         parsed.data.scope_type === "products" &&
-        parsed.data.product_ids.length > 0 &&
-        resolvedOriginalPrice == null
+        parsed.data.product_ids.length === 1
     ) {
-        const { data: dbProducts } = await admin
-            .from("products")
-            .select("price_agorot, compare_at_price_agorot")
-            .in("id", parsed.data.product_ids)
-            .limit(1);
-        if (dbProducts && dbProducts.length > 0) {
-            resolvedOriginalPrice =
-                dbProducts[0].compare_at_price_agorot || dbProducts[0].price_agorot;
+        resolvedSingleOriginalPrice = shekelInputToAgorot(parsed.data.original_price_shekels ?? "");
+        if (resolvedSingleOriginalPrice == null) {
+            const existingConfig = existingPromotion?.config as Record<string, unknown> | null;
+            resolvedSingleOriginalPrice = (existingConfig?.original_price_agorot as number) ?? null;
+        }
+        if (resolvedSingleOriginalPrice == null) {
+            const { data: dbProducts } = await admin
+                .from("products")
+                .select("price_agorot, compare_at_price_agorot")
+                .eq("id", parsed.data.product_ids[0])
+                .maybeSingle();
+            if (dbProducts) {
+                resolvedSingleOriginalPrice =
+                    dbProducts.compare_at_price_agorot || dbProducts.price_agorot;
+            }
         }
     }
 
@@ -205,7 +294,7 @@ export async function updatePromotion(
                 parsed.data.scope_type === "category" ? parsed.data.category_id : null,
             product_ids:
                 parsed.data.scope_type === "products" ? parsed.data.product_ids : [],
-            config: buildConfig(parsed.data.type, parsed.data, resolvedOriginalPrice),
+            config: buildConfig(parsed.data.type, parsed.data, resolvedSingleOriginalPrice),
             ...(parsed.data.image_path !== undefined
                 ? { image_path: parsed.data.image_path.trim() || null }
                 : {}),
@@ -215,57 +304,30 @@ export async function updatePromotion(
 
     if (error) return { error: te("updatePromotionFailed") };
 
-    // Sync product prices when price_deal on products is toggled or updated
-    const oldProductIds = (existingPromotion?.product_ids as string[]) || [];
-    const newProductIds = parsed.data.scope_type === "products" ? parsed.data.product_ids : [];
-    const oldOriginalPrice = (existingConfig?.original_price_agorot as number) ?? resolvedOriginalPrice;
+    // Determine new affected products
+    let newAffectedProductIds: string[] = [];
+    if (parsed.data.type === "price_deal" && parsed.data.is_active) {
+        if (parsed.data.scope_type === "products" && parsed.data.product_ids.length) {
+            newAffectedProductIds = parsed.data.product_ids;
+        } else if (parsed.data.scope_type === "category" && parsed.data.category_id) {
+            newAffectedProductIds = await getCategoryProductIds(admin, parsed.data.category_id);
+        }
+    }
 
-    // 1. Products removed from this promotion (or deactivated or changed type)
-    const removedProductIds = oldProductIds.filter(
-        (pid) => !newProductIds.includes(pid) || !parsed.data.is_active || parsed.data.type !== "price_deal"
+    // 1. Any product no longer affected gets its own original price restored
+    const removedProductIds = oldAffectedProductIds.filter(
+        (pid) => !newAffectedProductIds.includes(pid)
     );
-    if (
-        existingPromotion?.type === "price_deal" &&
-        existingPromotion?.scope_type === "products" &&
-        removedProductIds.length > 0 &&
-        oldOriginalPrice != null
-    ) {
-        await admin
-            .from("products")
-            .update({
-                price_agorot: oldOriginalPrice,
-                compare_at_price_agorot: null,
-            })
-            .in("id", removedProductIds);
+    if (removedProductIds.length > 0) {
+        await restoreProductsFromDeal(admin, removedProductIds);
         revalidateTag(STORE_CACHE_TAGS.products);
     }
 
-    // 2. Active products in this promotion
-    if (
-        parsed.data.type === "price_deal" &&
-        parsed.data.scope_type === "products" &&
-        newProductIds.length > 0
-    ) {
+    // 2. Active products in deal get updated with deal price and their own original prices
+    if (newAffectedProductIds.length > 0) {
         const dealPrice = shekelInputToAgorot(parsed.data.deal_price_shekels ?? "");
-        if (parsed.data.is_active && dealPrice != null) {
-            await admin
-                .from("products")
-                .update({
-                    price_agorot: dealPrice,
-                    ...(resolvedOriginalPrice != null
-                        ? { compare_at_price_agorot: resolvedOriginalPrice }
-                        : {}),
-                })
-                .in("id", newProductIds);
-            revalidateTag(STORE_CACHE_TAGS.products);
-        } else if (!parsed.data.is_active && oldOriginalPrice != null) {
-            await admin
-                .from("products")
-                .update({
-                    price_agorot: oldOriginalPrice,
-                    compare_at_price_agorot: null,
-                })
-                .in("id", newProductIds);
+        if (dealPrice != null) {
+            await applyPriceDealToProducts(admin, newAffectedProductIds, dealPrice);
             revalidateTag(STORE_CACHE_TAGS.products);
         }
     }
@@ -285,7 +347,7 @@ export async function deletePromotion(id: string): Promise<PromotionActionResult
     // Fetch promotion details before deleting to clean image and restore product prices
     const { data: promotion } = await admin
         .from("promotions")
-        .select("image_path, type, scope_type, product_ids, config")
+        .select("image_path, type, scope_type, product_ids, category_id, config")
         .eq("id", id)
         .maybeSingle();
 
@@ -296,23 +358,18 @@ export async function deletePromotion(id: string): Promise<PromotionActionResult
     }
 
     // Restore product prices if this was a price_deal
-    const promoConfig = promotion?.config as Record<string, unknown> | null;
-    const originalPrice = promoConfig?.original_price_agorot as number | undefined;
-    const productIds = promotion?.product_ids as string[] | undefined;
-    if (
-        promotion?.type === "price_deal" &&
-        promotion?.scope_type === "products" &&
-        productIds?.length &&
-        originalPrice != null
-    ) {
-        await admin
-            .from("products")
-            .update({
-                price_agorot: originalPrice,
-                compare_at_price_agorot: null,
-            })
-            .in("id", productIds);
-        revalidateTag(STORE_CACHE_TAGS.products);
+    if (promotion?.type === "price_deal") {
+        let productIdsToRestore: string[] = [];
+        if (promotion.scope_type === "products" && promotion.product_ids?.length) {
+            productIdsToRestore = promotion.product_ids;
+        } else if (promotion.scope_type === "category" && promotion.category_id) {
+            productIdsToRestore = await getCategoryProductIds(admin, promotion.category_id);
+        }
+
+        if (productIdsToRestore.length > 0) {
+            await restoreProductsFromDeal(admin, productIdsToRestore);
+            revalidateTag(STORE_CACHE_TAGS.products);
+        }
     }
 
     const { error } = await admin.from("promotions").delete().eq("id", id);
@@ -336,7 +393,7 @@ export async function cleanupExpiredPromotions(): Promise<void> {
 
         const { data: expiredPromos, error } = await admin
             .from("promotions")
-            .select("id, type, scope_type, product_ids, config")
+            .select("id, type, scope_type, product_ids, category_id, config")
             .eq("is_active", true)
             .not("ends_at", "is", null)
             .lt("ends_at", nowIso);
@@ -353,24 +410,18 @@ export async function cleanupExpiredPromotions(): Promise<void> {
                 .update({ is_active: false })
                 .eq("id", promo.id);
 
-            const config = promo.config as Record<string, unknown> | null;
-            const originalPrice = config?.original_price_agorot as number | undefined;
-            const productIds = promo.product_ids as string[] | undefined;
+            if (promo.type === "price_deal") {
+                let productIdsToRestore: string[] = [];
+                if (promo.scope_type === "products" && promo.product_ids?.length) {
+                    productIdsToRestore = promo.product_ids;
+                } else if (promo.scope_type === "category" && promo.category_id) {
+                    productIdsToRestore = await getCategoryProductIds(admin, promo.category_id);
+                }
 
-            if (
-                promo.type === "price_deal" &&
-                promo.scope_type === "products" &&
-                productIds?.length &&
-                originalPrice != null
-            ) {
-                await admin
-                    .from("products")
-                    .update({
-                        price_agorot: originalPrice,
-                        compare_at_price_agorot: null,
-                    })
-                    .in("id", productIds);
-                productsAffected = true;
+                if (productIdsToRestore.length > 0) {
+                    await restoreProductsFromDeal(admin, productIdsToRestore);
+                    productsAffected = true;
+                }
             }
         }
 

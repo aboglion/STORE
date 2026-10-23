@@ -279,30 +279,51 @@ export function PromotionDialog({
             current.add(productId);
             const product = products.find((p) => p.id === productId);
             if (product) {
-                // Auto-fill original price from selected product
-                const origAgorot = product.compare_at_price_agorot || product.price_agorot;
-                if (origAgorot) {
-                    form.setValue(
-                        "original_price_shekels",
-                        (origAgorot / 100).toFixed(2),
-                        { shouldDirty: true }
-                    );
+                // If exactly ONE product is selected, auto-fill original price & title
+                if (current.size === 1) {
+                    const origAgorot = product.compare_at_price_agorot || product.price_agorot;
+                    if (origAgorot) {
+                        form.setValue(
+                            "original_price_shekels",
+                            (origAgorot / 100).toFixed(2),
+                            { shouldDirty: true }
+                        );
+                    }
+                    if (!form.getValues("name_he")) {
+                        form.setValue("name_he", product.name_he, { shouldDirty: true });
+                    }
+                    if (product.name_ar && !form.getValues("name_ar")) {
+                        form.setValue("name_ar", product.name_ar, { shouldDirty: true });
+                    }
+                } else {
+                    // Two or more products selected: clear original price so each product gets its own!
+                    form.setValue("original_price_shekels", "", { shouldDirty: true });
                 }
+
                 // Auto-fill promotion image if no custom image is uploaded
                 if (!imagePath && !pendingImage && product.image_path) {
                     setImagePath(product.image_path);
                     form.setValue("image_path", product.image_path, { shouldDirty: true });
                 }
-                // Auto-fill promotion title if empty
-                if (!form.getValues("name_he")) {
-                    form.setValue("name_he", product.name_he, { shouldDirty: true });
-                }
-                if (product.name_ar && !form.getValues("name_ar")) {
-                    form.setValue("name_ar", product.name_ar, { shouldDirty: true });
-                }
             }
         } else {
             current.delete(productId);
+            if (current.size === 1) {
+                const remainingId = Array.from(current)[0];
+                const product = products.find((p) => p.id === remainingId);
+                if (product) {
+                    const origAgorot = product.compare_at_price_agorot || product.price_agorot;
+                    if (origAgorot) {
+                        form.setValue(
+                            "original_price_shekels",
+                            (origAgorot / 100).toFixed(2),
+                            { shouldDirty: true }
+                        );
+                    }
+                }
+            } else {
+                form.setValue("original_price_shekels", "", { shouldDirty: true });
+            }
         }
         form.setValue("product_ids", Array.from(current), { shouldDirty: true });
     }
@@ -585,12 +606,12 @@ export function PromotionDialog({
                             <div
                                 className={cn(
                                     "grid gap-4",
-                                    selectedScope === "products"
+                                    selectedScope !== "all"
                                         ? "sm:grid-cols-1"
                                         : "sm:grid-cols-2"
                                 )}
                             >
-                                {selectedScope !== "products" && (
+                                {selectedScope === "all" && (
                                     <FormField
                                         control={form.control}
                                         name="original_price_shekels"
@@ -677,9 +698,16 @@ export function PromotionDialog({
                                 <FormItem>
                                     <RadioGroup
                                             value={field.value}
-                                            onValueChange={(value) =>
-                                                field.onChange(value as PromotionScopeType)
-                                            }
+                                            onValueChange={(value) => {
+                                                const scope = value as PromotionScopeType;
+                                                field.onChange(scope);
+                                                if (
+                                                    scope === "category" ||
+                                                    (scope === "products" && (form.getValues("product_ids")?.length ?? 0) !== 1)
+                                                ) {
+                                                    form.setValue("original_price_shekels", "", { shouldDirty: true });
+                                                }
+                                            }}
                                             className="grid gap-2 sm:grid-cols-3"
                                         >
                                             {(["all", "category", "products"] as PromotionScopeType[]).map(
