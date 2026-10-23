@@ -117,19 +117,20 @@ function mapSettingsRows(rows: Array<{ key: string; value: unknown }>): AppSetti
                 title_ar?: string;
                 enabled?: boolean;
             } | null | undefined;
+            const imagePath = (
+                banner?.image_path ??
+                DEFAULT_SETTINGS.promotions_banner.image_path
+            ).trim();
+            const isEnabled = imagePath.length > 0;
             return {
-                image_path:
-                    banner?.image_path ??
-                    DEFAULT_SETTINGS.promotions_banner.image_path,
+                image_path: imagePath,
                 title_he:
                     banner?.title_he ??
                     DEFAULT_SETTINGS.promotions_banner.title_he,
                 title_ar:
                     banner?.title_ar ??
                     DEFAULT_SETTINGS.promotions_banner.title_ar,
-                enabled:
-                    banner?.enabled ??
-                    DEFAULT_SETTINGS.promotions_banner.enabled,
+                enabled: isEnabled,
             };
         })(),
     };

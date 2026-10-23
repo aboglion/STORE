@@ -332,6 +332,9 @@ export async function updatePromotionsBanner(
 
     const te = await getTranslations("admin.errors");
 
+    const imagePath = values.image_path.trim();
+    const hasImage = Boolean(imagePath);
+
     const { error } = await createAdminClient()
         .from("settings")
         .upsert(
@@ -339,10 +342,10 @@ export async function updatePromotionsBanner(
                 key: "promotions_banner",
                 value: {
                     value: {
-                        image_path: values.image_path.trim(),
+                        image_path: imagePath,
                         title_he: values.title_he.trim(),
                         title_ar: values.title_ar.trim(),
-                        enabled: values.enabled,
+                        enabled: hasImage ? (values.enabled ?? true) : false,
                     },
                 },
             },
