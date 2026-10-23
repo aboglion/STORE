@@ -14,7 +14,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { shekelInputToAgorot } from "@/lib/utils/currency";
 import { promotionFormSchema } from "@/lib/validations/promotion";
 
-export type PromotionActionResult = { error?: string } | undefined;
+export type PromotionActionResult = { error?: string; id?: string } | undefined;
 
 export type PromotionImageActionResult = { path?: string; error?: string } | undefined;
 
@@ -65,27 +65,34 @@ export async function createPromotion(
     const parsed = promotionFormSchema(t).safeParse(values);
     if (!parsed.success) return { error: te("invalidData") };
 
-    const { error } = await createAdminClient().from("promotions").insert({
-        name_he: parsed.data.name_he,
-        name_ar: parsed.data.name_ar || null,
-        type: parsed.data.type,
-        is_active: parsed.data.is_active,
-        starts_at: toIsoOrNull(parsed.data.starts_at),
-        ends_at: toIsoOrNull(parsed.data.ends_at),
-        scope_type: parsed.data.scope_type,
-        category_id:
-            parsed.data.scope_type === "category" ? parsed.data.category_id : null,
-        product_ids:
-            parsed.data.scope_type === "products" ? parsed.data.product_ids : [],
-        config: buildConfig(parsed.data.type, parsed.data),
-        sort_order: parsed.data.sort_order,
-    });
+    const { data, error } = await createAdminClient()
+        .from("promotions")
+        .insert({
+            name_he: parsed.data.name_he,
+            name_ar: parsed.data.name_ar || null,
+            type: parsed.data.type,
+            is_active: parsed.data.is_active,
+            starts_at: toIsoOrNull(parsed.data.starts_at),
+            ends_at: toIsoOrNull(parsed.data.ends_at),
+            scope_type: parsed.data.scope_type,
+            category_id:
+                parsed.data.scope_type === "category" ? parsed.data.category_id : null,
+            product_ids:
+                parsed.data.scope_type === "products" ? parsed.data.product_ids : [],
+            config: buildConfig(parsed.data.type, parsed.data),
+            sort_order: parsed.data.sort_order,
+        })
+        .select("id")
+        .single();
 
     if (error) return { error: te("savePromotionFailed") };
 
     revalidatePath("/admin/promotions");
     revalidatePath("/");
     revalidateTag(STORE_CACHE_TAGS.promotions);
+
+    // New promotion id — lets the client attach a card image right after.
+    return { id: data?.id };
 }
 
 export async function updatePromotion(

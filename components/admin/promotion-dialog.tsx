@@ -117,14 +117,19 @@ export function PromotionDialog({
     const [pending, startTransition] = useTransition();
     const [productSearch, setProductSearch] = useState("");
     const [imagePath, setImagePath] = useState(promotion?.image_path ?? "");
+    const [pendingImage, setPendingImage] = useState<File | null>(null);
+    const [pendingImageUrl, setPendingImageUrl] = useState("");
     const [imageUploading, setImageUploading] = useState(false);
     const [imageFailed, setImageFailed] = useState(false);
     const imageInputRef = useRef<HTMLInputElement>(null);
-    const imageSrc = imagePath && !imageFailed ? storageImageUrl(imagePath) : "";
+    const hasPendingImage = Boolean(pendingImage && pendingImageUrl);
+    const imageSrc =
+        pendingImageUrl ||
+        (imagePath && !imageFailed ? storageImageUrl(imagePath) : "");
 
     async function handleImageFiles(files: FileList | null) {
         const file = files?.[0];
-        if (!file || !promotion) return;
+        if (!file) return;
 
         if (!file.type.startsWith("image/")) {
             toast.error(t("notImageToast"));
@@ -139,16 +144,31 @@ export function PromotionDialog({
                 useWebWorker: true,
             });
 
-            startTransition(async () => {
-                const res = await uploadPromotionImage(promotion.id, compressed);
-                if (res?.error) {
-                    toast.error(res.error);
-                } else if (res?.path) {
-                    setImagePath(res.path);
-                    setImageFailed(false);
-                    toast.success(t("imageUploadedToast"));
-                }
-            });
+            if (promotion) {
+                // Editing an existing promotion → upload straight away.
+                startTransition(async () => {
+                    const res = await uploadPromotionImage(
+                        promotion.id,
+                        compressed
+                    );
+                    if (res?.error) {
+                        toast.error(res.error);
+                    } else if (res?.path) {
+                        setImagePath(res.path);
+                        setImageFailed(false);
+                        toast.success(t("imageUploadedToast"));
+                    }
+                });
+            } else {
+                // Creating a new promotion → keep the image locally and
+                // upload it right after the promotion row is created.
+                setPendingImageUrl((prev) => {
+                    if (prev) URL.revokeObjectURL(prev);
+                    return URL.createObjectURL(compressed);
+                });
+                setPendingImage(compressed);
+                setImageFailed(false);
+            }
         } catch {
             toast.error(t("compressFailedToast"));
         } finally {
@@ -158,7 +178,12 @@ export function PromotionDialog({
     }
 
     function handleRemoveImage() {
-        if (!promotion) return;
+        if (!promotion) {
+            if (pendingImageUrl) URL.revokeObjectURL(pendingImageUrl);
+            setPendingImage(null);
+            setPendingImageUrl("");
+            return;
+        }
         startTransition(async () => {
             const res = await removePromotionImage(promotion.id);
             if (res?.error) {
@@ -168,6 +193,16 @@ export function PromotionDialog({
             setImagePath("");
             toast.success(t("imageRemovedToast"));
         });
+    }
+
+    function handleOpenChange(next: boolean) {
+        setOpen(next);
+        if (!next) {
+            // Discard any locally-previewed image on close (create flow).
+            if (pendingImageUrl) URL.revokeObjectURL(pendingImageUrl);
+            setPendingImage(null);
+            setPendingImageUrl("");
+        }
     }
 
     const schema = useMemo(() => promotionFormSchema(tv), [tv]);
@@ -239,23 +274,55 @@ export function PromotionDialog({
 
     function onSubmit(values: PromotionFormValues) {
         startTransition(async () => {
-            const result: PromotionActionResult = promotion
-                ? await updatePromotion(promotion.id, values)
-                : await createPromotion(values);
+            if (promotion) {
+                const result: PromotionActionResult = await updatePromotion(
+                    promotion.id,
+                    values
+                );
+                if (result?.error) {
+                    toast.error(result.error);
+                    return;
+                }
+                if (pendingImage) {
+                    const imgRes = await uploadPromotionImage(
+                        promotion.id,
+                        pendingImage
+                    );
+                    if (imgRes?.error) {
+                        toast.error(imgRes.error);
+                        return;
+                    }
+                }
+                toast.success(t("updatedToast"));
+                setOpen(false);
+                router.refresh();
+                return;
+            }
 
+            const result: PromotionActionResult = await createPromotion(values);
             if (result?.error) {
                 toast.error(result.error);
                 return;
             }
 
-            toast.success(promotion ? t("updatedToast") : t("createdToast"));
+            if (pendingImage && result?.id) {
+                const imgRes = await uploadPromotionImage(result.id, pendingImage);
+                if (imgRes?.error) {
+                    toast.error(imgRes.error);
+                    setOpen(false);
+                    router.refresh();
+                    return;
+                }
+            }
+
+            toast.success(t("createdToast"));
             setOpen(false);
             router.refresh();
         });
     }
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>{trigger}</DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
@@ -295,69 +362,70 @@ export function PromotionDialog({
                             )}
                         />
 
-                        {/* Card image (only for existing promotions — needs an id) */}
-                        {promotion && (
-                            <div className="rounded-xl border border-border/70 bg-muted/30 p-3">
-                                <div className="text-sm font-semibold text-muted-foreground">
-                                    {t("imageLabel")}
-                                </div>
-                                <div className="mt-2 flex flex-wrap items-center gap-3">
-                                    <div className="relative aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted/40">
-                                        {imageSrc ? (
-                                            <Image
-                                                src={imageSrc}
-                                                alt={t("imagePreviewAlt")}
-                                                fill
-                                                sizes="112px"
-                                                className="object-cover"
-                                                onError={() => setImageFailed(true)}
-                                            />
-                                        ) : (
-                                            <span className="flex items-center justify-center text-[10px] text-muted-foreground">
-                                                {t("noImage")}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="grid gap-1.5">
-                                        <input
-                                            ref={imageInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => handleImageFiles(e.target.files)}
+                        {/* Card image — uploaded right away when editing, or kept
+                            locally and uploaded once the promotion is created. */}
+                        <div className="rounded-xl border border-border/70 bg-muted/30 p-3">
+                            <div className="text-sm font-semibold text-muted-foreground">
+                                {t("imageLabel")}
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-3">
+                                <div className="relative aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted/40">
+                                    {imageSrc ? (
+                                        <Image
+                                            src={imageSrc}
+                                            alt={t("imagePreviewAlt")}
+                                            fill
+                                            sizes="112px"
+                                            className="object-cover"
+                                            onError={() => setImageFailed(true)}
                                         />
+                                    ) : (
+                                        <span className="flex items-center justify-center text-[10px] text-muted-foreground">
+                                            {t("noImage")}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="grid gap-1.5">
+                                    <input
+                                        ref={imageInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => handleImageFiles(e.target.files)}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="rounded-full"
+                                        disabled={imageUploading || pending}
+                                        onClick={() => imageInputRef.current?.click()}
+                                    >
+                                        {imageUploading ? (
+                                            <Loader2 className="size-4 animate-spin" />
+                                        ) : (
+                                            <Upload className="size-4" />
+                                        )}
+                                        {imagePath || hasPendingImage
+                                            ? t("replaceImage")
+                                            : t("uploadImage")}
+                                    </Button>
+                                    {(imagePath || hasPendingImage) && (
                                         <Button
                                             type="button"
-                                            variant="outline"
+                                            variant="ghost"
                                             size="sm"
-                                            className="rounded-full"
-                                            disabled={imageUploading || pending}
-                                            onClick={() => imageInputRef.current?.click()}
+                                            className="rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                                            disabled={pending || imageUploading}
+                                            onClick={handleRemoveImage}
                                         >
-                                            {imageUploading ? (
-                                                <Loader2 className="size-4 animate-spin" />
-                                            ) : (
-                                                <Upload className="size-4" />
-                                            )}
-                                            {imagePath ? t("replaceImage") : t("uploadImage")}
+                                            <Trash2 className="size-4" />
+                                            {t("removeImage")}
                                         </Button>
-                                        {imagePath && (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                className="rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                                                disabled={pending}
-                                                onClick={handleRemoveImage}
-                                            >
-                                                <Trash2 className="size-4" />
-                                                {t("removeImage")}
-                                            </Button>
-                                        )}
-                                    </div>
+                                    )}
                                 </div>
                             </div>
-                        )}
+                        </div>
 
                         <Separator className="my-1" />
 
@@ -760,7 +828,10 @@ export function PromotionDialog({
                         </div>
 
                         <DialogFooter>
-                            <Button type="submit" disabled={pending}>
+                            <Button
+                                type="submit"
+                                disabled={pending || imageUploading}
+                            >
                                 {pending && <Loader2 className="size-4 animate-spin" />}
                                 {promotion ? t("save") : t("create")}
                             </Button>
