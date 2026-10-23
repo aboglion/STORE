@@ -27,7 +27,8 @@ function toIsoOrNull(value: string | undefined): string | null {
 
 function buildConfig(
     type: string,
-    data: z.infer<ReturnType<typeof promotionFormSchema>>
+    data: z.infer<ReturnType<typeof promotionFormSchema>>,
+    originalPriceOverride?: number | null
 ): Record<string, unknown> {
     switch (type) {
         case "multi_buy":
@@ -41,9 +42,9 @@ function buildConfig(
             const config: Record<string, unknown> = {
                 deal_price_agorot: dealPrice ?? 0,
             };
-            const originalPrice = shekelInputToAgorot(
-                data.original_price_shekels ?? ""
-            );
+            const originalPrice =
+                originalPriceOverride ??
+                shekelInputToAgorot(data.original_price_shekels ?? "");
             if (originalPrice != null) {
                 config.original_price_agorot = originalPrice;
             }
@@ -75,6 +76,25 @@ export async function createPromotion(
     if (!parsed.success) return { error: te("invalidData") };
 
     const admin = createAdminClient();
+
+    let resolvedOriginalPrice = shekelInputToAgorot(parsed.data.original_price_shekels ?? "");
+    if (
+        parsed.data.type === "price_deal" &&
+        parsed.data.scope_type === "products" &&
+        parsed.data.product_ids.length > 0 &&
+        resolvedOriginalPrice == null
+    ) {
+        const { data: dbProducts } = await admin
+            .from("products")
+            .select("price_agorot, compare_at_price_agorot")
+            .in("id", parsed.data.product_ids)
+            .limit(1);
+        if (dbProducts && dbProducts.length > 0) {
+            resolvedOriginalPrice =
+                dbProducts[0].compare_at_price_agorot || dbProducts[0].price_agorot;
+        }
+    }
+
     const { data, error } = await admin
         .from("promotions")
         .insert({
@@ -89,7 +109,7 @@ export async function createPromotion(
                 parsed.data.scope_type === "category" ? parsed.data.category_id : null,
             product_ids:
                 parsed.data.scope_type === "products" ? parsed.data.product_ids : [],
-            config: buildConfig(parsed.data.type, parsed.data),
+            config: buildConfig(parsed.data.type, parsed.data, resolvedOriginalPrice),
             image_path: parsed.data.image_path?.trim() || null,
             sort_order: parsed.data.sort_order,
         })
@@ -105,13 +125,14 @@ export async function createPromotion(
         parsed.data.product_ids.length > 0
     ) {
         const dealPrice = shekelInputToAgorot(parsed.data.deal_price_shekels ?? "");
-        const originalPrice = shekelInputToAgorot(parsed.data.original_price_shekels ?? "");
         if (dealPrice != null && parsed.data.is_active) {
             await admin
                 .from("products")
                 .update({
                     price_agorot: dealPrice,
-                    ...(originalPrice != null ? { compare_at_price_agorot: originalPrice } : {}),
+                    ...(resolvedOriginalPrice != null
+                        ? { compare_at_price_agorot: resolvedOriginalPrice }
+                        : {}),
                 })
                 .in("id", parsed.data.product_ids);
             revalidateTag(STORE_CACHE_TAGS.products);
@@ -140,6 +161,36 @@ export async function updatePromotion(
     if (!parsed.success) return { error: te("invalidData") };
 
     const admin = createAdminClient();
+
+    // Fetch existing promotion to handle product price transitions
+    const { data: existingPromotion } = await admin
+        .from("promotions")
+        .select("type, scope_type, product_ids, config, is_active")
+        .eq("id", id)
+        .maybeSingle();
+
+    const existingConfig = existingPromotion?.config as Record<string, unknown> | null;
+    let resolvedOriginalPrice = shekelInputToAgorot(parsed.data.original_price_shekels ?? "");
+    if (resolvedOriginalPrice == null) {
+        resolvedOriginalPrice = (existingConfig?.original_price_agorot as number) ?? null;
+    }
+    if (
+        parsed.data.type === "price_deal" &&
+        parsed.data.scope_type === "products" &&
+        parsed.data.product_ids.length > 0 &&
+        resolvedOriginalPrice == null
+    ) {
+        const { data: dbProducts } = await admin
+            .from("products")
+            .select("price_agorot, compare_at_price_agorot")
+            .in("id", parsed.data.product_ids)
+            .limit(1);
+        if (dbProducts && dbProducts.length > 0) {
+            resolvedOriginalPrice =
+                dbProducts[0].compare_at_price_agorot || dbProducts[0].price_agorot;
+        }
+    }
+
     const { error } = await admin
         .from("promotions")
         .update({
@@ -154,7 +205,7 @@ export async function updatePromotion(
                 parsed.data.scope_type === "category" ? parsed.data.category_id : null,
             product_ids:
                 parsed.data.scope_type === "products" ? parsed.data.product_ids : [],
-            config: buildConfig(parsed.data.type, parsed.data),
+            config: buildConfig(parsed.data.type, parsed.data, resolvedOriginalPrice),
             ...(parsed.data.image_path !== undefined
                 ? { image_path: parsed.data.image_path.trim() || null }
                 : {}),
@@ -165,30 +216,56 @@ export async function updatePromotion(
     if (error) return { error: te("updatePromotionFailed") };
 
     // Sync product prices when price_deal on products is toggled or updated
+    const oldProductIds = (existingPromotion?.product_ids as string[]) || [];
+    const newProductIds = parsed.data.scope_type === "products" ? parsed.data.product_ids : [];
+    const oldOriginalPrice = (existingConfig?.original_price_agorot as number) ?? resolvedOriginalPrice;
+
+    // 1. Products removed from this promotion (or deactivated or changed type)
+    const removedProductIds = oldProductIds.filter(
+        (pid) => !newProductIds.includes(pid) || !parsed.data.is_active || parsed.data.type !== "price_deal"
+    );
+    if (
+        existingPromotion?.type === "price_deal" &&
+        existingPromotion?.scope_type === "products" &&
+        removedProductIds.length > 0 &&
+        oldOriginalPrice != null
+    ) {
+        await admin
+            .from("products")
+            .update({
+                price_agorot: oldOriginalPrice,
+                compare_at_price_agorot: null,
+            })
+            .in("id", removedProductIds);
+        revalidateTag(STORE_CACHE_TAGS.products);
+    }
+
+    // 2. Active products in this promotion
     if (
         parsed.data.type === "price_deal" &&
         parsed.data.scope_type === "products" &&
-        parsed.data.product_ids.length > 0
+        newProductIds.length > 0
     ) {
         const dealPrice = shekelInputToAgorot(parsed.data.deal_price_shekels ?? "");
-        const originalPrice = shekelInputToAgorot(parsed.data.original_price_shekels ?? "");
         if (parsed.data.is_active && dealPrice != null) {
             await admin
                 .from("products")
                 .update({
                     price_agorot: dealPrice,
-                    ...(originalPrice != null ? { compare_at_price_agorot: originalPrice } : {}),
+                    ...(resolvedOriginalPrice != null
+                        ? { compare_at_price_agorot: resolvedOriginalPrice }
+                        : {}),
                 })
-                .in("id", parsed.data.product_ids);
+                .in("id", newProductIds);
             revalidateTag(STORE_CACHE_TAGS.products);
-        } else if (!parsed.data.is_active && originalPrice != null) {
+        } else if (!parsed.data.is_active && oldOriginalPrice != null) {
             await admin
                 .from("products")
                 .update({
-                    price_agorot: originalPrice,
+                    price_agorot: oldOriginalPrice,
                     compare_at_price_agorot: null,
                 })
-                .in("id", parsed.data.product_ids);
+                .in("id", newProductIds);
             revalidateTag(STORE_CACHE_TAGS.products);
         }
     }
@@ -246,6 +323,64 @@ export async function deletePromotion(id: string): Promise<PromotionActionResult
     revalidatePath("/products");
     revalidatePath("/");
     revalidateTag(STORE_CACHE_TAGS.promotions);
+}
+
+/**
+ * Automatically cleans up expired promotions (ends_at has passed).
+ * Marks them is_active = false and restores affected products' original prices.
+ */
+export async function cleanupExpiredPromotions(): Promise<void> {
+    try {
+        const admin = createAdminClient();
+        const nowIso = new Date().toISOString();
+
+        const { data: expiredPromos, error } = await admin
+            .from("promotions")
+            .select("id, type, scope_type, product_ids, config")
+            .eq("is_active", true)
+            .not("ends_at", "is", null)
+            .lt("ends_at", nowIso);
+
+        if (error || !expiredPromos || expiredPromos.length === 0) {
+            return;
+        }
+
+        let productsAffected = false;
+
+        for (const promo of expiredPromos) {
+            await admin
+                .from("promotions")
+                .update({ is_active: false })
+                .eq("id", promo.id);
+
+            const config = promo.config as Record<string, unknown> | null;
+            const originalPrice = config?.original_price_agorot as number | undefined;
+            const productIds = promo.product_ids as string[] | undefined;
+
+            if (
+                promo.type === "price_deal" &&
+                promo.scope_type === "products" &&
+                productIds?.length &&
+                originalPrice != null
+            ) {
+                await admin
+                    .from("products")
+                    .update({
+                        price_agorot: originalPrice,
+                        compare_at_price_agorot: null,
+                    })
+                    .in("id", productIds);
+                productsAffected = true;
+            }
+        }
+
+        if (productsAffected) {
+            revalidateTag(STORE_CACHE_TAGS.products);
+        }
+        revalidateTag(STORE_CACHE_TAGS.promotions);
+    } catch (e) {
+        console.error("cleanupExpiredPromotions error:", e);
+    }
 }
 
 // ---------------------------------------------------------------------------

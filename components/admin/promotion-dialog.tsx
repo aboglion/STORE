@@ -279,12 +279,12 @@ export function PromotionDialog({
             current.add(productId);
             const product = products.find((p) => p.id === productId);
             if (product) {
-                // Auto-fill original price if not entered yet
-                const currentOriginal = form.getValues("original_price_shekels");
-                if (!currentOriginal && product.price_agorot) {
+                // Auto-fill original price from selected product
+                const origAgorot = product.compare_at_price_agorot || product.price_agorot;
+                if (origAgorot) {
                     form.setValue(
                         "original_price_shekels",
-                        (product.price_agorot / 100).toFixed(2),
+                        (origAgorot / 100).toFixed(2),
                         { shouldDirty: true }
                     );
                 }
@@ -582,23 +582,32 @@ export function PromotionDialog({
                         )}
 
                         {selectedType === "price_deal" && (
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <FormField
-                                    control={form.control}
-                                    name="original_price_shekels"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t("originalPrice")}</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="12.90" dir="ltr" {...field} />
-                                            </FormControl>
-                                            <FormDescription>
-                                                {t("originalPriceDesc")}
-                                            </FormDescription>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                            <div
+                                className={cn(
+                                    "grid gap-4",
+                                    selectedScope === "products"
+                                        ? "sm:grid-cols-1"
+                                        : "sm:grid-cols-2"
+                                )}
+                            >
+                                {selectedScope !== "products" && (
+                                    <FormField
+                                        control={form.control}
+                                        name="original_price_shekels"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{t("originalPrice")}</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="12.90" dir="ltr" {...field} />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    {t("originalPriceDesc")}
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
                                 <FormField
                                     control={form.control}
                                     name="deal_price_shekels"

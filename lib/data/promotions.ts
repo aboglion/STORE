@@ -6,6 +6,7 @@ import { cache } from "react";
 import type { Promotion } from "@/types/database.types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createPublicClient } from "@/lib/supabase/public";
+import { cleanupExpiredPromotions } from "@/lib/actions/promotions";
 import { STORE_CACHE_TAGS } from "@/lib/data/storefront";
 
 /** Safety-net revalidation window for storefront data (seconds). */
@@ -13,6 +14,9 @@ const STORE_CACHE_REVALIDATE = 300;
 
 /** All promotions (admin panel — includes inactive rows). */
 export async function getPromotions(): Promise<Promotion[]> {
+    // Run cleanup on any expired promotions to restore product prices automatically
+    await cleanupExpiredPromotions();
+
     const admin = createAdminClient();
 
     const { data, error } = await admin
