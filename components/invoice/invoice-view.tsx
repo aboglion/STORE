@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { composeAddressLine } from "@/lib/utils/address";
 import { formatILS } from "@/lib/utils/currency";
 import { formatDateTime } from "@/lib/utils/dates";
-import type { Locale } from "@/lib/i18n/config";
+import { localizedText, type Locale } from "@/lib/i18n/config";
 import type { OrderDetail } from "@/lib/data/orders";
 import type { AppSettings } from "@/types/database.types";
 
@@ -210,16 +210,42 @@ export function InvoiceView({ detail, settings }: InvoiceViewProps) {
                         <span>{t("subtotal")}</span>
                         <span dir="ltr">{formatILS(order.subtotal_agorot, locale)}</span>
                     </div>
-                    {order.delivery_fee_agorot > 0 && (
-                        <div className="flex w-56 items-center justify-between text-slate-500">
-                            <span>{t("delivery")}</span>
-                            <span dir="ltr">{formatILS(order.delivery_fee_agorot, locale)}</span>
-                        </div>
-                    )}
+                    <div className="flex w-56 items-center justify-between text-slate-500">
+                        <span>{t("delivery")}</span>
+                        <span dir="ltr">
+                            {order.delivery_fee_agorot > 0
+                                ? formatILS(order.delivery_fee_agorot, locale)
+                                : t("freeDelivery")}
+                        </span>
+                    </div>
                     {order.discount_agorot > 0 && (
                         <div className="flex w-56 items-center justify-between text-slate-500">
                             <span>{t("discount")}</span>
                             <span dir="ltr">-{formatILS(order.discount_agorot, locale)}</span>
+                        </div>
+                    )}
+                    {order.promotions_snapshot.length > 0 && (
+                        <div className="w-56 space-y-0.5 text-[11px] text-emerald-600">
+                            {order.promotions_snapshot.map((promo) => (
+                                <div key={promo.promotion_id} className="flex items-center justify-between gap-1">
+                                    <span className="min-w-0 flex-1 truncate">
+                                        {localizedText(locale, promo.name_he, promo.name_ar)}
+                                        {promo.discount_agorot > 0 && (
+                                            <span className="text-slate-400">
+                                                {" · "}
+                                                {localizedText(
+                                                    locale,
+                                                    promo.description_he,
+                                                    promo.description_ar
+                                                )}
+                                            </span>
+                                        )}
+                                    </span>
+                                    {promo.discount_agorot > 0 && (
+                                        <span dir="ltr">-{formatILS(promo.discount_agorot, locale)}</span>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     )}
                     <div className="mt-1 flex w-56 items-center justify-between border-t border-slate-200 pt-2 text-base font-extrabold">
@@ -232,10 +258,10 @@ export function InvoiceView({ detail, settings }: InvoiceViewProps) {
                 <div className="flex items-center gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
                     <span
                         className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${isPaid
-                                ? "bg-emerald-100 text-emerald-700"
-                                : isCash
-                                    ? "bg-amber-100 text-amber-700"
-                                    : "bg-slate-200 text-slate-600"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : isCash
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-slate-200 text-slate-600"
                             }`}
                     >
                         {paymentStatusLabel}

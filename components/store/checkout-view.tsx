@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ProgressiveImage } from "@/components/ui/progressive-image";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { Truck } from "lucide-react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -58,7 +59,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/cart-context";
 import { createOrder } from "@/lib/actions/orders";
-import { getCartProductDetails } from "@/lib/actions/storefront";
+import { getCartPricing, type CartPricingData } from "@/lib/actions/storefront";
+import { computeCartPricing } from "@/lib/promotions/engine";
 import { localizedText, type Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
 import { demoImageUrl } from "@/lib/utils/images";
@@ -106,9 +108,7 @@ export function CheckoutView() {
     const [showLocationRequired, setShowLocationRequired] = useState(false);
     const [termsAccepted, setTermsAccepted] = useState(true);
     const [marketingOptIn, setMarketingOptIn] = useState(false);
-    const [details, setDetails] = useState<Awaited<
-        ReturnType<typeof getCartProductDetails>
-    >>([]);
+    const [pricing, setPricing] = useState<CartPricingData | null>(null);
 
     // Address precision state
     const isAr = locale === "ar";
@@ -180,12 +180,12 @@ export function CheckoutView() {
     useEffect(() => {
         const ids = items.map((i) => i.product_id);
         if (ids.length === 0) {
-            setDetails([]);
+            setPricing(null);
             return;
         }
         startTransition(async () => {
-            const result = await getCartProductDetails(ids);
-            setDetails(result);
+            const result = await getCartPricing(ids);
+            setPricing(result);
         });
     }, [items]);
 
@@ -413,11 +413,30 @@ export function CheckoutView() {
         );
     }
 
+    const details = pricing?.products ?? [];
     const detailMap = new Map(details.map((d) => [d.id, d]));
-    const subtotal = orderItems.reduce((sum, item) => {
-        const detail = detailMap.get(item.product_id);
-        return sum + (detail ? detail.price_agorot * item.quantity : 0);
-    }, 0);
+
+    const pricingResult = pricing
+        ? computeCartPricing(
+            orderItems.map((item) => {
+                const detail = detailMap.get(item.product_id);
+                return {
+                    product_id: item.product_id,
+                    quantity: item.quantity,
+                    unit_price_agorot: detail?.price_agorot ?? 0,
+                    category_id: detail?.category_id ?? null,
+                };
+            }),
+            pricing.promotions,
+            pricing.settings
+        )
+        : null;
+
+    const subtotal = pricingResult?.subtotal_agorot ?? 0;
+    const discount = pricingResult?.discount_agorot ?? 0;
+    const deliveryFee = pricingResult?.delivery_fee_agorot ?? 0;
+    const total = pricingResult?.total_agorot ?? subtotal;
+    const appliedPromotions = pricingResult?.applied ?? [];
     const hasUnavailableItems = orderItems.some((item) => {
         const detail = detailMap.get(item.product_id);
         return !detail || !detail.is_active || detail.stock_quantity <= 0;
@@ -895,6 +914,54 @@ export function CheckoutView() {
                             <span>{t("itemsTotal")} ({t("includingVat")})</span>
                             <span className="font-semibold">{formatILS(subtotal, locale)}</span>
                         </div>
+                        {appliedPromotions.length > 0 && (
+                            <div className="mt-1.5 grid gap-1 text-xs">
+                                {appliedPromotions.map((promo) => (
+                                    <div
+                                        key={promo.promotion_id}
+                                        className="flex items-center justify-between gap-2 text-emerald-600 dark:text-emerald-400"
+                                    >
+                                        <span className="min-w-0 flex-1 truncate">
+                                            {localizedText(locale, promo.name_he, promo.name_ar)}
+                                            {promo.discount_agorot > 0 && (
+                                                <span className="text-muted-foreground">
+                                                    {" · "}
+                                                    {localizedText(
+                                                        locale,
+                                                        promo.description_he,
+                                                        promo.description_ar
+                                                    )}
+                                                </span>
+                                            )}
+                                        </span>
+                                        {promo.discount_agorot > 0 && (
+                                            <span className="font-semibold">
+                                                -{formatILS(promo.discount_agorot, locale)}
+                                            </span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {discount > 0 && (
+                            <div className="mt-1 flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
+                                <span>{t("discount")}</span>
+                                <span className="font-semibold">-{formatILS(discount, locale)}</span>
+                            </div>
+                        )}
+                        <div className="mt-1 flex justify-between text-sm">
+                            <span className="flex items-center gap-1.5">
+                                <Truck className="size-3.5" />
+                                {t("delivery")}
+                            </span>
+                            <span className={cn("font-semibold", deliveryFee === 0 && "text-emerald-600 dark:text-emerald-400")}>
+                                {deliveryFee === 0 ? t("freeDelivery") : formatILS(deliveryFee, locale)}
+                            </span>
+                        </div>
+                        <div className="mt-1 flex justify-between border-t border-border/60 pt-2 text-base font-bold">
+                            <span>{t("totalToPay")}</span>
+                            <span>{formatILS(total, locale)}</span>
+                        </div>
                         <div className="mt-1 text-xs text-muted-foreground">
                             {t("deliveryByCart")}
                         </div>
@@ -949,7 +1016,7 @@ export function CheckoutView() {
                     <div className="flex shrink-0 flex-col">
                         <span className="text-[10px] text-muted-foreground">{t("totalToPay")} ({t("includingVat")})</span>
                         <span className="font-display text-lg font-extrabold text-primary">
-                            {formatILS(subtotal, locale)}
+                            {formatILS(total, locale)}
                         </span>
                     </div>
                     <Button

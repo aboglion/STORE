@@ -198,6 +198,8 @@ export interface Order {
     eta_at: string | null;
     /** Unguessable token used in the public invoice URL. */
     invoice_token: string | null;
+    /** Promotions applied at checkout (snapshot for the receipt). */
+    promotions_snapshot: PromotionSnapshot[];
     placed_at: string;
     updated_at: string;
 }
@@ -240,6 +242,65 @@ export interface Setting {
     key: string;
     value: Json;
     updated_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Promotions
+// ---------------------------------------------------------------------------
+
+export type PromotionType = "multi_buy" | "price_deal" | "free_shipping";
+
+export type PromotionScopeType = "all" | "category" | "products";
+
+/**
+ * Type-specific promotion parameters.
+ *   * multi_buy:     { buy_quantity, get_quantity, discount_percent }
+ *                    (discount_percent = 100 means the Y units are free)
+ *   * price_deal:    { deal_price_agorot }
+ *   * free_shipping: { min_quantity, min_subtotal_agorot }
+ */
+export interface PromotionConfig {
+    /** multi_buy: units the customer must buy to trigger one reward group. */
+    buy_quantity?: number;
+    /** multi_buy: granted (free/discounted) units per reward group. */
+    get_quantity?: number;
+    /** multi_buy: discount % applied to the granted units (100 = free). */
+    discount_percent?: number;
+    /** price_deal: the promotional unit price in agorot. */
+    deal_price_agorot?: number;
+    /** free_shipping: minimum total units in the cart. */
+    min_quantity?: number;
+    /** free_shipping: minimum subtotal in agorot. */
+    min_subtotal_agorot?: number;
+}
+
+export interface Promotion {
+    id: string;
+    name_he: string;
+    /** Arabic promotion name — falls back to name_he when empty. */
+    name_ar: string | null;
+    type: PromotionType;
+    is_active: boolean;
+    starts_at: string | null;
+    ends_at: string | null;
+    scope_type: PromotionScopeType;
+    category_id: string | null;
+    product_ids: string[];
+    config: PromotionConfig;
+    sort_order: number;
+    created_at: string;
+    updated_at: string;
+}
+
+/** One applied promotion frozen on the order for the receipt. */
+export interface PromotionSnapshot {
+    promotion_id: string;
+    name_he: string;
+    name_ar: string | null;
+    type: PromotionType;
+    discount_agorot: number;
+    description_he: string;
+    description_ar: string;
 }
 
 export interface AdminProfile {

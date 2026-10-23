@@ -1,12 +1,30 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Download, Smartphone, X } from "lucide-react";
+import {
+    Check,
+    CheckCircle2,
+    Download,
+    Menu,
+    MonitorSmartphone,
+    Share,
+    Smartphone,
+    Sparkles,
+    X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -18,7 +36,11 @@ interface BeforeInstallPromptEvent extends Event {
     prompt(): Promise<void>;
 }
 
+type InstallPlatform = "ios" | "android" | "desktop";
+
 let globalDeferredPrompt: BeforeInstallPromptEvent | null = null;
+
+const GUIDE_OPEN_EVENT = "pwa-open-install-guide";
 
 // Capture early beforeinstallprompt at module level
 if (typeof window !== "undefined") {
@@ -27,90 +49,294 @@ if (typeof window !== "undefined") {
         globalDeferredPrompt = e as BeforeInstallPromptEvent;
         window.dispatchEvent(new CustomEvent("pwa-prompt-available"));
     });
+    window.addEventListener("appinstalled", () => {
+        globalDeferredPrompt = null;
+    });
+}
+
+function getDeferredPrompt(): BeforeInstallPromptEvent | null {
+    return (
+        (window as unknown as { __pwaDeferredPrompt?: BeforeInstallPromptEvent | null }).__pwaDeferredPrompt ||
+        globalDeferredPrompt
+    );
+}
+
+function checkStandalone(): boolean {
+    if (typeof window === "undefined") return false;
+    return (
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.matchMedia("(display-mode: window-controls-overlay)").matches ||
+        (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
+        document.referrer.includes("android-app://")
+    );
+}
+
+function detectPlatform(): InstallPlatform {
+    const ua = navigator.userAgent || "";
+    const isIos =
+        /iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream;
+    if (isIos) return "ios";
+    if (/Android/i.test(ua)) return "android";
+    return "desktop";
+}
+
+async function tryNativePrompt(): Promise<"accepted" | "shown" | "none"> {
+    const promptEvent = getDeferredPrompt();
+    if (!promptEvent) return "none";
+    try {
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
+        if (choice?.outcome === "accepted") {
+            globalDeferredPrompt = null;
+            (window as unknown as { __pwaDeferredPrompt?: BeforeInstallPromptEvent | null }).__pwaDeferredPrompt =
+                null;
+            return "accepted";
+        }
+        return "shown";
+    } catch (err) {
+        console.warn("[PWA] Error calling prompt():", err);
+        return "none";
+    }
+}
+
+function waitForPrompt(ms: number): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+        const timer = setTimeout(() => {
+            cleanup();
+            resolve(Boolean(getDeferredPrompt()));
+        }, ms);
+        const onAvailable = () => {
+            cleanup();
+            resolve(Boolean(getDeferredPrompt()));
+        };
+        const cleanup = () => {
+            clearTimeout(timer);
+            window.removeEventListener("pwa-prompt-available", onAvailable);
+        };
+        window.addEventListener("pwa-prompt-available", onAvailable);
+    });
+}
+
+function openGuideDialog(platform: InstallPlatform) {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent<InstallPlatform>(GUIDE_OPEN_EVENT, { detail: platform }));
 }
 
 /**
- * Triggers the install prompt modal manually from any button in the app.
+ * Triggers the install experience: preferred native prompt, and if the browser
+ * does not fire it (e.g. iOS Safari or Chrome suppressing prompts), opens a
+ * clear step-by-step guide dialog instead of a forgettable toast.
  */
 export async function triggerPwaInstall() {
     if (typeof window === "undefined") return;
 
-    // Check if already in standalone mode
-    const isStandalone =
-        window.matchMedia("(display-mode: standalone)").matches ||
-        (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
-        document.referrer.includes("android-app://");
-
-    if (isStandalone) {
+    if (checkStandalone()) {
         toast.info("האפליקציה כבר מותקנת במכשיר שלך ופועלת כאפליקציית ווב! 📱");
         return;
     }
 
-    // 1. Check if native prompt is already captured
-    const promptEvent =
-        (window as unknown as { __pwaDeferredPrompt?: BeforeInstallPromptEvent | null }).__pwaDeferredPrompt ||
-        globalDeferredPrompt;
+    // 1. Try the captured native prompt immediately
+    const outcome = await tryNativePrompt();
+    if (outcome === "accepted" || outcome === "shown") return;
 
-    if (promptEvent) {
-        try {
-            await promptEvent.prompt();
-            const choice = await promptEvent.userChoice;
-            if (choice?.outcome === "accepted") {
-                globalDeferredPrompt = null;
-                (window as unknown as { __pwaDeferredPrompt?: BeforeInstallPromptEvent | null }).__pwaDeferredPrompt = null;
-                toast.success("האפליקציה הותקנה בהצלחה במסך הבית שלך! 🎉");
-            }
-            return;
-        } catch (err) {
-            console.warn("[PWA] Error calling prompt():", err);
-        }
+    // 2. Wait briefly in case beforeinstallprompt is firing right on page load
+    const available = await waitForPrompt(800);
+    if (available) {
+        const second = await tryNativePrompt();
+        if (second === "accepted" || second === "shown") return;
     }
 
-    // 2. Wait briefly (up to 800ms) in case beforeinstallprompt is firing right now on page load
-    const promptPromise = new Promise<BeforeInstallPromptEvent | null>((resolve) => {
-        const timer = setTimeout(() => resolve(null), 800);
-        const onPrompt = () => {
-            clearTimeout(timer);
-            window.removeEventListener("pwa-prompt-available", onPrompt);
-            resolve(
-                (window as unknown as { __pwaDeferredPrompt?: BeforeInstallPromptEvent | null }).__pwaDeferredPrompt ||
-                globalDeferredPrompt
-            );
-        };
-        window.addEventListener("pwa-prompt-available", onPrompt);
-    });
-
-    const incoming = await promptPromise;
-    if (incoming) {
-        try {
-            await incoming.prompt();
-            const choice = await incoming.userChoice;
-            if (choice?.outcome === "accepted") {
-                globalDeferredPrompt = null;
-                (window as unknown as { __pwaDeferredPrompt?: BeforeInstallPromptEvent | null }).__pwaDeferredPrompt = null;
-                toast.success("האפליקציה הותקנה בהצלחה במסך הבית שלך! 🎉");
-            }
-            return;
-        } catch (err) {
-            console.warn("[PWA] prompt error:", err);
-        }
-    }
-
-    // 3. Fallback when browser has not fired programmatic install prompt (e.g. iOS or plain HTTP)
-    const ua = navigator.userAgent || "";
-    const isIos = /iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream;
-    if (isIos) {
-        toast.info("להתקנה ב-iPhone: לחץ על כפתור השיתוף ⎋ ובחר 'הוסף למסך הבית' 📲");
-    } else {
-        toast.info("להתקנה ישירה: לחץ על 3 הנקודות (⋮) בדפדפן ובחר 'התקן אפליקציה' או 'הוסף למסך הבית' 📲");
-    }
+    // 3. Fallback: open the visual install guide dialog
+    openGuideDialog(detectPlatform());
 }
 
 /**
- * Kept as a clean no-op so no instruction guide or modal is ever displayed to the user.
+ * A clear, platform-aware install guide. Opened automatically by
+ * `triggerPwaInstall()` when the native prompt cannot be shown.
+ */
+function InstallGuideDialog() {
+    const t = useTranslations("pwa");
+    const [open, setOpen] = useState(false);
+    const [platform, setPlatform] = useState<InstallPlatform>("android");
+
+    useEffect(() => {
+        const onOpen = (e: Event) => {
+            const detail = (e as CustomEvent<InstallPlatform>).detail;
+            if (detail) setPlatform(detail);
+            setOpen(true);
+        };
+        window.addEventListener(GUIDE_OPEN_EVENT, onOpen);
+        return () => window.removeEventListener(GUIDE_OPEN_EVENT, onOpen);
+    }, []);
+
+    const handleInstallNow = useCallback(async () => {
+        // If a native prompt is still available (e.g. desktop Chrome), use it.
+        const outcome = await tryNativePrompt();
+        if (outcome === "accepted" || outcome === "shown") {
+            setOpen(false);
+            return;
+        }
+        // Otherwise keep the guide open — the steps are the only way forward (iOS).
+    }, []);
+
+    const isIos = platform === "ios";
+    const isDesktop = platform === "desktop";
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent className="gap-5 sm:max-w-md">
+                <DialogHeader>
+                    <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 shadow-sm">
+                        <SmarthphoneIcon platform={platform} />
+                    </div>
+                    <DialogTitle className="text-center text-lg font-extrabold">
+                        {isIos ? t("iosTitle") : isDesktop ? t("desktopTitle") : t("androidTitle")}
+                    </DialogTitle>
+                    <DialogDescription className="text-center">
+                        {isIos ? t("iosSubtitle") : isDesktop ? t("desktopSubtitle") : t("androidSubtitle")}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid gap-2 rounded-2xl border border-primary/15 bg-primary/5 p-3">
+                    <div className="flex items-center gap-2 text-xs font-bold text-primary">
+                        <Sparkles className="size-3.5" />
+                        {t("badge")}
+                    </div>
+                    <div className="grid gap-1.5 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                            <CheckCircle2 className="size-3.5 shrink-0 text-primary" />
+                            {t("benefitFast")}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <CheckCircle2 className="size-3.5 shrink-0 text-primary" />
+                            {t("benefitStorage")}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <CheckCircle2 className="size-3.5 shrink-0 text-primary" />
+                            {t("benefitOrders")}
+                        </span>
+                    </div>
+                </div>
+
+                <ol className="space-y-2.5">
+                    {isIos ? (
+                        <>
+                            <GuideStep
+                                step={1}
+                                icon={<Share className="size-4" />}
+                                text={t("iosStep1")}
+                            />
+                            <GuideStep
+                                step={2}
+                                icon={<Smartphone className="size-4" />}
+                                text={t("iosStep2")}
+                            />
+                            <GuideStep
+                                step={3}
+                                icon={<Check className="size-4" />}
+                                text={t("iosStep3")}
+                            />
+                        </>
+                    ) : isDesktop ? (
+                        <>
+                            <GuideStep
+                                step={1}
+                                icon={<Download className="size-4" />}
+                                text={t("desktopStep1")}
+                            />
+                            <GuideStep
+                                step={2}
+                                icon={<Menu className="size-4" />}
+                                text={t("desktopStep2")}
+                            />
+                            <GuideStep
+                                step={3}
+                                icon={<Check className="size-4" />}
+                                text={t("desktopStep3")}
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <GuideStep
+                                step={1}
+                                icon={<Menu className="size-4" />}
+                                text={t("androidStep1")}
+                            />
+                            <GuideStep
+                                step={2}
+                                icon={<Smartphone className="size-4" />}
+                                text={t("androidStep2")}
+                            />
+                            <GuideStep
+                                step={3}
+                                icon={<Check className="size-4" />}
+                                text={t("androidStep3")}
+                            />
+                        </>
+                    )}
+                </ol>
+
+                {!isIos && (
+                    <p className="rounded-xl bg-muted px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+                        {t("androidMenuHint")}
+                    </p>
+                )}
+
+                <DialogFooter className="gap-2 sm:gap-2">
+                    <Button
+                        type="button"
+                        onClick={handleInstallNow}
+                        className="w-full gap-2 font-bold"
+                    >
+                        <Download className="size-4" />
+                        {isIos ? t("gotIt") : t("installButton")}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setOpen(false)}
+                        className="w-full"
+                    >
+                        {t("laterButton")}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function SmarthphoneIcon({ platform }: { platform: InstallPlatform }) {
+    if (platform === "desktop") return <MonitorSmartphone className="size-7 text-primary" />;
+    return <Smartphone className="size-7 text-primary" />;
+}
+
+function GuideStep({
+    step,
+    icon,
+    text,
+}: {
+    step: number;
+    icon: React.ReactNode;
+    text: string;
+}) {
+    return (
+        <li className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-extrabold text-primary">
+                {step}
+            </span>
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                {icon}
+            </span>
+            <span className="min-w-0 text-sm leading-snug text-foreground/90">{text}</span>
+        </li>
+    );
+}
+
+/**
+ * Mounted once in the store shell — hosts the install guide dialog.
  */
 export function InstallPrompt() {
-    return null;
+    return <InstallGuideDialog />;
 }
 
 /**
@@ -129,12 +355,7 @@ export function PwaInstallTriggerButton({
 
     useEffect(() => {
         setMounted(true);
-        if (typeof window === "undefined") return;
-        const standaloneCheck =
-            window.matchMedia("(display-mode: standalone)").matches ||
-            (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
-            document.referrer.includes("android-app://");
-        setIsStandalone(standaloneCheck);
+        setIsStandalone(checkStandalone());
     }, []);
 
     if (!mounted || isStandalone) {
@@ -148,11 +369,11 @@ export function PwaInstallTriggerButton({
             className={cn(
                 "inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all hover:scale-102 active:scale-98",
                 variant === "outline" &&
-                    "border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10",
+                "border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10",
                 variant === "default" &&
-                    "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
+                "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
                 variant === "ghost" &&
-                    "text-muted-foreground hover:bg-muted hover:text-foreground",
+                "text-muted-foreground hover:bg-muted hover:text-foreground",
                 className
             )}
         >
@@ -174,13 +395,7 @@ export function PwaInstallBanner() {
 
     useEffect(() => {
         setMounted(true);
-        if (typeof window === "undefined") return;
-
-        const standaloneCheck =
-            window.matchMedia("(display-mode: standalone)").matches ||
-            (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
-            document.referrer.includes("android-app://");
-        setIsStandalone(standaloneCheck);
+        setIsStandalone(checkStandalone());
 
         const ua = navigator.userAgent || "";
         const mobileCheck =
@@ -261,12 +476,7 @@ export function PwaInstallHeaderButton({ className }: { className?: string }) {
 
     useEffect(() => {
         setMounted(true);
-        if (typeof window === "undefined") return;
-        const standaloneCheck =
-            window.matchMedia("(display-mode: standalone)").matches ||
-            (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
-            document.referrer.includes("android-app://");
-        setIsStandalone(standaloneCheck);
+        setIsStandalone(checkStandalone());
     }, []);
 
     if (!mounted || isStandalone) return null;

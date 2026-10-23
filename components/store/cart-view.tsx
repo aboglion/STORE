@@ -5,31 +5,36 @@ import { useEffect, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ProgressiveImage } from "@/components/ui/progressive-image";
 
-import { Loader2, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { Loader2, Minus, Plus, ShoppingBag, Trash2, Truck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/cart-context";
-import { getCartProductDetails, type CartProductDetail } from "@/lib/actions/storefront";
+import {
+    getCartPricing,
+    type CartPricingData,
+} from "@/lib/actions/storefront";
+import { computeCartPricing } from "@/lib/promotions/engine";
 import { localizedText, type Locale } from "@/lib/i18n/config";
 import { formatILS } from "@/lib/utils/currency";
 import { demoImageUrl } from "@/lib/utils/images";
+import { cn } from "@/lib/utils";
 
 import { MobileStickyBar } from "./mobile-sticky-bar";
 
 /**
- * Short-lived client cache for cart product details so quantity edits
+ * Short-lived client cache for cart pricing data so quantity edits
  * (which change `items` but not the set of product ids) never re-hit the
  * server. Prices are re-validated server-side at checkout regardless.
  */
-const detailsCache = new Map<string, { data: CartProductDetail[]; at: number }>();
-const DETAILS_CACHE_TTL_MS = 30_000;
+const pricingCache = new Map<string, { data: CartPricingData; at: number }>();
+const PRICING_CACHE_TTL_MS = 30_000;
 
 export function CartView() {
     const { items, setQuantity, removeItem } = useCart();
     const t = useTranslations("cart");
     const locale = useLocale() as Locale;
-    const [details, setDetails] = useState<CartProductDetail[]>([]);
+    const [pricing, setPricing] = useState<CartPricingData | null>(null);
     const [loading, setLoading] = useState(true);
     const [, startTransition] = useTransition();
 
@@ -39,21 +44,21 @@ export function CartView() {
     useEffect(() => {
         const ids = idsKey ? idsKey.split(",") : [];
         if (ids.length === 0) {
-            setDetails([]);
+            setPricing(null);
             setLoading(false);
             return;
         }
-        const cached = detailsCache.get(idsKey);
-        if (cached && Date.now() - cached.at < DETAILS_CACHE_TTL_MS) {
-            setDetails(cached.data);
+        const cached = pricingCache.get(idsKey);
+        if (cached && Date.now() - cached.at < PRICING_CACHE_TTL_MS) {
+            setPricing(cached.data);
             setLoading(false);
             return;
         }
         setLoading(true);
         startTransition(async () => {
-            const result = await getCartProductDetails(ids);
-            detailsCache.set(idsKey, { data: result, at: Date.now() });
-            setDetails(result);
+            const result = await getCartPricing(ids);
+            pricingCache.set(idsKey, { data: result, at: Date.now() });
+            setPricing(result);
             setLoading(false);
         });
     }, [idsKey, startTransition]);
@@ -77,11 +82,29 @@ export function CartView() {
         );
     }
 
+    const details = pricing?.products ?? [];
     const detailMap = new Map(details.map((d) => [d.id, d]));
-    const subtotal = items.reduce((sum, item) => {
-        const detail = detailMap.get(item.product_id);
-        return sum + (detail ? detail.price_agorot * item.quantity : 0);
-    }, 0);
+
+    const pricingResult = pricing
+        ? computeCartPricing(
+            items.map((item) => {
+                const detail = detailMap.get(item.product_id);
+                return {
+                    product_id: item.product_id,
+                    quantity: item.quantity,
+                    unit_price_agorot: detail?.price_agorot ?? 0,
+                    category_id: detail?.category_id ?? null,
+                };
+            }),
+            pricing.promotions,
+            pricing.settings
+        )
+        : null;
+
+    const subtotal = pricingResult?.subtotal_agorot ?? 0;
+    const discount = pricingResult?.discount_agorot ?? 0;
+    const deliveryFee = pricingResult?.delivery_fee_agorot ?? 0;
+    const total = pricingResult?.total_agorot ?? subtotal;
     const hasUnavailableItems = items.some((item) => {
         const detail = detailMap.get(item.product_id);
         return !detail || !detail.is_active || detail.stock_quantity <= 0;
@@ -206,8 +229,24 @@ export function CartView() {
                             <span>{t("itemsTotal")} ({t("includingVat")})</span>
                             <span className="font-semibold">{formatILS(subtotal, locale)}</span>
                         </div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                            {t("deliveryAtCheckout")}
+                        {discount > 0 && (
+                            <div className="mt-1 flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
+                                <span>{t("discount")}</span>
+                                <span className="font-semibold">-{formatILS(discount, locale)}</span>
+                            </div>
+                        )}
+                        <div className="mt-1 flex justify-between text-sm">
+                            <span className="flex items-center gap-1.5">
+                                <Truck className="size-3.5" />
+                                {t("delivery")}
+                            </span>
+                            <span className={cn("font-semibold", deliveryFee === 0 && "text-emerald-600 dark:text-emerald-400")}>
+                                {deliveryFee === 0 ? t("freeDelivery") : formatILS(deliveryFee, locale)}
+                            </span>
+                        </div>
+                        <div className="mt-1 flex justify-between border-t border-border/60 pt-2 text-base font-bold">
+                            <span>{t("totalToPay")}</span>
+                            <span>{formatILS(total, locale)}</span>
                         </div>
                         <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                             ✓ {t("vatNotice")}
@@ -233,9 +272,9 @@ export function CartView() {
             {!loading && (
                 <MobileStickyBar>
                     <div className="flex shrink-0 flex-col">
-                        <span className="text-[10px] text-muted-foreground">{t("total")} ({t("includingVat")})</span>
+                        <span className="text-[10px] text-muted-foreground">{t("totalToPay")} ({t("includingVat")})</span>
                         <span className="font-display text-lg font-extrabold text-primary">
-                            {formatILS(subtotal, locale)}
+                            {formatILS(total, locale)}
                         </span>
                     </div>
                     {hasUnavailableItems ? (

@@ -9,6 +9,7 @@ import {
     Clock,
     DollarSign,
     ExternalLink,
+    Gift,
     Package,
     Plus,
     Receipt,
@@ -42,6 +43,7 @@ interface ModuleCardDef {
     | "orders"
     | "products"
     | "categories"
+    | "promotions"
     | "inventory"
     | "receipts"
     | "finance"
@@ -103,6 +105,14 @@ const MODULE_CARDS: ModuleCardDef[] = [
             text: t("totalBadge", { count: metrics.totalCategories }),
             className: "bg-muted/80 text-muted-foreground border-border/60",
         }),
+    },
+    {
+        href: "/admin/promotions",
+        key: "promotions",
+        icon: Gift,
+        iconBg: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20",
+        gradientBg: "from-orange-500/10 via-amber-500/5 to-transparent",
+        accentHover: "hover:border-orange-500/40",
     },
     {
         href: "/admin/inventory",

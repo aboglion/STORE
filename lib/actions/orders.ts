@@ -2,8 +2,13 @@
 
 import { getTranslations } from "next-intl/server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { getActivePromotions } from "@/lib/data/promotions";
 import { getSettings } from "@/lib/data/storefront";
+import {
+    computeCartPricing,
+    toPromotionSnapshot,
+} from "@/lib/promotions/engine";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isMaintenanceActive } from "@/lib/server/backups";
 import { geocodeAddress } from "@/lib/server/geocoding";
 import { rateLimit } from "@/lib/server/rate-limit";
@@ -87,13 +92,17 @@ export async function createOrder(
     const admin = createAdminClient();
 
     // 3. Compute subtotal from the database (never from the client) and
-    //    read the delivery settings in parallel (settings are cached).
-    const [productsResult, settings] = await Promise.all([
+    //    read the delivery settings + active promotions in parallel
+    //    (both are cached).
+    const [productsResult, settings, promotions] = await Promise.all([
         admin
             .from("products")
-            .select("id, name_he, price_agorot, is_active, stock_quantity")
+            .select(
+                "id, name_he, price_agorot, category_id, is_active, stock_quantity"
+            )
             .in("id", productIds),
         getSettings(),
+        getActivePromotions(),
     ]);
     const { data: products } = productsResult;
 
@@ -101,6 +110,7 @@ export async function createOrder(
         id: string;
         name_he: string;
         price_agorot: number;
+        category_id: string | null;
         is_active: boolean;
         stock_quantity: number;
     }
@@ -109,7 +119,7 @@ export async function createOrder(
         ((products ?? []) as unknown as CheckoutProduct[]).map((p) => [p.id, p])
     );
 
-    let subtotalAgorot = 0;
+    const pricingLines = [];
     for (const line of cartLines) {
         const product = productMap.get(line.product_id);
         if (!product || !product.is_active) {
@@ -127,14 +137,25 @@ export async function createOrder(
         if (line.quantity > 999) {
             return { ok: false, error: te("invalidQuantity") };
         }
-        subtotalAgorot += product.price_agorot * line.quantity;
+        pricingLines.push({
+            product_id: line.product_id,
+            quantity: line.quantity,
+            unit_price_agorot: product.price_agorot,
+            category_id: product.category_id,
+        });
     }
 
-    // 4. Delivery fee: free above the configured threshold.
-    const deliveryFee =
-        subtotalAgorot >= settings.free_delivery_threshold_agorot
-            ? 0
-            : settings.delivery_fee_agorot;
+    // 4. Run the shared promotion engine: it computes the subtotal, the
+    //    promotion discounts (multi-buy / price deals) and the delivery
+    //    fee (threshold + free-shipping promotions). The result is the
+    //    authoritative total — the client never supplies prices.
+    const pricing = computeCartPricing(pricingLines, promotions, {
+        delivery_fee_agorot: settings.delivery_fee_agorot,
+        free_delivery_threshold_agorot: settings.free_delivery_threshold_agorot,
+    });
+    const deliveryFee = pricing.delivery_fee_agorot;
+    const discountAgorot = pricing.discount_agorot;
+    const promotionsSnapshot = toPromotionSnapshot(pricing.applied);
 
     // 5. Normalize the address (for customer/address identification).
     const fullAddress = [
@@ -199,10 +220,11 @@ export async function createOrder(
         p_address: addressSnapshot,
         p_payment_method: customer.payment_method,
         p_delivery_fee_agorot: deliveryFee,
-        p_discount_agorot: 0,
+        p_discount_agorot: discountAgorot,
         p_customer_notes: customer.customer_notes || null,
         p_location_source: locationSource,
         p_items: cartLines,
+        p_promotions_snapshot: promotionsSnapshot,
     });
 
     if (error) {

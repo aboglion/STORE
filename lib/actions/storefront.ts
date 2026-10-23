@@ -2,8 +2,11 @@
 
 import { z } from "zod";
 
+import { getActivePromotions } from "@/lib/data/promotions";
+import { getSettings } from "@/lib/data/storefront";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { productImageUrl } from "@/lib/utils/images";
+import type { Promotion } from "@/types/database.types";
 
 export interface CartProductDetail {
     id: string;
@@ -11,6 +14,7 @@ export interface CartProductDetail {
     name_he: string;
     name_ar: string | null;
     price_agorot: number;
+    category_id: string | null;
     stock_quantity: number;
     is_active: boolean;
     image_url: string | null;
@@ -36,7 +40,7 @@ export async function getCartProductDetails(
     const { data } = await admin
         .from("products")
         .select(
-            "id, slug, name_he, name_ar, price_agorot, stock_quantity, is_active, images:product_images(id, storage_path, sort_order)"
+            "id, slug, name_he, name_ar, price_agorot, category_id, stock_quantity, is_active, images:product_images(id, storage_path, sort_order)"
         )
         .in("id", ids);
 
@@ -46,6 +50,7 @@ export async function getCartProductDetails(
         name_he: string;
         name_ar: string | null;
         price_agorot: number;
+        category_id: string | null;
         stock_quantity: number;
         is_active: boolean;
         images: { id: string; storage_path: string; sort_order: number }[];
@@ -57,8 +62,43 @@ export async function getCartProductDetails(
         name_he: p.name_he,
         name_ar: p.name_ar,
         price_agorot: p.price_agorot,
+        category_id: p.category_id,
         stock_quantity: p.stock_quantity,
         is_active: p.is_active,
         image_url: productImageUrl(p.images[0]?.storage_path, p.slug),
     }));
+}
+
+export interface CartPricingData {
+    products: CartProductDetail[];
+    settings: {
+        delivery_fee_agorot: number;
+        free_delivery_threshold_agorot: number;
+    };
+    promotions: Promotion[];
+}
+
+/**
+ * Everything the cart/checkout UI needs to render live pricing:
+ * fresh product rows, the delivery settings and the active promotions.
+ * The authoritative total is always recomputed server-side at checkout.
+ */
+export async function getCartPricing(
+    productIds: string[]
+): Promise<CartPricingData> {
+    const [products, settings, promotions] = await Promise.all([
+        getCartProductDetails(productIds),
+        getSettings(),
+        getActivePromotions(),
+    ]);
+
+    return {
+        products,
+        settings: {
+            delivery_fee_agorot: settings.delivery_fee_agorot,
+            free_delivery_threshold_agorot:
+                settings.free_delivery_threshold_agorot,
+        },
+        promotions,
+    };
 }

@@ -21,6 +21,7 @@ export const STORE_CACHE_TAGS = {
     settings: "settings",
     categories: "categories",
     products: "products",
+    promotions: "promotions",
 } as const;
 
 /** Safety-net revalidation window for storefront data (seconds). */

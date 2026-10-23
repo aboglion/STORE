@@ -73,7 +73,11 @@
         "unavailableWarning": "יש מוצרים שאזלו מן המלאי — הסירו אותם כדי להמשיך",
         "total": "סה\"כ",
         "includingVat": "כולל מע״מ",
-        "vatNotice": "המחיר כולל מע״מ כחוק"
+        "vatNotice": "המחיר כולל מע״מ כחוק",
+        "delivery": "משלוח",
+        "freeDelivery": "חינם",
+        "discount": "הנחה",
+        "totalToPay": "סה\"כ לתשלום"
     },
     "checkout": {
         "title": "צ'קאאוט",
@@ -135,7 +139,10 @@
         "locationWarningContinue": "המשך בכל זאת",
         "agreeToTerms": "קראתי ואני מאשר/ת את תקנון האתר ומדיניות ביטול עסקה כחוק",
         "termsNotice": "בלחיצה על ביצוע הזמנה הנך מאשר/ת את תנאי השימוש ומדיניות ביטול עסקה כחוק",
-        "marketingOptIn": "אני מעוניין/ת לקבל עדכונים והטבות בדוא״ל/SMS (ניתן להסיר את ההסכמה בכל עת)"
+        "marketingOptIn": "אני מעוניין/ת לקבל עדכונים והטבות בדוא״ל/SMS (ניתן להסיר את ההסכמה בכל עת)",
+        "delivery": "משלוח",
+        "freeDelivery": "חינם",
+        "discount": "הנחה"
     },
     "footer": {
         "tagline": "סופרמרקט גולדן מארקט ברהט — מגוון מוצרי מזון, מצרכים טריים לבית ומשלוח מהיר עד הדלת.",
@@ -337,7 +344,14 @@
         "deliveryFeeInvalid": "דמי משלוח לא תקינים",
         "freeDeliveryInvalid": "סף משלוח חינם לא תקין",
         "invalidValue": "ערך לא תקין",
-        "emptyCart": "הסל ריק"
+        "emptyCart": "הסל ריק",
+        "promotionName": "נא להזין שם למבצע",
+        "buyQuantityRequired": "נא להזין כמות לקנייה (X)",
+        "getQuantityRequired": "נא להזין כמות למתנה (Y)",
+        "dealPriceRequired": "נא להזין מחיר למבצע",
+        "freeShippingConditionRequired": "נא להזין כמות או סכום מינימלי למשלוח חינם",
+        "categoryRequired": "נא לבחור קטגוריה",
+        "productsRequired": "נא לבחור מוצר אחד לפחות"
     },
     "admin": {
         "panelTitle": "פאנל ניהול",
@@ -364,7 +378,8 @@
             "customers": "לקוחות",
             "stats": "סטטיסטיקות",
             "backups": "גיבויים",
-            "settings": "הגדרות"
+            "settings": "הגדרות",
+            "promotions": "מבצעים"
         },
         "orders": {
             "actions": {
@@ -932,7 +947,9 @@
             "stats": "סטטיסטיקות",
             "statsDesc": "ניתוח מכירות, ביצועי מוצרים וגרפי מכירות",
             "settings": "הגדרות",
-            "settingsDesc": "הגדרות החנות, פרטי עסק, לוגו, מדיניות ואמצעי תשלום"
+            "settingsDesc": "הגדרות החנות, פרטי עסק, לוגו, מדיניות ואמצעי תשלום",
+            "promotions": "מבצעים",
+            "promotionsDesc": "ניהול מבצעים: קנה X קבל Y, מחיר מבצע ומשלוח חינם"
         },
         "errors": {
             "invalidData": "הנתונים שנשלחו לא תקינים",
@@ -972,7 +989,10 @@
             "invalidEmail": "נא להזין אימייל תקין",
             "passwordTooShort": "סיסמה קצרה מדי",
             "fillValidLogin": "נא למלא אימייל וסיסמה תקינים",
-            "invalidCredentials": "אימייל או סיסמה שגויים"
+            "invalidCredentials": "אימייל או סיסמה שגויים",
+            "savePromotionFailed": "שמירת המבצע נכשלה",
+            "updatePromotionFailed": "עדכון המבצע נכשל",
+            "deletePromotionFailed": "מחיקת המבצע נכשלה"
         },
         "couriers": {
             "title": "שליחים",
@@ -1086,6 +1106,69 @@
                 "assignFailed": "שליחת ההזמנות נכשלה",
                 "returnFailed": "החזרת ההזמנות נכשלה"
             }
+        },
+        "promotions": {
+            "title": "מבצעים",
+            "count": "{count} מבצעים",
+            "empty": "אין מבצעים — צור מבצע ראשון",
+            "newPromotion": "מבצע חדש",
+            "editPromotion": "עריכת מבצע",
+            "desc": "הגדרת מבצע: קנה X קבל Y, מחיר מבצע או משלוח חינם",
+            "name": "שם",
+            "nameLabel": "שם המבצע",
+            "namePlaceholder": "לדוגמה: קנה 3 קבל 1 חינם",
+            "nameArLabel": "اسم العرض (بالعربية)",
+            "type": "סוג",
+            "typeLabel": "סוג המבצע",
+            "types": {
+                "multi_buy": "קנה X קבל Y",
+                "multi_buyDesc": "לכל X+1 יחידות, Y יחידות חינם או בהנחה",
+                "price_deal": "מחיר במקום מחיר",
+                "price_dealDesc": "מחיר מבצע מיוחד במקום המחיר הרגיל",
+                "free_shipping": "משלוח חינם",
+                "free_shippingDesc": "קנה כמות מסוימת וקבל משלוח חינם"
+            },
+            "buyQuantity": "כמות לקנייה (X)",
+            "getQuantity": "כמות למתנה (Y)",
+            "discountPercent": "אחוז הנחה על Y",
+            "discountPercentDesc": "100 = חינם",
+            "dealPrice": "מחיר המבצע (₪)",
+            "dealPriceDesc": "המחיר שיחויב במקום המחיר הרגיל",
+            "minQuantity": "כמות מינימלית (יחידות)",
+            "minQuantityDesc": "כמות פריטים בסל להפעלת המבצע",
+            "minSubtotal": "סכום מינימלי (₪)",
+            "minSubtotalDesc": "סכום קנייה מינימלי להפעלת המבצע",
+            "scopeLabel": "היקף המבצע",
+            "scopes": {
+                "all": "כל המוצרים",
+                "category": "קטגוריה",
+                "products": "מוצרים נבחרים"
+            },
+            "categoryLabel": "קטגוריה",
+            "categoryPlaceholder": "בחירת קטגוריה...",
+            "productsLabel": "מוצרים נבחרים",
+            "productsSearch": "חיפוש מוצר...",
+            "productsEmpty": "לא נמצאו מוצרים",
+            "startsAt": "תאריך התחלה",
+            "startsAtDesc": "אופציונלי — ריק = פעיל מיד",
+            "endsAt": "תאריך סיום",
+            "endsAtDesc": "אופציונלי — ריק = ללא הגבלת זמן",
+            "sortLabel": "סדר",
+            "activeLabel": "פעיל",
+            "inactiveLabel": "לא פעיל",
+            "schedule": "תאריכים",
+            "always": "תמיד פעיל",
+            "status": "סטטוס",
+            "scope": "היקף",
+            "save": "שמירה",
+            "create": "יצירה",
+            "cancel": "ביטול",
+            "delete": "מחיקה",
+            "deleteTitle": "למחוק את המבצע؟",
+            "deleteDesc": "המבצע יימחק לצמיתות. הזמנות קיימות לא ייפגעו.",
+            "createdToast": "המבצע נוצר בהצלחה",
+            "updatedToast": "המבצע עודכן בהצלחה",
+            "deletedToast": "המבצע נמחק"
         }
     },
     "courier": {
@@ -1209,7 +1292,8 @@
         "scanToTrack": "מעקב הזמנה",
         "footerHint": "החשבונית נוצרה אוטומטית — אין צורך באישור נוסף",
         "notFound": "החשבונית לא נמצאה",
-        "notFoundHint": "הקישור לא תקין או שההזמנה אינה קיימת"
+        "notFoundHint": "הקישור לא תקין או שההזמנה אינה קיימת",
+        "freeDelivery": "חינם"
     },
     "pwa": {
         "installApp": "התקנת האפליקציה",
@@ -1237,6 +1321,12 @@
         "installedSuccess": "מעולה! האפליקציה נוספה למסך הבית שלך 🎉",
         "bannerTitle": "אפליקציית ווב לטלפון",
         "bannerSubtitle": "גישה מהירה ממסך הבית ומעקב הזמנות",
-        "install": "התקן"
+        "install": "התקן",
+        "alreadyInstalled": "האפליקציה כבר מותקנת במכשיר שלך! 📱",
+        "desktopTitle": "התקנה בדפדפן Chrome",
+        "desktopSubtitle": "שלושה צעדים קלים להתקנת האפליקציה בדפדפן:",
+        "desktopStep1": "לחץ על סמל ההתקנה (➕) בקצה שורת הכתובת של הדפדפן",
+        "desktopStep2": "בחר באפשרות \"התקן\" מתוך החלון שנפתח",
+        "desktopStep3": "האפליקציה תיפתח בחלון נפרד — ומוכנה לשימוש!"
     }
 }

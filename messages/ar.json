@@ -73,7 +73,11 @@
         "unavailableWarning": "هناك منتجات نفدت من المخزون — أزلها للمتابعة",
         "total": "الإجمالي",
         "includingVat": "شامل ضريبة القيمة المضافة",
-        "vatNotice": "الأسعار تشمل ضريبة القيمة المضافة كالقانون"
+        "vatNotice": "الأسعار تشمل ضريبة القيمة المضافة كالقانون",
+        "delivery": "التوصيل",
+        "freeDelivery": "مجاني",
+        "discount": "خصم",
+        "totalToPay": "الإجمالي للدفع"
     },
     "checkout": {
         "title": "إتمام الطلب",
@@ -135,7 +139,10 @@
         "locationWarningContinue": "متابعة على أي حال",
         "agreeToTerms": "قرأت ووافقت على شروط وأحكام الموقع وسياسة الإلغاء القانونية",
         "termsNotice": "بالضغط على تأكيد الطلب، فإنك توافق على الشروط والأحكام وسياسة الإلغاء القانونية",
-        "marketingOptIn": "أرغب في استلام تحديثات وعروض عبر البريد الإلكتروني/الرسائل النصية"
+        "marketingOptIn": "أرغب في استلام تحديثات وعروض عبر البريد الإلكتروني/الرسائل النصية",
+        "delivery": "التوصيل",
+        "freeDelivery": "مجاني",
+        "discount": "خصم"
     },
     "footer": {
         "tagline": "سوبر ماركت جولدن ماركت في رهط — تشكيلة واسعة من المواد الغذائية والمستلزمات اليومية وتوصيل سريع حتى البيت.",
@@ -337,7 +344,14 @@
         "deliveryFeeInvalid": "رسوم التوصيل غير صحيحة",
         "freeDeliveryInvalid": "حد التوصيل المجاني غير صحيح",
         "invalidValue": "قيمة غير صحيحة",
-        "emptyCart": "السلة فارغة"
+        "emptyCart": "السلة فارغة",
+        "promotionName": "أدخل اسم العرض",
+        "buyQuantityRequired": "أدخل كمية الشراء (X)",
+        "getQuantityRequired": "أدخل الكمية الهدية (Y)",
+        "dealPriceRequired": "أدخل سعر العرض",
+        "freeShippingConditionRequired": "أدخل كمية أو مبلغًا أدنى للتوصيل المجاني",
+        "categoryRequired": "اختر فئة",
+        "productsRequired": "اختر منتجًا واحدًا على الأقل"
     },
     "admin": {
         "panelTitle": "لوحة الإدارة",
@@ -364,7 +378,8 @@
             "customers": "العملاء",
             "stats": "الإحصائيات",
             "backups": "النسخ الاحتياطي",
-            "settings": "الإعدادات"
+            "settings": "الإعدادات",
+            "promotions": "العروض"
         },
         "orders": {
             "actions": {
@@ -932,7 +947,9 @@
             "stats": "الإحصائيات",
             "statsDesc": "تحليلات المبيعات وأداء المنتجات والرسوم البيانية للمبيعات",
             "settings": "الإعدادات",
-            "settingsDesc": "إعدادات المتجر وبيانات النشاط والشعار والسياسات وطرق الدفع"
+            "settingsDesc": "إعدادات المتجر وبيانات النشاط والشعار والسياسات وطرق الدفع",
+            "promotions": "العروض",
+            "promotionsDesc": "إدارة العروض: اشتر X واحصل على Y، سعر خاص وتوصيل مجاني"
         },
         "errors": {
             "invalidData": "البيانات المرسلة غير صحيحة",
@@ -972,7 +989,10 @@
             "invalidEmail": "يرجى إدخال بريد إلكتروني صحيح",
             "passwordTooShort": "كلمة المرور قصيرة جدًا",
             "fillValidLogin": "يرجى إدخال بريد إلكتروني وكلمة مرور صحيحة",
-            "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة"
+            "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+            "savePromotionFailed": "فشل حفظ العرض",
+            "updatePromotionFailed": "فشل تحديث العرض",
+            "deletePromotionFailed": "فشل حذف العرض"
         },
         "couriers": {
             "title": "السعاة",
@@ -1086,6 +1106,69 @@
                 "assignFailed": "فشل إرسال الطلبات",
                 "returnFailed": "فشل إعادة الطلبات"
             }
+        },
+        "promotions": {
+            "title": "العروض",
+            "count": "{count} عروض",
+            "empty": "لا توجد عروض — أنشئ أول عرض",
+            "newPromotion": "عرض جديد",
+            "editPromotion": "تعديل العرض",
+            "desc": "إعداد عرض: اشتر X واحصل على Y، سعر خاص أو توصيل مجاني",
+            "name": "الاسم",
+            "nameLabel": "اسم العرض",
+            "namePlaceholder": "مثال: اشتر 3 واحصل على 1 مجانًا",
+            "nameArLabel": "اسم العرض (بالعربية)",
+            "type": "النوع",
+            "typeLabel": "نوع العرض",
+            "types": {
+                "multi_buy": "اشتر X واحصل على Y",
+                "multi_buyDesc": "لكل X+1 وحدة، Y وحدة مجانًا أو بخصم",
+                "price_deal": "سعر بدل السعر",
+                "price_dealDesc": "سعر عرض خاص بدل السعر العادي",
+                "free_shipping": "توصيل مجاني",
+                "free_shippingDesc": "اشتر كمية معينة واحصل على توصيل مجاني"
+            },
+            "buyQuantity": "كمية الشراء (X)",
+            "getQuantity": "الكمية الهدية (Y)",
+            "discountPercent": "نسبة الخصم على Y",
+            "discountPercentDesc": "100 = مجانًا",
+            "dealPrice": "سعر العرض (₪)",
+            "dealPriceDesc": "السعر الذي سيُحتسب بدل السعر العادي",
+            "minQuantity": "الحد الأدنى للكمية (وحدات)",
+            "minQuantityDesc": "عدد الوحدات في السلة لتفعيل العرض",
+            "minSubtotal": "الحد الأدنى للمبلغ (₪)",
+            "minSubtotalDesc": "الحد الأدنى لمبلغ الشراء لتفعيل العرض",
+            "scopeLabel": "نطاق العرض",
+            "scopes": {
+                "all": "كل المنتجات",
+                "category": "فئة",
+                "products": "منتجات مختارة"
+            },
+            "categoryLabel": "الفئة",
+            "categoryPlaceholder": "اختر فئة...",
+            "productsLabel": "منتجات مختارة",
+            "productsSearch": "بحث عن منتج...",
+            "productsEmpty": "لا توجد منتجات",
+            "startsAt": "تاريخ البدء",
+            "startsAtDesc": "اختياري — فارغ = نشط فورًا",
+            "endsAt": "تاريخ الانتهاء",
+            "endsAtDesc": "اختياري — فارغ = بدون حد زمني",
+            "sortLabel": "الترتيب",
+            "activeLabel": "نشط",
+            "inactiveLabel": "غير نشط",
+            "schedule": "التواريخ",
+            "always": "نشط دائمًا",
+            "status": "الحالة",
+            "scope": "النطاق",
+            "save": "حفظ",
+            "create": "إنشاء",
+            "cancel": "إلغاء",
+            "delete": "حذف",
+            "deleteTitle": "حذف العرض؟",
+            "deleteDesc": "سيتم حذف العرض نهائيًا. الطلبات الحالية لن تتأثر.",
+            "createdToast": "تم إنشاء العرض بنجاح",
+            "updatedToast": "تم تحديث العرض بنجاح",
+            "deletedToast": "تم حذف العرض"
         }
     },
     "courier": {
@@ -1209,7 +1292,8 @@
         "scanToTrack": "تتبع الطلب",
         "footerHint": "تم إنشاء الفاتورة تلقائيًا — لا حاجة لأي موافقة إضافية",
         "notFound": "الفاتورة غير موجودة",
-        "notFoundHint": "الرابط غير صالح أو أن الطلب غير موجود"
+        "notFoundHint": "الرابط غير صالح أو أن الطلب غير موجود",
+        "freeDelivery": "مجاني"
     },
     "pwa": {
         "installApp": "تثبيت التطبيق",
@@ -1237,6 +1321,12 @@
         "installedSuccess": "رائع! تمت إضافة التطبيق إلى شاشتك الرئيسية 🎉",
         "bannerTitle": "تطبيق الويب للهاتف",
         "bannerSubtitle": "وصول سريع من الشاشة الرئيسية ومتابعة الطلبات",
-        "install": "تثبيت"
+        "install": "تثبيت",
+        "alreadyInstalled": "التطبيق مثبت بالفعل على جهازك! 📱",
+        "desktopTitle": "التثبيت في متصفح Chrome",
+        "desktopSubtitle": "3 خطوات بسيطة لتثبيت التطبيق في المتصفح:",
+        "desktopStep1": "اضغط على أيقونة التثبيت (➕) في نهاية شريط العنوان",
+        "desktopStep2": "اختر \"تثبيت\" من النافذة المنبثقة",
+        "desktopStep3": "سيُفتح التطبيق في نافذة مستقلة — جاهز للاستخدام!"
     }
 }

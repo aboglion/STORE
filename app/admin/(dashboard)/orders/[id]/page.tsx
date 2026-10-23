@@ -230,6 +230,30 @@ export default async function OrderDetailPage({
                                 <span>-{formatILS(order.discount_agorot, locale)}</span>
                             </div>
                         )}
+                        {order.promotions_snapshot.length > 0 && (
+                            <div className="mt-1 grid gap-0.5 text-xs text-emerald-600 dark:text-emerald-400">
+                                {order.promotions_snapshot.map((promo) => (
+                                    <div key={promo.promotion_id} className="flex items-center justify-between gap-1">
+                                        <span className="min-w-0 flex-1 truncate">
+                                            {localizedText(locale, promo.name_he, promo.name_ar)}
+                                            {promo.discount_agorot > 0 && (
+                                                <span className="text-muted-foreground">
+                                                    {" · "}
+                                                    {localizedText(
+                                                        locale,
+                                                        promo.description_he,
+                                                        promo.description_ar
+                                                    )}
+                                                </span>
+                                            )}
+                                        </span>
+                                        {promo.discount_agorot > 0 && (
+                                            <span>-{formatILS(promo.discount_agorot, locale)}</span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                         <div className="mt-1 flex justify-between border-t pt-2 font-semibold">
                             <span>{t("totalToPay")}</span>
                             <span>{formatILS(order.total_agorot, locale)}</span>
