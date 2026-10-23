@@ -16,6 +16,7 @@ mkdir -p "$ROOT_DIR/logs"
 PID_FILE="$ROOT_DIR/logs/updater.pid"
 LOG_FILE="$ROOT_DIR/logs/updater.log"
 LOCK_FILE="$ROOT_DIR/logs/updater.lock"
+DEPLOYED_COMMIT_FILE="$ROOT_DIR/logs/deployed.commit"
 CHECK_INTERVAL="${CHECK_INTERVAL:-60}" # ברירת מחדל: בדיקה כל 60 שניות
 HEALTH_CHECK_URL="${HEALTH_CHECK_URL:-http://127.0.0.1:3000/api/health}"
 MAX_LOG_SIZE=10485760 # 10MB
@@ -194,7 +195,10 @@ run_supervisor() {
 
         LOCAL_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo '')"
         REMOTE_COMMIT="$(git rev-parse "origin/$CURRENT_BRANCH" 2>/dev/null || echo '')"
+        DEPLOYED_COMMIT="$(cat "$DEPLOYED_COMMIT_FILE" 2>/dev/null || echo '')"
 
+        # שלב 1: משיכת קומיטים חדשים מ-GitHub (אם נדחפו משרת אחר)
+        STASHED=0
         if [ -n "$LOCAL_COMMIT" ] && [ -n "$REMOTE_COMMIT" ] && [ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]; then
             log "INFO" "🔔 זוהתה גרסה חדשה ב-GitHub עבור ענף '$CURRENT_BRANCH'!"
             log "INFO" "   קומיט נוכחי: $LOCAL_COMMIT"
@@ -202,7 +206,6 @@ run_supervisor() {
             log "INFO" "מתחיל בתהליך עדכון בטוח (Zero-Downtime Safe Update)..."
 
             # 1. שמירת שינויים מקומיים בקבצים במקרה הצורך (git stash)
-            STASHED=0
             if ! git diff-index --quiet HEAD -- 2>/dev/null; then
                 log "INFO" "נמצאו שינויים מקומיים, שומר אותם ב-stash..."
                 git stash push -m "auto-updater-$(date +%s)" >/dev/null 2>&1 || true
@@ -219,7 +222,16 @@ run_supervisor() {
                 continue
             fi
 
-            log "INFO" "✅ הקוד נמשך בהצלחה מ-GitHub. בונה כעת את קונטיינר ה-Docker בבטחה..."
+            LOCAL_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo '')"
+            log "INFO" "✅ הקוד נמשך בהצלחה מ-GitHub. קומיט חדש: $LOCAL_COMMIT"
+        fi
+
+        # שלב 2: בנייה ופריסה אם הקוד המקומי שונה מהגרסה הפרוסה בקונטיינר.
+        # מכסה גם דחיפה ישירות מהשרת (make gp) שבה local == remote —
+        # במקרה כזה הקונטיינר נשאר עם תמונה ישנה, ולכן משווים ל-DEPLOYED_COMMIT.
+        if [ -n "$LOCAL_COMMIT" ] && [ "$LOCAL_COMMIT" != "$DEPLOYED_COMMIT" ]; then
+            log "INFO" "🔄 הקוד המקומי ($LOCAL_COMMIT) שונה מהגרסה הפרוסה (${DEPLOYED_COMMIT:-אין רישום}). מתחיל בנייה ופריסה..."
+            PREVIOUS_COMMIT="$DEPLOYED_COMMIT"
 
             # וידוא טעינת משתני הסביבה העדכניים עבור בניית הדוקר
             if [ -f "$ROOT_DIR/.env.local" ]; then
@@ -231,19 +243,21 @@ run_supervisor() {
                 source "$ROOT_DIR/.env" 2>/dev/null || true
                 set +a
             fi
+            domain="${DOMAIN:-}"
 
             # 3. בניית תמונת ה-Docker החדשה בזמן שהקונטיינר הישן עדיין רץ ומשרת לקוחות!
-            BUILD_SUCCESS=0
             if docker compose build web >> "$LOG_FILE" 2>&1; then
-                BUILD_SUCCESS=1
+                log "INFO" "✅ תמונת ה-Docker נבנתה בהצלחה."
             else
-                log "ERROR" "❌ בניית תמונת ה-Docker החדשה נכשלה עבור קומיט $REMOTE_COMMIT!"
-                log "WARN" "🛡️  מבצע Rollback מיידי של קוד ה-Git לקומיט הקודם: $LOCAL_COMMIT..."
-                git reset --hard "$LOCAL_COMMIT" >> "$LOG_FILE" 2>&1 || true
+                log "ERROR" "❌ בניית תמונת ה-Docker החדשה נכשלה עבור קומיט $LOCAL_COMMIT!"
+                if [ -n "$PREVIOUS_COMMIT" ]; then
+                    log "WARN" "🛡️  מבצע Rollback מיידי של קוד ה-Git לקומיט הקודם: $PREVIOUS_COMMIT..."
+                    git reset --hard "$PREVIOUS_COMMIT" >> "$LOG_FILE" 2>&1 || true
+                fi
                 if [ "$STASHED" -eq 1 ]; then
                     git stash pop >/dev/null 2>&1 || true
                 fi
-                log "INFO" "✅ הקוד שוחזר. הקונטיינר הקיים ממשיך לרוץ ללא כל השבתה."
+                log "INFO" "✅ הקונטיינר הקיים ממשיך לרוץ ללא כל השבתה."
                 interruptible_sleep "$CHECK_INTERVAL"
                 continue
             fi
@@ -264,7 +278,9 @@ run_supervisor() {
             fi
             if ! $up_cmd >> "$LOG_FILE" 2>&1; then
                 log "ERROR" "❌ הפעלת הקונטיינר החדש נכשלה! מנסה להחזיר לגרסה הקודמת..."
-                git reset --hard "$LOCAL_COMMIT" >> "$LOG_FILE" 2>&1 || true
+                if [ -n "$PREVIOUS_COMMIT" ]; then
+                    git reset --hard "$PREVIOUS_COMMIT" >> "$LOG_FILE" 2>&1 || true
+                fi
                 docker compose build web >> "$LOG_FILE" 2>&1 || true
                 $up_cmd >> "$LOG_FILE" 2>&1 || true
                 interruptible_sleep "$CHECK_INTERVAL"
@@ -274,7 +290,8 @@ run_supervisor() {
             # 6. בדיקת בריאות ווידוא שהאפליקציה החדשה עונה בפורט 3000
             log "INFO" "בודק תקינות תגובת השרת לאחר העדכון..."
             if check_health 45; then
-                log "SUCCESS" "🎉 העדכון הושלם בהצלחה מלאה! האפליקציה רצה ותקינה בקומיט $REMOTE_COMMIT."
+                log "SUCCESS" "🎉 העדכון הושלם בהצלחה מלאה! האפליקציה רצה ותקינה בקומיט $LOCAL_COMMIT."
+                echo "$LOCAL_COMMIT" > "$DEPLOYED_COMMIT_FILE"
                 # ניקוי תמונות ישנות ומטמון בנייה מוגזם למניעת עומס בדיסק
                 docker image prune -f --filter "until=24h" >/dev/null 2>&1 || true
                 docker builder prune -f --filter "until=48h" --reserved-space 5GB >/dev/null 2>&1 || true
@@ -283,10 +300,12 @@ run_supervisor() {
                 fi
             else
                 log "ERROR" "🚨 בדיקת הבריאות נכשלה! האפליקציה בגרסה החדשה אינה מגיבה בפורט 3000."
-                log "WARN" "🛡️  מבצע שחזור אוטומטי (Rollback) מלא לגרסה $LOCAL_COMMIT..."
-                git reset --hard "$LOCAL_COMMIT" >> "$LOG_FILE" 2>&1 || true
-                docker compose build web >> "$LOG_FILE" 2>&1 || true
-                docker compose up -d --no-deps web >> "$LOG_FILE" 2>&1 || true
+                log "WARN" "🛡️  מבצע שחזור אוטומטי (Rollback) מלא לגרסה ${PREVIOUS_COMMIT:-הקודמת}..."
+                if [ -n "$PREVIOUS_COMMIT" ]; then
+                    git reset --hard "$PREVIOUS_COMMIT" >> "$LOG_FILE" 2>&1 || true
+                    docker compose build web >> "$LOG_FILE" 2>&1 || true
+                    docker compose up -d --no-deps web >> "$LOG_FILE" 2>&1 || true
+                fi
                 if [ "$STASHED" -eq 1 ]; then
                     git stash pop >/dev/null 2>&1 || true
                 fi
