@@ -23,6 +23,8 @@ export const dynamic = "force-dynamic";
 const notoSansHebrew = localFont({
     src: "../public/fonts/noto-sans-hebrew.woff2",
     variable: "--font-hebrew",
+    display: "swap",
+    preload: false,
 });
 
 const frankRuhlLibre = localFont({
@@ -30,17 +32,23 @@ const frankRuhlLibre = localFont({
     weight: "400 900",
     style: "normal",
     variable: "--font-display-hebrew",
+    display: "swap",
+    preload: false,
 });
 
 const notoSansArabic = localFont({
     src: "../public/fonts/noto-sans-arabic.woff2",
     variable: "--font-arabic",
+    display: "swap",
+    preload: false,
 });
 
 const cairo = localFont({
     src: "../public/fonts/cairo-arabic.woff2",
     weight: "400 900",
     variable: "--font-display-arabic",
+    display: "swap",
+    preload: false,
 });
 
 export async function generateMetadata(): Promise<Metadata> {
