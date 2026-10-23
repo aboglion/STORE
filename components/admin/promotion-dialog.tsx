@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import Image from "next/image";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import imageCompression from "browser-image-compression";
 import {
     BadgePercent,
     Gift,
@@ -13,7 +15,9 @@ import {
     Package,
     Search,
     Tags,
+    Trash2,
     Truck,
+    Upload,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -51,12 +55,15 @@ import {
 import { Separator } from "@/components/ui/separator";
 import {
     createPromotion,
+    removePromotionImage,
     updatePromotion,
+    uploadPromotionImage,
     type PromotionActionResult,
 } from "@/lib/actions/promotions";
 import { localizedText, type Locale } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils";
 import { agorotToShekelInput } from "@/lib/utils/currency";
+import { storageImageUrl } from "@/lib/utils/images";
 import {
     promotionFormSchema,
     type PromotionFormValues,
@@ -109,6 +116,59 @@ export function PromotionDialog({
     const [open, setOpen] = useState(false);
     const [pending, startTransition] = useTransition();
     const [productSearch, setProductSearch] = useState("");
+    const [imagePath, setImagePath] = useState(promotion?.image_path ?? "");
+    const [imageUploading, setImageUploading] = useState(false);
+    const [imageFailed, setImageFailed] = useState(false);
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const imageSrc = imagePath && !imageFailed ? storageImageUrl(imagePath) : "";
+
+    async function handleImageFiles(files: FileList | null) {
+        const file = files?.[0];
+        if (!file || !promotion) return;
+
+        if (!file.type.startsWith("image/")) {
+            toast.error(t("notImageToast"));
+            return;
+        }
+
+        setImageUploading(true);
+        try {
+            const compressed = await imageCompression(file, {
+                maxSizeMB: 1.5,
+                maxWidthOrHeight: 1200,
+                useWebWorker: true,
+            });
+
+            startTransition(async () => {
+                const res = await uploadPromotionImage(promotion.id, compressed);
+                if (res?.error) {
+                    toast.error(res.error);
+                } else if (res?.path) {
+                    setImagePath(res.path);
+                    setImageFailed(false);
+                    toast.success(t("imageUploadedToast"));
+                }
+            });
+        } catch {
+            toast.error(t("compressFailedToast"));
+        } finally {
+            setImageUploading(false);
+            if (imageInputRef.current) imageInputRef.current.value = "";
+        }
+    }
+
+    function handleRemoveImage() {
+        if (!promotion) return;
+        startTransition(async () => {
+            const res = await removePromotionImage(promotion.id);
+            if (res?.error) {
+                toast.error(res.error);
+                return;
+            }
+            setImagePath("");
+            toast.success(t("imageRemovedToast"));
+        });
+    }
 
     const schema = useMemo(() => promotionFormSchema(tv), [tv]);
 
@@ -234,6 +294,70 @@ export function PromotionDialog({
                                 </FormItem>
                             )}
                         />
+
+                        {/* Card image (only for existing promotions — needs an id) */}
+                        {promotion && (
+                            <div className="rounded-xl border border-border/70 bg-muted/30 p-3">
+                                <div className="text-sm font-semibold text-muted-foreground">
+                                    {t("imageLabel")}
+                                </div>
+                                <div className="mt-2 flex flex-wrap items-center gap-3">
+                                    <div className="relative aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted/40">
+                                        {imageSrc ? (
+                                            <Image
+                                                src={imageSrc}
+                                                alt={t("imagePreviewAlt")}
+                                                fill
+                                                sizes="112px"
+                                                className="object-cover"
+                                                onError={() => setImageFailed(true)}
+                                            />
+                                        ) : (
+                                            <span className="flex items-center justify-center text-[10px] text-muted-foreground">
+                                                {t("noImage")}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="grid gap-1.5">
+                                        <input
+                                            ref={imageInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => handleImageFiles(e.target.files)}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="rounded-full"
+                                            disabled={imageUploading || pending}
+                                            onClick={() => imageInputRef.current?.click()}
+                                        >
+                                            {imageUploading ? (
+                                                <Loader2 className="size-4 animate-spin" />
+                                            ) : (
+                                                <Upload className="size-4" />
+                                            )}
+                                            {imagePath ? t("replaceImage") : t("uploadImage")}
+                                        </Button>
+                                        {imagePath && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                                                disabled={pending}
+                                                onClick={handleRemoveImage}
+                                            >
+                                                <Trash2 className="size-4" />
+                                                {t("removeImage")}
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <Separator className="my-1" />
 

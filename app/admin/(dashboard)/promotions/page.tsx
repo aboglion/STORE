@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { CalendarDays, Pencil, Plus } from "lucide-react";
 
 import { DeletePromotionButton } from "@/components/admin/delete-promotion-button";
+import { PromotionBannerForm } from "@/components/admin/promotion-banner-form";
 import { PromotionDialog } from "@/components/admin/promotion-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
 import { requireAdmin } from "@/lib/auth";
 import { getCategories, getAllProducts } from "@/lib/data/products";
 import { getPromotions } from "@/lib/data/promotions";
+import { getSettings } from "@/lib/data/storefront";
 import { localizedText, type Locale } from "@/lib/i18n/config";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { PromotionType } from "@/types/database.types";
@@ -43,10 +45,11 @@ export default async function AdminPromotionsPage() {
 
     const locale = (await getLocale()) as Locale;
     const t = await getTranslations("admin.promotions");
-    const [promotions, categories, products] = await Promise.all([
+    const [promotions, categories, products, settings] = await Promise.all([
         getPromotions(),
         getCategories(),
         getAllProducts(),
+        getSettings(),
     ]);
 
     const productOptions = products.map((p) => ({
@@ -75,6 +78,14 @@ export default async function AdminPromotionsPage() {
                     }
                 />
             </div>
+
+            {/* Site banner shown at the top of the public promotions page */}
+            <PromotionBannerForm
+                imagePath={settings.promotions_banner.image_path}
+                titleHe={settings.promotions_banner.title_he}
+                titleAr={settings.promotions_banner.title_ar}
+                enabled={settings.promotions_banner.enabled}
+            />
 
             <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-soft">
                 <Table>

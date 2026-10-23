@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useTransition } from "react";
+import Image from "next/image";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import imageCompression from "browser-image-compression";
+import { Loader2, Trash2, Upload } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -34,6 +36,7 @@ import type { ProductListItem } from "@/lib/data/products";
 import {
     createProduct,
     updateProduct,
+    uploadProductImage,
     type ActionResult,
 } from "@/lib/actions/products";
 import { localizedText, type Locale } from "@/lib/i18n/config";
@@ -44,6 +47,8 @@ import {
 } from "@/lib/validations/product";
 
 const NO_CATEGORY = "none";
+
+type PendingImage = { file: File; preview: string };
 
 export function ProductForm({
     product,
@@ -56,7 +61,11 @@ export function ProductForm({
     const t = useTranslations("admin.products");
     const tv = useTranslations("validation");
     const locale = useLocale() as Locale;
+    const tImage = useTranslations("admin.images");
+    const ts = useTranslations("admin.settings");
     const [pending, startTransition] = useTransition();
+    const [imageFiles, setImageFiles] = useState<PendingImage[]>([]);
+    const imageInputRef = useRef<HTMLInputElement>(null);
 
     const schema = useMemo(() => productFormSchema(tv), [tv]);
 
@@ -105,18 +114,79 @@ export function ProductForm({
 
     function onSubmit(values: ProductFormValues) {
         startTransition(async () => {
-            const result: ActionResult = product
-                ? await updateProduct(product.id, values)
-                : await createProduct(values);
+            if (product) {
+                const result: ActionResult = await updateProduct(product.id, values);
+                if (result?.error) {
+                    toast.error(result.error);
+                    return;
+                }
+                toast.success(t("updatedToast"));
+                router.push("/admin/products");
+                router.refresh();
+                return;
+            }
 
+            const result: ActionResult = await createProduct(values);
             if (result?.error) {
                 toast.error(result.error);
                 return;
             }
 
-            toast.success(product ? t("updatedToast") : t("createdToast"));
+            // Images are only attachable once the product row exists —
+            // upload each pending file right after creation.
+            if (result?.id && imageFiles.length > 0) {
+                for (const img of imageFiles) {
+                    const res = await uploadProductImage(
+                        result.id,
+                        img.file.name,
+                        img.file
+                    );
+                    if (res?.error) {
+                        toast.error(res.error);
+                        break;
+                    }
+                }
+            }
+
+            toast.success(t("createdToast"));
             router.push("/admin/products");
             router.refresh();
+        });
+    }
+
+    async function handleImageSelection(files: FileList | null) {
+        const incoming = Array.from(files ?? []);
+        if (incoming.length === 0) return;
+
+        const next: PendingImage[] = [];
+        for (const file of incoming) {
+            if (!file.type.startsWith("image/")) {
+                toast.error(ts("notImageToast"));
+                continue;
+            }
+            const preview = URL.createObjectURL(file);
+            try {
+                const compressed = await imageCompression(file, {
+                    maxSizeMB: 1,
+                    maxWidthOrHeight: 1600,
+                    useWebWorker: true,
+                });
+                next.push({ file: compressed, preview });
+            } catch {
+                toast.error(ts("compressFailedToast"));
+                URL.revokeObjectURL(preview);
+            }
+        }
+
+        if (next.length > 0) setImageFiles((prev) => [...prev, ...next]);
+        if (imageInputRef.current) imageInputRef.current.value = "";
+    }
+
+    function removePendingImage(index: number) {
+        setImageFiles((prev) => {
+            const preview = prev[index]?.preview;
+            if (preview) URL.revokeObjectURL(preview);
+            return prev.filter((_, i) => i !== index);
         });
     }
 
@@ -349,13 +419,66 @@ export function ProductForm({
                     />
                 </div>
 
-                {product && (
+                {product ? (
                     <div className="grid gap-2">
                         <FormLabel>{t("imagesLabel")}</FormLabel>
                         <ImageUploader
                             productId={product.id}
                             productSlug={product.slug}
                             images={product.images}
+                        />
+                    </div>
+                ) : (
+                    <div className="grid gap-2">
+                        <FormLabel>{t("imagesLabel")}</FormLabel>
+                        {imageFiles.length > 0 && (
+                            <FormDescription>
+                                {t("imagesPendingHint")}
+                            </FormDescription>
+                        )}
+                        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                            {imageFiles.map((img, index) => (
+                                <div
+                                    key={img.preview}
+                                    className="group relative aspect-square overflow-hidden rounded-md border bg-muted"
+                                >
+                                    <Image
+                                        src={img.preview}
+                                        alt={tImage("imageAlt", { index: index + 1 })}
+                                        fill
+                                        sizes="120px"
+                                        className="object-cover"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="icon"
+                                        className="absolute top-1 right-1 size-7 opacity-0 transition-opacity group-hover:opacity-100"
+                                        disabled={pending}
+                                        aria-label={tImage("removeImage")}
+                                        onClick={() => removePendingImage(index)}
+                                    >
+                                        <Trash2 className="size-3.5" />
+                                    </Button>
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => imageInputRef.current?.click()}
+                                disabled={pending}
+                                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border border-dashed text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                            >
+                                <Upload className="size-5" />
+                                <span>{tImage("addImage")}</span>
+                            </button>
+                        </div>
+                        <input
+                            ref={imageInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => handleImageSelection(e.target.files)}
                         />
                     </div>
                 )}

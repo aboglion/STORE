@@ -287,6 +287,8 @@ export interface Promotion {
     category_id: string | null;
     product_ids: string[];
     config: PromotionConfig;
+    /** Storage path of the promotion card image (product-images bucket). */
+    image_path: string | null;
     sort_order: number;
     created_at: string;
     updated_at: string;
@@ -652,4 +654,11 @@ export interface AppSettings {
     /** Storage path of the uploaded store logo in the product-images bucket. */
     logo_url: string;
     theme: StoreThemeKey;
+    /** Site-wide banner shown at the top of the public promotions page. */
+    promotions_banner: {
+        image_path: string;
+        title_he: string;
+        title_ar: string;
+        enabled: boolean;
+    };
 }

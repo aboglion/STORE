@@ -45,6 +45,12 @@ const DEFAULT_SETTINGS: AppSettings = {
     contact_phone: "08-6000000",
     logo_url: "",
     theme: "caramel",
+    promotions_banner: {
+        image_path: "",
+        title_he: "",
+        title_ar: "",
+        enabled: false,
+    },
 };
 
 function mapSettingsRows(rows: Array<{ key: string; value: unknown }>): AppSettings {
@@ -96,6 +102,20 @@ function mapSettingsRows(rows: Array<{ key: string; value: unknown }>): AppSetti
             (read("logo_url") as string) ?? DEFAULT_SETTINGS.logo_url,
         theme:
             (read("theme") as StoreThemeKey) ?? DEFAULT_SETTINGS.theme,
+        promotions_banner: {
+            image_path:
+                (read("promotions_banner") as { image_path?: string } | null)
+                    ?.image_path ?? DEFAULT_SETTINGS.promotions_banner.image_path,
+            title_he:
+                (read("promotions_banner") as { title_he?: string } | null)
+                    ?.title_he ?? DEFAULT_SETTINGS.promotions_banner.title_he,
+            title_ar:
+                (read("promotions_banner") as { title_ar?: string } | null)
+                    ?.title_ar ?? DEFAULT_SETTINGS.promotions_banner.title_ar,
+            enabled:
+                (read("promotions_banner") as { enabled?: boolean } | null)
+                    ?.enabled ?? DEFAULT_SETTINGS.promotions_banner.enabled,
+        },
     };
 }
 

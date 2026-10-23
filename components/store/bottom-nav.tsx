@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
-import { House, PackageCheck, ShoppingBag } from "lucide-react";
+import { Gift, House, PackageCheck, ShoppingBag } from "lucide-react";
 
 import { useCart } from "@/contexts/cart-context";
 import { BanknoteImage, ColorfulCartBag } from "@/components/store/cart-badge-icon";
@@ -35,6 +35,12 @@ export function BottomNav() {
             active: pathname === "/",
         },
         {
+            href: "/promotions",
+            label: t("promotions"),
+            icon: Gift,
+            active: pathname.startsWith("/promotions"),
+        },
+        {
             href: "/orders",
             label: t("myOrders"),
             icon: PackageCheck,
@@ -53,7 +59,7 @@ export function BottomNav() {
             aria-label={t("mainNav")}
             className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/90 pb-safe backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 md:hidden"
         >
-            <div className="grid grid-cols-3">
+            <div className="grid grid-cols-4">
                 {items.map((item) => (
                     <Link
                         key={item.href}

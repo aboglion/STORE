@@ -7,7 +7,6 @@ import { LocaleSwitcher } from "@/components/locale-switcher";
 import {
     InstallPrompt,
     PwaInstallBanner,
-    PwaInstallHeaderButton,
 } from "@/components/pwa/install-prompt";
 import { CartProvider } from "@/contexts/cart-context";
 import { getSettings, getStoreName } from "@/lib/data/storefront";
@@ -56,6 +55,12 @@ export async function StoreChrome({
                                 {t("catalog")}
                             </Link>
                             <Link
+                                href="/promotions"
+                                className="hidden rounded-full px-4 py-1.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 sm:inline-flex"
+                            >
+                                {t("promotions")}
+                            </Link>
+                            <Link
                                 href="/orders"
                                 className="hidden rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:inline-flex"
                             >
@@ -67,7 +72,6 @@ export async function StoreChrome({
                             >
                                 {t("cancellation")}
                             </Link>
-                            <PwaInstallHeaderButton />
                             <AccessibilityHeaderButton />
                             <LocaleSwitcher />
                             <CartButton />

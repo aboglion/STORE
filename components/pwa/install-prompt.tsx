@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
+    ArrowDown,
     Check,
     CheckCircle2,
     Download,
@@ -80,6 +81,22 @@ function detectPlatform(): InstallPlatform {
     return "desktop";
 }
 
+type InstallBrowser = "chrome" | "firefox" | "samsung" | "edge" | "other";
+
+function detectBrowser(): InstallBrowser {
+    const ua = navigator.userAgent || "";
+    if (/Firefox\//i.test(ua) && !/Seamonkey/.test(ua)) return "firefox";
+    if (/SamsungBrowser/i.test(ua)) return "samsung";
+    if (/Edg\//i.test(ua)) return "edge";
+    if (/Chrome\//i.test(ua) && !/CriOS/i.test(ua) && !/OPR\//i.test(ua)) return "chrome";
+    if (/OPR\//i.test(ua)) return "other";
+    return "other";
+}
+
+function isFirefox(): boolean {
+    return detectBrowser() === "firefox";
+}
+
 async function tryNativePrompt(): Promise<"accepted" | "shown" | "none"> {
     const promptEvent = getDeferredPrompt();
     if (!promptEvent) return "none";
@@ -135,6 +152,15 @@ export async function triggerPwaInstall() {
         return;
     }
 
+    const platform = detectPlatform();
+
+    // Firefox and iOS do not support beforeinstallprompt at all — skip the
+    // native prompt attempts and go straight to the visual guide.
+    if (isFirefox() || platform === "ios") {
+        openGuideDialog(platform);
+        return;
+    }
+
     // 1. Try the captured native prompt immediately
     const outcome = await tryNativePrompt();
     if (outcome === "accepted" || outcome === "shown") return;
@@ -154,34 +180,128 @@ export async function triggerPwaInstall() {
  * A clear, platform-aware install guide. Opened automatically by
  * `triggerPwaInstall()` when the native prompt cannot be shown.
  */
+const IOS_COACH_SEEN_KEY = "pwa_ios_coach_seen";
+
 function InstallGuideDialog() {
     const t = useTranslations("pwa");
     const [open, setOpen] = useState(false);
     const [platform, setPlatform] = useState<InstallPlatform>("android");
+    const [firefox, setFirefox] = useState(false);
+    // On iOS we show a two-stage guide: first a "tap the share button" callout
+    // that mimics the actual Safari button, then the numbered steps.
+    const [iosStage, setIosStage] = useState<"coach" | "steps">("steps");
+
+    const isIos = platform === "ios";
+    const isDesktop = platform === "desktop";
 
     useEffect(() => {
         const onOpen = (e: Event) => {
             const detail = (e as CustomEvent<InstallPlatform>).detail;
             if (detail) setPlatform(detail);
             setOpen(true);
+            setFirefox(isFirefox());
+            setIosStage("steps");
+            if (detail === "ios") {
+                let seen = false;
+                try {
+                    seen = sessionStorage.getItem(IOS_COACH_SEEN_KEY) === "1";
+                } catch {
+                    /* storage might be blocked */
+                }
+                // Show the callout only the first time per session.
+                if (!seen) {
+                    setIosStage("coach");
+                    try {
+                        sessionStorage.setItem(IOS_COACH_SEEN_KEY, "1");
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            }
         };
         window.addEventListener(GUIDE_OPEN_EVENT, onOpen);
         return () => window.removeEventListener(GUIDE_OPEN_EVENT, onOpen);
     }, []);
 
     const handleInstallNow = useCallback(async () => {
+        // Firefox and iOS cannot show a native prompt — acknowledge and close.
+        if (firefox || isIos) {
+            setOpen(false);
+            return;
+        }
         // If a native prompt is still available (e.g. desktop Chrome), use it.
         const outcome = await tryNativePrompt();
         if (outcome === "accepted" || outcome === "shown") {
             setOpen(false);
             return;
         }
-        // Otherwise keep the guide open — the steps are the only way forward (iOS).
-    }, []);
+        // Otherwise keep the guide open — the steps are the only way forward.
+    }, [firefox, isIos]);
 
-    const isIos = platform === "ios";
-    const isDesktop = platform === "desktop";
+    // ----- iOS first stage: animated "tap the Share button" callout -----
+    if (isIos && iosStage === "coach") {
+        return (
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogContent className="gap-4 sm:max-w-md">
+                    <DialogHeader>
+                        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 shadow-sm">
+                            <Smartphone className="size-7 text-primary" />
+                        </div>
+                        <DialogTitle className="text-center text-lg font-extrabold">
+                            {t("iosTitle")}
+                        </DialogTitle>
+                        <DialogDescription className="text-center">
+                            {t("iosSubtitle")}
+                        </DialogDescription>
+                    </DialogHeader>
 
+                    {/* Fake Safari bottom bar + pulsing Share button */}
+                    <div className="relative mx-auto w-full max-w-[280px]">
+                        <div className="flex items-center justify-center gap-7 rounded-2xl border border-border bg-card px-6 py-4 shadow-lg">
+                            <div className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                                <Menu className="size-5" />
+                            </div>
+                            <div className="relative flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
+                                <span className="absolute inset-0 -m-2 animate-ping rounded-full bg-primary/40" />
+                                <Share className="size-5" />
+                            </div>
+                            <div className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                                <Check className="size-5" />
+                            </div>
+                        </div>
+                        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2">
+                            <ArrowDown className="size-5 animate-bounce text-primary" />
+                        </div>
+                    </div>
+
+                    <p className="mx-auto max-w-xs text-center text-sm leading-relaxed text-muted-foreground">
+                        {t("iosCoachHint")}
+                    </p>
+
+                    <DialogFooter className="gap-2 sm:gap-2">
+                        <Button
+                            type="button"
+                            onClick={() => setIosStage("steps")}
+                            className="w-full gap-2 font-bold"
+                        >
+                            <Share className="size-4" />
+                            {t("iosCoachNext")}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setIosStage("steps")}
+                            className="w-full"
+                        >
+                            {t("iosCoachBack")}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        );
+    }
+
+    // ----- Shared dialog: numbered steps for every platform -----
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="gap-5 sm:max-w-md">
@@ -265,7 +385,7 @@ function InstallGuideDialog() {
                             <GuideStep
                                 step={2}
                                 icon={<Smartphone className="size-4" />}
-                                text={t("androidStep2")}
+                                text={firefox ? t("androidFirefoxStep2") : t("androidStep2")}
                             />
                             <GuideStep
                                 step={3}
@@ -276,10 +396,45 @@ function InstallGuideDialog() {
                     )}
                 </ol>
 
-                {!isIos && (
-                    <p className="rounded-xl bg-muted px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-                        {t("androidMenuHint")}
+                {isIos ? (
+                    <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[11px] leading-relaxed text-amber-700 dark:text-amber-300">
+                        {t("iosSafariNote")}
                     </p>
+                ) : (
+                    <p className="rounded-xl bg-muted px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+                        {firefox ? t("firefoxNote") : t("androidMenuHint")}
+                    </p>
+                )}
+
+                {firefox && !isIos && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const url = window.location.href;
+                            // Always copy the link first as a reliable fallback.
+                            try {
+                                if (navigator.clipboard?.writeText) {
+                                    navigator.clipboard.writeText(url);
+                                    toast.success(t("linkCopied"));
+                                }
+                            } catch {
+                                /* clipboard may be unavailable — ignore */
+                            }
+                            // Android intent to open the current URL in Chrome.
+                            const intent = `intent://${url.replace(/^https?:\/\//, "")}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(
+                                url
+                            )};end`;
+                            try {
+                                window.location.href = intent;
+                            } catch {
+                                /* ignore navigation failures — the link was copied */
+                            }
+                            setTimeout(() => setOpen(false), 600);
+                        }}
+                        className="w-full rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/10"
+                    >
+                        {t("useChrome")}
+                    </button>
                 )}
 
                 <DialogFooter className="gap-2 sm:gap-2">
@@ -288,7 +443,7 @@ function InstallGuideDialog() {
                         onClick={handleInstallNow}
                         className="w-full gap-2 font-bold"
                     >
-                        <Download className="size-4" />
+                        {isIos ? <Share className="size-4" /> : <Download className="size-4" />}
                         {isIos ? t("gotIt") : t("installButton")}
                     </Button>
                     <Button

@@ -5,6 +5,11 @@ import type {
     PromotionType,
 } from "@/types/database.types";
 
+export interface PromotionDescription {
+    description_he: string;
+    description_ar: string;
+}
+
 /**
  * Shared promotion pricing engine.
  *
@@ -79,6 +84,21 @@ function inScope(p: Promotion, line: CartPricingLine): boolean {
         default:
             return true;
     }
+}
+
+/**
+ * Public description for a promotion card (storefront display).
+ * Uses the promotion's regular price when available for price deals.
+ */
+export function describePromotion(
+    promotion: Promotion,
+    unitPriceAgorot?: number
+): PromotionDescription {
+    return buildDescription(
+        promotion.type,
+        promotion.config,
+        unitPriceAgorot ?? 0
+    );
 }
 
 function buildDescription(

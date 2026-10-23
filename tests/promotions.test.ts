@@ -26,6 +26,7 @@ function promo(overrides: Partial<Promotion>): Promotion {
         category_id: null,
         product_ids: [],
         config: {},
+        image_path: null,
         sort_order: 0,
         created_at: "2026-01-01T00:00:00Z",
         updated_at: "2026-01-01T00:00:00Z",

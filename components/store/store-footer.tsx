@@ -10,6 +10,7 @@ import {
     ChevronDown,
     ChevronUp,
     FileText,
+    Gift,
     Mail,
     MapPin,
     Phone,
@@ -144,6 +145,15 @@ export function StoreFooter({ settings, storeName }: StoreFooterProps) {
                             <span>{t("legalAndConsumer")}</span>
                         </div>
                         <ul className="space-y-2 text-xs">
+                            <li>
+                                <Link
+                                    href="/promotions"
+                                    className="font-bold text-primary hover:underline flex items-center gap-1.5"
+                                >
+                                    <Gift className="size-3.5" />
+                                    <span>{t("promotions")}</span>
+                                </Link>
+                            </li>
                             <li>
                                 <Link
                                     href="/cancellation"

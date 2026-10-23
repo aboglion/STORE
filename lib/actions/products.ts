@@ -17,7 +17,7 @@ import {
     productFormSchema,
 } from "@/lib/validations/product";
 
-export type ActionResult = { error?: string } | undefined;
+export type ActionResult = { error?: string; id?: string } | undefined;
 
 function uniqueViolationTarget(
     error: { code?: string; message?: string } | null
@@ -65,7 +65,7 @@ export async function createProduct(
         return { error: te("invalidCost") };
     }
 
-    const { error } = await createAdminClient()
+    const { data: created, error } = await createAdminClient()
         .from("products")
         .insert({
             category_id: parsed.data.category_id || null,
@@ -82,7 +82,9 @@ export async function createProduct(
             low_stock_threshold: parsed.data.low_stock_threshold,
             is_active: parsed.data.is_active,
             sort_order: parsed.data.sort_order,
-        });
+        })
+        .select("id")
+        .single();
 
     if (error) {
         const target = uniqueViolationTarget(error);
@@ -94,6 +96,8 @@ export async function createProduct(
     revalidatePath("/admin/products");
     revalidatePath("/");
     revalidateTag(STORE_CACHE_TAGS.products);
+
+    return { id: created?.id };
 }
 
 export async function updateProduct(
