@@ -78,7 +78,14 @@ import type {
 interface PromotionDialogProps {
     promotion?: Promotion;
     categories: Pick<Category, "id" | "name_he" | "name_ar">[];
-    products: Array<{ id: string; name_he: string; name_ar: string | null }>;
+    products: Array<{
+        id: string;
+        name_he: string;
+        name_ar: string | null;
+        price_agorot: number;
+        compare_at_price_agorot?: number | null;
+        image_path?: string | null;
+    }>;
     trigger: React.ReactNode;
 }
 
@@ -270,6 +277,30 @@ export function PromotionDialog({
         const current = new Set(form.watch("product_ids") ?? []);
         if (checked) {
             current.add(productId);
+            const product = products.find((p) => p.id === productId);
+            if (product) {
+                // Auto-fill original price if not entered yet
+                const currentOriginal = form.getValues("original_price_shekels");
+                if (!currentOriginal && product.price_agorot) {
+                    form.setValue(
+                        "original_price_shekels",
+                        (product.price_agorot / 100).toFixed(2),
+                        { shouldDirty: true }
+                    );
+                }
+                // Auto-fill promotion image if no custom image is uploaded
+                if (!imagePath && !pendingImage && product.image_path) {
+                    setImagePath(product.image_path);
+                    form.setValue("image_path", product.image_path, { shouldDirty: true });
+                }
+                // Auto-fill promotion title if empty
+                if (!form.getValues("name_he")) {
+                    form.setValue("name_he", product.name_he, { shouldDirty: true });
+                }
+                if (product.name_ar && !form.getValues("name_ar")) {
+                    form.setValue("name_ar", product.name_ar, { shouldDirty: true });
+                }
+            }
         } else {
             current.delete(productId);
         }
@@ -277,11 +308,15 @@ export function PromotionDialog({
     }
 
     function onSubmit(values: PromotionFormValues) {
+        const payload: PromotionFormValues = {
+            ...values,
+            image_path: imagePath || values.image_path || undefined,
+        };
         startTransition(async () => {
             if (promotion) {
                 const result: PromotionActionResult = await updatePromotion(
                     promotion.id,
-                    values
+                    payload
                 );
                 if (result?.error) {
                     toast.error(result.error);
@@ -303,7 +338,7 @@ export function PromotionDialog({
                 return;
             }
 
-            const result: PromotionActionResult = await createPromotion(values);
+            const result: PromotionActionResult = await createPromotion(payload);
             if (result?.error) {
                 toast.error(result.error);
                 return;
@@ -442,8 +477,7 @@ export function PromotionDialog({
                             name="type"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormControl>
-                                        <RadioGroup
+                                    <RadioGroup
                                             value={field.value}
                                             onValueChange={(value) =>
                                                 field.onChange(value as PromotionType)
@@ -494,7 +528,6 @@ export function PromotionDialog({
                                                 }
                                             )}
                                         </RadioGroup>
-                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -633,8 +666,7 @@ export function PromotionDialog({
                             name="scope_type"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormControl>
-                                        <RadioGroup
+                                    <RadioGroup
                                             value={field.value}
                                             onValueChange={(value) =>
                                                 field.onChange(value as PromotionScopeType)
@@ -671,7 +703,6 @@ export function PromotionDialog({
                                                 }
                                             )}
                                         </RadioGroup>
-                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -684,32 +715,32 @@ export function PromotionDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>{t("categoryLabel")}</FormLabel>
-                                        <FormControl>
-                                            <Select
-                                                value={field.value ?? ""}
-                                                onValueChange={(value) =>
-                                                    field.onChange(value || null)
-                                                }
-                                            >
+                                        <Select
+                                            value={field.value ?? ""}
+                                            onValueChange={(value) =>
+                                                field.onChange(value || null)
+                                            }
+                                        >
+                                            <FormControl>
                                                 <SelectTrigger className="w-full">
                                                     <SelectValue placeholder={t("categoryPlaceholder")} />
                                                 </SelectTrigger>
-                                                <SelectContent>
-                                                    {categories.map((category) => (
-                                                        <SelectItem
-                                                            key={category.id}
-                                                            value={category.id}
-                                                        >
-                                                            {localizedText(
-                                                                locale,
-                                                                category.name_he,
-                                                                category.name_ar
-                                                            )}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </FormControl>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {categories.map((category) => (
+                                                    <SelectItem
+                                                        key={category.id}
+                                                        value={category.id}
+                                                    >
+                                                        {localizedText(
+                                                            locale,
+                                                            category.name_he,
+                                                            category.name_ar
+                                                        )}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -725,56 +756,73 @@ export function PromotionDialog({
                                         <FormLabel>
                                             {t("productsLabel")} ({selectedProductIds.length})
                                         </FormLabel>
-                                        <FormControl>
-                                            <div>
-                                                <div className="relative">
-                                                    <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                                                    <Input
-                                                        value={productSearch}
-                                                        onChange={(e) =>
-                                                            setProductSearch(e.target.value)
-                                                        }
-                                                        placeholder={t("productsSearch")}
-                                                        className="ps-9"
-                                                    />
+                                        <div className="relative">
+                                            <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                                            <Input
+                                                value={productSearch}
+                                                onChange={(e) =>
+                                                    setProductSearch(e.target.value)
+                                                }
+                                                placeholder={t("productsSearch")}
+                                                className="ps-9"
+                                            />
+                                        </div>
+                                        <div className="mt-2 max-h-56 overflow-y-auto rounded-xl border border-border/70 bg-card">
+                                            {filteredProducts.length === 0 && (
+                                                <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                                                    {t("productsEmpty")}
                                                 </div>
-                                                <div className="mt-2 max-h-56 overflow-y-auto rounded-xl border border-border/70 bg-card">
-                                                    {filteredProducts.length === 0 && (
-                                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground">
-                                                            {t("productsEmpty")}
-                                                        </div>
-                                                    )}
-                                                    {filteredProducts.map((product) => {
-                                                        const checked = selectedProductIds.includes(
-                                                            product.id
-                                                        );
-                                                        return (
-                                                            <label
-                                                                key={product.id}
-                                                                className="flex cursor-pointer items-center gap-2.5 border-b border-border/50 px-3 py-2 text-sm last:border-0 hover:bg-accent/50"
-                                                            >
-                                                                <Checkbox
-                                                                    checked={checked}
-                                                                    onCheckedChange={(c) =>
-                                                                        toggleProduct(
-                                                                            product.id,
-                                                                            Boolean(c)
-                                                                        )
-                                                                    }
+                                            )}
+                                            {filteredProducts.map((product) => {
+                                                const checked = selectedProductIds.includes(
+                                                    product.id
+                                                );
+                                                const pImgSrc = product.image_path
+                                                    ? storageImageUrl(product.image_path)
+                                                    : "";
+                                                return (
+                                                    <label
+                                                        key={product.id}
+                                                        className="flex cursor-pointer items-center gap-2.5 border-b border-border/50 px-3 py-2 text-sm last:border-0 hover:bg-accent/50 transition-colors"
+                                                    >
+                                                        <Checkbox
+                                                            checked={checked}
+                                                            onCheckedChange={(c) =>
+                                                                toggleProduct(
+                                                                    product.id,
+                                                                    Boolean(c)
+                                                                )
+                                                            }
+                                                        />
+                                                        {pImgSrc ? (
+                                                            <div className="relative size-8 shrink-0 overflow-hidden rounded-md border border-border/70 bg-muted/30">
+                                                                <Image
+                                                                    src={pImgSrc}
+                                                                    alt=""
+                                                                    fill
+                                                                    sizes="32px"
+                                                                    className="object-contain p-0.5"
                                                                 />
-                                                                <span className="min-w-0 flex-1 truncate">
-                                                                    {localizedText(
-                                                                        locale,
-                                                                        product.name_he,
-                                                                        product.name_ar
-                                                                    )}
-                                                                </span>
-                                                            </label>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </FormControl>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted/30 text-muted-foreground">
+                                                                <Package className="size-4" />
+                                                            </div>
+                                                        )}
+                                                        <span className="min-w-0 flex-1 truncate font-medium">
+                                                            {localizedText(
+                                                                locale,
+                                                                product.name_he,
+                                                                product.name_ar
+                                                            )}
+                                                        </span>
+                                                        <span className="shrink-0 text-xs font-semibold text-primary/90 bg-primary/10 px-2 py-0.5 rounded-md">
+                                                            ₪{(product.price_agorot / 100).toFixed(2)}
+                                                        </span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
                                         <FormMessage />
                                     </FormItem>
                                 )}

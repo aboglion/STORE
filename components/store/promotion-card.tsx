@@ -98,7 +98,7 @@ export function PromotionCard({
                             <span className="font-display text-lg font-extrabold text-primary">
                                 {formatMoney(promotion.config.deal_price_agorot)}
                             </span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground line-through">
                                 {promotion.config.original_price_agorot != null
                                     ? (locale === "ar"
                                         ? `بدلًا من ${formatMoney(promotion.config.original_price_agorot)}`

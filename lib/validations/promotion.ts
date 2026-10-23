@@ -26,6 +26,7 @@ export function promotionFormSchema(t: ValidationMessages) {
             scope_type: z.enum(PROMOTION_SCOPE_TYPES).default("all"),
             category_id: z.string().uuid().nullable().optional(),
             product_ids: z.array(z.string().uuid()).default([]),
+            image_path: z.string().optional().or(z.literal("")),
             sort_order: z.coerce.number().int().min(0).default(0),
             // multi_buy
             buy_quantity: z.coerce.number().int().min(0).default(0),

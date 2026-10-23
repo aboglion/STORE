@@ -56,6 +56,9 @@ export default async function AdminPromotionsPage() {
         id: p.id,
         name_he: p.name_he,
         name_ar: p.name_ar,
+        price_agorot: p.price_agorot,
+        compare_at_price_agorot: p.compare_at_price_agorot,
+        image_path: p.images?.[0]?.storage_path ?? null,
     }));
 
     return (

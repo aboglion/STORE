@@ -74,7 +74,8 @@ export async function createPromotion(
     const parsed = promotionFormSchema(t).safeParse(values);
     if (!parsed.success) return { error: te("invalidData") };
 
-    const { data, error } = await createAdminClient()
+    const admin = createAdminClient();
+    const { data, error } = await admin
         .from("promotions")
         .insert({
             name_he: parsed.data.name_he,
@@ -89,6 +90,7 @@ export async function createPromotion(
             product_ids:
                 parsed.data.scope_type === "products" ? parsed.data.product_ids : [],
             config: buildConfig(parsed.data.type, parsed.data),
+            image_path: parsed.data.image_path?.trim() || null,
             sort_order: parsed.data.sort_order,
         })
         .select("id")
@@ -96,7 +98,28 @@ export async function createPromotion(
 
     if (error) return { error: te("savePromotionFailed") };
 
+    // When a price_deal on specific products is active, update their store price
+    if (
+        parsed.data.type === "price_deal" &&
+        parsed.data.scope_type === "products" &&
+        parsed.data.product_ids.length > 0
+    ) {
+        const dealPrice = shekelInputToAgorot(parsed.data.deal_price_shekels ?? "");
+        const originalPrice = shekelInputToAgorot(parsed.data.original_price_shekels ?? "");
+        if (dealPrice != null && parsed.data.is_active) {
+            await admin
+                .from("products")
+                .update({
+                    price_agorot: dealPrice,
+                    ...(originalPrice != null ? { compare_at_price_agorot: originalPrice } : {}),
+                })
+                .in("id", parsed.data.product_ids);
+            revalidateTag(STORE_CACHE_TAGS.products);
+        }
+    }
+
     revalidatePath("/admin/promotions");
+    revalidatePath("/products");
     revalidatePath("/");
     revalidateTag(STORE_CACHE_TAGS.promotions);
 
@@ -116,7 +139,8 @@ export async function updatePromotion(
     const parsed = promotionFormSchema(t).safeParse(values);
     if (!parsed.success) return { error: te("invalidData") };
 
-    const { error } = await createAdminClient()
+    const admin = createAdminClient();
+    const { error } = await admin
         .from("promotions")
         .update({
             name_he: parsed.data.name_he,
@@ -131,13 +155,46 @@ export async function updatePromotion(
             product_ids:
                 parsed.data.scope_type === "products" ? parsed.data.product_ids : [],
             config: buildConfig(parsed.data.type, parsed.data),
+            ...(parsed.data.image_path !== undefined
+                ? { image_path: parsed.data.image_path.trim() || null }
+                : {}),
             sort_order: parsed.data.sort_order,
         })
         .eq("id", id);
 
     if (error) return { error: te("updatePromotionFailed") };
 
+    // Sync product prices when price_deal on products is toggled or updated
+    if (
+        parsed.data.type === "price_deal" &&
+        parsed.data.scope_type === "products" &&
+        parsed.data.product_ids.length > 0
+    ) {
+        const dealPrice = shekelInputToAgorot(parsed.data.deal_price_shekels ?? "");
+        const originalPrice = shekelInputToAgorot(parsed.data.original_price_shekels ?? "");
+        if (parsed.data.is_active && dealPrice != null) {
+            await admin
+                .from("products")
+                .update({
+                    price_agorot: dealPrice,
+                    ...(originalPrice != null ? { compare_at_price_agorot: originalPrice } : {}),
+                })
+                .in("id", parsed.data.product_ids);
+            revalidateTag(STORE_CACHE_TAGS.products);
+        } else if (!parsed.data.is_active && originalPrice != null) {
+            await admin
+                .from("products")
+                .update({
+                    price_agorot: originalPrice,
+                    compare_at_price_agorot: null,
+                })
+                .in("id", parsed.data.product_ids);
+            revalidateTag(STORE_CACHE_TAGS.products);
+        }
+    }
+
     revalidatePath("/admin/promotions");
+    revalidatePath("/products");
     revalidatePath("/");
     revalidateTag(STORE_CACHE_TAGS.promotions);
 }
@@ -148,10 +205,10 @@ export async function deletePromotion(id: string): Promise<PromotionActionResult
     const te = await getTranslations("admin.errors");
     const admin = createAdminClient();
 
-    // Remove the promotion image from storage first (best effort).
+    // Fetch promotion details before deleting to clean image and restore product prices
     const { data: promotion } = await admin
         .from("promotions")
-        .select("image_path")
+        .select("image_path, type, scope_type, product_ids, config")
         .eq("id", id)
         .maybeSingle();
 
@@ -161,11 +218,32 @@ export async function deletePromotion(id: string): Promise<PromotionActionResult
             .remove([promotion.image_path]);
     }
 
+    // Restore product prices if this was a price_deal
+    const promoConfig = promotion?.config as Record<string, unknown> | null;
+    const originalPrice = promoConfig?.original_price_agorot as number | undefined;
+    const productIds = promotion?.product_ids as string[] | undefined;
+    if (
+        promotion?.type === "price_deal" &&
+        promotion?.scope_type === "products" &&
+        productIds?.length &&
+        originalPrice != null
+    ) {
+        await admin
+            .from("products")
+            .update({
+                price_agorot: originalPrice,
+                compare_at_price_agorot: null,
+            })
+            .in("id", productIds);
+        revalidateTag(STORE_CACHE_TAGS.products);
+    }
+
     const { error } = await admin.from("promotions").delete().eq("id", id);
 
     if (error) return { error: te("deletePromotionFailed") };
 
     revalidatePath("/admin/promotions");
+    revalidatePath("/products");
     revalidatePath("/");
     revalidateTag(STORE_CACHE_TAGS.promotions);
 }
