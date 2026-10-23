@@ -13,13 +13,27 @@ const isHttps = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://");
  *   Next.js inline bootstrap scripts; everything else is locked down.
  * - Development: CSP is skipped so webpack HMR / React DevTools keep working.
  */
+const extraSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL ? [process.env.NEXT_PUBLIC_SUPABASE_URL] : [];
+const extraSupabaseWs = process.env.NEXT_PUBLIC_SUPABASE_URL
+    ? [process.env.NEXT_PUBLIC_SUPABASE_URL.replace(/^http/i, "ws")]
+    : [];
+
 const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://*.supabase.co http://127.0.0.1:54321 http://host.docker.internal:54321",
+    [
+        "img-src 'self' data: blob: https://*.supabase.co http://127.0.0.1:54321 http://localhost:54321 http://host.docker.internal:54321",
+        ...extraSupabase,
+    ].join(" "),
     "font-src 'self' data:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co http://127.0.0.1:54321 http://host.docker.internal:54321",
+    [
+        "connect-src 'self' https://*.supabase.co wss://*.supabase.co http://127.0.0.1:54321 ws://127.0.0.1:54321 http://localhost:54321 ws://localhost:54321 http://host.docker.internal:54321 ws://host.docker.internal:54321",
+        ...extraSupabase,
+        ...extraSupabaseWs,
+    ].join(" "),
+    "worker-src 'self' blob:",
+    "child-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
