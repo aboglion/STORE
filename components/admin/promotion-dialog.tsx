@@ -726,51 +726,53 @@ export function PromotionDialog({
                                             {t("productsLabel")} ({selectedProductIds.length})
                                         </FormLabel>
                                         <FormControl>
-                                            <div className="relative">
-                                                <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                                                <Input
-                                                    value={productSearch}
-                                                    onChange={(e) =>
-                                                        setProductSearch(e.target.value)
-                                                    }
-                                                    placeholder={t("productsSearch")}
-                                                    className="ps-9"
-                                                />
-                                            </div>
-                                            <div className="mt-2 max-h-56 overflow-y-auto rounded-xl border border-border/70 bg-card">
-                                                {filteredProducts.length === 0 && (
-                                                    <div className="px-3 py-4 text-center text-xs text-muted-foreground">
-                                                        {t("productsEmpty")}
-                                                    </div>
-                                                )}
-                                                {filteredProducts.map((product) => {
-                                                    const checked = selectedProductIds.includes(
-                                                        product.id
-                                                    );
-                                                    return (
-                                                        <label
-                                                            key={product.id}
-                                                            className="flex cursor-pointer items-center gap-2.5 border-b border-border/50 px-3 py-2 text-sm last:border-0 hover:bg-accent/50"
-                                                        >
-                                                            <Checkbox
-                                                                checked={checked}
-                                                                onCheckedChange={(c) =>
-                                                                    toggleProduct(
-                                                                        product.id,
-                                                                        Boolean(c)
-                                                                    )
-                                                                }
-                                                            />
-                                                            <span className="min-w-0 flex-1 truncate">
-                                                                {localizedText(
-                                                                    locale,
-                                                                    product.name_he,
-                                                                    product.name_ar
-                                                                )}
-                                                            </span>
-                                                        </label>
-                                                    );
-                                                })}
+                                            <div>
+                                                <div className="relative">
+                                                    <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                                                    <Input
+                                                        value={productSearch}
+                                                        onChange={(e) =>
+                                                            setProductSearch(e.target.value)
+                                                        }
+                                                        placeholder={t("productsSearch")}
+                                                        className="ps-9"
+                                                    />
+                                                </div>
+                                                <div className="mt-2 max-h-56 overflow-y-auto rounded-xl border border-border/70 bg-card">
+                                                    {filteredProducts.length === 0 && (
+                                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                                                            {t("productsEmpty")}
+                                                        </div>
+                                                    )}
+                                                    {filteredProducts.map((product) => {
+                                                        const checked = selectedProductIds.includes(
+                                                            product.id
+                                                        );
+                                                        return (
+                                                            <label
+                                                                key={product.id}
+                                                                className="flex cursor-pointer items-center gap-2.5 border-b border-border/50 px-3 py-2 text-sm last:border-0 hover:bg-accent/50"
+                                                            >
+                                                                <Checkbox
+                                                                    checked={checked}
+                                                                    onCheckedChange={(c) =>
+                                                                        toggleProduct(
+                                                                            product.id,
+                                                                            Boolean(c)
+                                                                        )
+                                                                    }
+                                                                />
+                                                                <span className="min-w-0 flex-1 truncate">
+                                                                    {localizedText(
+                                                                        locale,
+                                                                        product.name_he,
+                                                                        product.name_ar
+                                                                    )}
+                                                                </span>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         </FormControl>
                                         <FormMessage />
